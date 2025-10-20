@@ -1,9 +1,9 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Fossapay",
   "colors": {
-    "primary": "#16A34A",
+    "primary": "#0080FF",
     "light": "#07C983",
     "dark": "#15803D"
   },
@@ -11,58 +11,82 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "authentication",
+              "sandbox"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/virtual-accounts",
+              "concepts/wallets",
+              "concepts/settlements",
+              "concepts/webhooks"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/collections",
+              "guides/payouts",
+              "guides/reconciliation",
+              "guides/kyc-compliance"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Collections",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/collections/create-virtual-account",
+              "api-reference/collections/get-virtual-account",
+              "api-reference/collections/list-transactions"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Payouts",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/payouts/single-payout",
+              "api-reference/payouts/bulk-payout",
+              "api-reference/payouts/get-payout-status"
+            ]
+          },
+          {
+            "group": "Wallets",
+            "pages": [
+              "api-reference/wallets/create-wallet",
+              "api-reference/wallets/get-balance",
+              "api-reference/wallets/wallet-transactions"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "api-reference/webhooks/overview",
+              "api-reference/webhooks/events"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "White-Label",
+        "groups": [
+          {
+            "group": "Neobank Solution",
+            "pages": [
+              "white-label/overview",
+              "white-label/setup",
+              "white-label/customization"
             ]
           }
         ]
@@ -71,14 +95,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Community",
+          "href": "https://t.me/+N1-Gq6L5WStmYWM8",
+          "icon": "users"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Dashboard",
+          "href": "https://dashboard.fossapay.com",
+          "icon": "chart-line"
         }
       ]
     }
@@ -91,13 +115,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@fossapay.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get API Access",
+      "href": "https://dashboard.fossapay.com/signup"
     }
   },
   "contextual": {
@@ -114,9 +138,9 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/fossapay",
+      "github": "https://github.com/fossapay",
+      "linkedin": "https://linkedin.com/company/fossapay"
     }
   }
 }

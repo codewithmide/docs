@@ -1,0 +1,491 @@
+---
+title: Collections Guide
+description: 'Complete guide to accepting payments with Fossapay'
+---
+
+## Overview
+
+This guide walks you through accepting payments using Fossapay's Collections API. You'll learn how to create virtual accounts, receive payments, handle webhooks, and reconcile transactions.
+
+## Quick Start
+
+<Steps>
+  <Step title="Create a Virtual Account">
+    Generate a unique account number for your customer
+  </Step>
+  <Step title="Share Account Details">
+    Provide the account number to your customer
+  </Step>
+  <Step title="Receive Payment">
+    Customer transfers money to the virtual account
+  </Step>
+  <Step title="Get Notified">
+    Receive instant webhook notification
+  </Step>
+  <Step title="Credit Customer">
+    Update your customer's balance or fulfill their order
+  </Step>
+</Steps>
+
+## Creating Virtual Accounts
+
+### For Wallet Top-ups
+
+```javascript
+const fossapay = require('fossapay-node');
+const client = new fossapay(process.env.FOSSAPAY_SECRET_KEY);
+
+// Create dedicated account for customer
+const account = await client.virtualAccounts.create({
+  type: 'dedicated',
+  customer_name: 'John Doe',
+  customer_email: 'john@example.com',
+  customer_phone: '+2348012345678',
+  metadata: {
+    customer_id: 'cus_123',
+    purpose: 'wallet_topup'
+  }
+});
+
+console.log(account);
+// {
+//   "status": "success",
+//   "data": {
+//     "virtual_account_id": "va_abc123",
+//     "account_number": "1234567890",
+//     "account_name": "ACME Corp - John Doe",
+//     "bank_name": "Wema Bank",
+//     "type": "dedicated",
+//     "status": "active",
+//     "created_at": "2024-01-15T10:30:00Z"
+//   }
+// }
+```
+
+### For Invoice Payments
+
+```javascript
+// Create temporary account for invoice
+const account = await client.virtualAccounts.create({
+  type: 'temporary',
+  customer_name: 'Jane Smith',
+  customer_email: 'jane@example.com',
+  amount: 50000, // Expected amount
+  expires_at: '2024-01-31T23:59:59Z',
+  metadata: {
+    invoice_id: 'INV-001',
+    order_id: 'ORD-456'
+  }
+});
+
+// Share account details with customer
+sendInvoiceEmail(customer.email, {
+  accountNumber: account.data.account_number,
+  bankName: account.data.bank_name,
+  amount: 50000,
+  dueDate: '2024-01-31'
+});
+```
+
+## Displaying Account Details
+
+### Email Template
+
+```html
+<div style="font-family: Arial, sans-serif;">
+  <h2>Payment Instructions</h2>
+  <p>Please transfer <strong>₦50,000</strong> to the account below:</p>
+
+  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+    <p><strong>Bank:</strong> Wema Bank</p>
+    <p><strong>Account Number:</strong> 1234567890</p>
+    <p><strong>Account Name:</strong> ACME Corp - Jane Smith</p>
+    <p><strong>Amount:</strong> ₦50,000</p>
+  </div>
+
+  <p><small>This account is unique to your transaction and expires on Jan 31, 2024</small></p>
+</div>
+```
+
+### In-App Display (React)
+
+```jsx
+function PaymentInstructions({ account, amount }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyAccountNumber = () => {
+    navigator.clipboard.writeText(account.account_number);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="payment-card">
+      <h3>Transfer {formatCurrency(amount)} to:</h3>
+
+      <div className="account-details">
+        <div className="detail-row">
+          <span>Bank:</span>
+          <strong>{account.bank_name}</strong>
+        </div>
+
+        <div className="detail-row">
+          <span>Account Number:</span>
+          <div>
+            <strong>{account.account_number}</strong>
+            <button onClick={copyAccountNumber}>
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+
+        <div className="detail-row">
+          <span>Account Name:</span>
+          <strong>{account.account_name}</strong>
+        </div>
+      </div>
+
+      <p className="note">
+        Payments are confirmed instantly
+      </p>
+    </div>
+  );
+}
+```
+
+## Handling Webhook Notifications
+
+### Set Up Webhook Endpoint
+
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.json());
+
+app.post('/webhooks/fossapay', async (req, res) => {
+  // 1. Verify signature
+  if (!verifySignature(req.body, req.headers['x-fossapay-signature'])) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  // 2. Respond immediately
+  res.status(200).json({ received: true });
+
+  // 3. Process asynchronously
+  const { event, data } = req.body;
+
+  if (event === 'payment.received') {
+    await handlePaymentReceived(data);
+  }
+});
+
+async function handlePaymentReceived(payment) {
+  console.log('Payment received:', payment);
+
+  // Get customer from metadata
+  const customerId = payment.metadata.customer_id;
+
+  // Create transaction record
+  await db.transactions.create({
+    id: payment.transaction_id,
+    customer_id: customerId,
+    amount: payment.amount,
+    type: 'credit',
+    status: 'completed',
+    reference: payment.reference,
+    created_at: payment.created_at
+  });
+
+  // Credit customer wallet
+  await db.wallets.increment({
+    customer_id: customerId,
+    amount: payment.amount
+  });
+
+  // Send notification
+  await sendNotification(customerId, {
+    title: 'Payment Received!',
+    message: `Your wallet has been credited with ₦${payment.amount.toLocaleString()}`
+  });
+
+  // Send confirmation email
+  await sendEmail(payment.metadata.customer_email, {
+    subject: 'Payment Confirmation',
+    template: 'payment-received',
+    data: {
+      amount: payment.amount,
+      reference: payment.reference,
+      date: payment.created_at
+    }
+  });
+}
+
+function verifySignature(payload, signature) {
+  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return hash === signature;
+}
+```
+
+### Webhook Payload Example
+
+```json
+{
+  "event": "payment.received",
+  "event_id": "evt_abc123",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    "transaction_id": "txn_001",
+    "virtual_account_number": "1234567890",
+    "virtual_account_id": "va_abc123",
+    "amount": 50000,
+    "currency": "NGN",
+    "sender_name": "John Doe",
+    "sender_account": "0987654321",
+    "sender_bank": "GTBank",
+    "sender_bank_code": "058",
+    "reference": "FP-20240115-001",
+    "narration": "Payment from John Doe",
+    "settled": true,
+    "settlement_id": "stl_xyz789",
+    "metadata": {
+      "customer_id": "cus_123",
+      "purpose": "wallet_topup"
+    },
+    "created_at": "2024-01-15T10:30:40Z"
+  }
+}
+```
+
+## Querying Transaction Status
+
+### Get Transaction by ID
+
+```javascript
+const transaction = await client.transactions.get('txn_001');
+
+console.log(transaction);
+// {
+//   "status": "success",
+//   "data": {
+//     "transaction_id": "txn_001",
+//     "amount": 50000,
+//     "status": "successful",
+//     "sender_name": "John Doe",
+//     "created_at": "2024-01-15T10:30:40Z"
+//   }
+// }
+```
+
+### List Virtual Account Transactions
+
+```javascript
+const transactions = await client.virtualAccounts.getTransactions('va_abc123', {
+  start_date: '2024-01-01',
+  end_date: '2024-01-31',
+  status: 'successful',
+  limit: 50
+});
+```
+
+## Reconciliation
+
+### Daily Reconciliation
+
+```javascript
+async function dailyReconciliation() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Get all transactions from Fossapay
+  const fossapayTransactions = await client.transactions.list({
+    start_date: today.toISOString(),
+    end_date: tomorrow.toISOString(),
+    limit: 1000
+  });
+
+  // Get all transactions from your database
+  const dbTransactions = await db.transactions.findAll({
+    created_at: {
+      gte: today,
+      lt: tomorrow
+    }
+  });
+
+  // Match transactions
+  const matched = [];
+  const unmatched = [];
+
+  for (const fpTxn of fossapayTransactions.data) {
+    const dbTxn = dbTransactions.find(t => t.id === fpTxn.transaction_id);
+
+    if (dbTxn && dbTxn.amount === fpTxn.amount) {
+      matched.push(fpTxn);
+    } else {
+      unmatched.push(fpTxn);
+    }
+  }
+
+  // Alert on unmatched transactions
+  if (unmatched.length > 0) {
+    await sendAlert({
+      type: 'reconciliation_mismatch',
+      count: unmatched.length,
+      transactions: unmatched
+    });
+  }
+
+  return { matched, unmatched };
+}
+
+// Run daily at midnight
+cron.schedule('0 0 * * *', dailyReconciliation);
+```
+
+## Handling Edge Cases
+
+### Overpayment
+
+```javascript
+async function handlePaymentReceived(payment) {
+  const expectedAmount = await getExpectedAmount(payment.metadata.invoice_id);
+
+  if (payment.amount > expectedAmount) {
+    // Overpayment detected
+    const excess = payment.amount - expectedAmount;
+
+    // Credit invoice amount
+    await creditInvoice(payment.metadata.invoice_id, expectedAmount);
+
+    // Credit excess to wallet
+    await creditWallet(payment.metadata.customer_id, excess);
+
+    // Notify customer
+    await sendNotification(payment.metadata.customer_id, {
+      title: 'Overpayment Detected',
+      message: `You paid ₦${excess.toLocaleString()} extra. We've added it to your wallet.`
+    });
+  } else {
+    // Normal payment
+    await creditInvoice(payment.metadata.invoice_id, payment.amount);
+  }
+}
+```
+
+### Underpayment
+
+```javascript
+if (payment.amount < expectedAmount) {
+  const shortfall = expectedAmount - payment.amount;
+
+  // Mark invoice as partially paid
+  await db.invoices.update(payment.metadata.invoice_id, {
+    status: 'partially_paid',
+    amount_paid: payment.amount,
+    amount_remaining: shortfall
+  });
+
+  // Notify customer
+  await sendNotification(payment.metadata.customer_id, {
+    title: 'Partial Payment Received',
+    message: `You paid ₦${payment.amount.toLocaleString()}. ₦${shortfall.toLocaleString()} remaining.`
+  });
+}
+```
+
+### Duplicate Payments
+
+```javascript
+async function handlePaymentReceived(payment) {
+  // Check if already processed
+  const existing = await db.transactions.findOne({
+    id: payment.transaction_id
+  });
+
+  if (existing) {
+    console.log('Duplicate webhook, skipping');
+    return;
+  }
+
+  // Process payment
+  // ...
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Use Metadata">
+    Store relevant information in metadata for easy tracking:
+    ```javascript
+    metadata: {
+      customer_id: 'cus_123',
+      order_id: 'ord_456',
+      campaign: 'q1-promo',
+      source: 'mobile_app'
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Set Expiry for Temporary Accounts">
+    Always set expiry dates for invoice payments:
+    ```javascript
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    ```
+  </Accordion>
+
+  <Accordion title="Verify Webhook Signatures">
+    Never process webhooks without signature verification.
+  </Accordion>
+
+  <Accordion title="Handle Webhooks Idempotently">
+    Always check for duplicates using transaction_id or event_id.
+  </Accordion>
+
+  <Accordion title="Send Confirmations">
+    Always notify customers when payments are received.
+  </Accordion>
+</AccordionGroup>
+
+## Testing
+
+### Simulate Payment in Sandbox
+
+```bash
+curl -X POST https://api.fossapay.com/v1/sandbox/simulate-payment \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "sender_name": "Test Customer",
+    "sender_account": "0000000001",
+    "sender_bank": "058"
+  }'
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Virtual Account API" icon="code" href="/api-reference/collections/create-virtual-account">
+    API reference for creating virtual accounts
+  </Card>
+  <Card title="Webhooks Guide" icon="webhook" href="/concepts/webhooks">
+    Learn more about handling webhooks
+  </Card>
+  <Card title="Reconciliation Guide" icon="book" href="/guides/reconciliation">
+    Best practices for reconciliation
+  </Card>
+  <Card title="Virtual Accounts Concept" icon="building-columns" href="/concepts/virtual-accounts">
+    Understand virtual accounts in depth
+  </Card>
+</CardGroup>

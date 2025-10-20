@@ -1,0 +1,472 @@
+---
+title: Reconciliation Guide
+description: 'Best practices for transaction reconciliation'
+---
+
+## Overview
+
+Reconciliation ensures your records match Fossapay's records. This guide covers daily reconciliation, settlement matching, and handling discrepancies.
+
+## Why Reconcile?
+
+<CardGroup cols={2}>
+  <Card title="Accuracy" icon="check-double">
+    Ensure all transactions are recorded correctly
+  </Card>
+  <Card title="Fraud Detection" icon="shield">
+    Identify suspicious or unauthorized transactions
+  </Card>
+  <Card title="Compliance" icon="scale-balanced">
+    Meet regulatory and audit requirements
+  </Card>
+  <Card title="Customer Trust" icon="handshake">
+    Resolve disputes quickly with accurate records
+  </Card>
+</CardGroup>
+
+## Daily Reconciliation
+
+### Automated Daily Check
+
+```javascript
+const cron = require('node-cron');
+
+// Run every day at 1 AM
+cron.schedule('0 1 * * *', async () => {
+  await performDailyReconciliation();
+});
+
+async function performDailyReconciliation() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Get Fossapay transactions
+  const fpTransactions = await fossapay.transactions.list({
+    start_date: yesterday.toISOString(),
+    end_date: today.toISOString(),
+    limit: 1000
+  });
+
+  // Get your database transactions
+  const dbTransactions = await db.transactions.findAll({
+    date: {
+      gte: yesterday,
+      lt: today
+    }
+  });
+
+  // Reconcile
+  const result = await reconcile(fpTransactions.data, dbTransactions);
+
+  // Generate report
+  await generateReconciliationReport(result);
+
+  // Alert if mismatches found
+  if (result.unmatched.length > 0) {
+    await sendAlert({
+      type: 'reconciliation_mismatch',
+      date: yesterday.toISOString(),
+      count: result.unmatched.length
+    });
+  }
+}
+```
+
+### Reconciliation Logic
+
+```javascript
+function reconcile(fossapayTxns, dbTxns) {
+  const matched = [];
+  const unmatchedFP = [];
+  const unmatchedDB = [];
+
+  // Create maps for quick lookup
+  const fpMap = new Map(
+    fossapayTxns.map(t => [t.transaction_id, t])
+  );
+  const dbMap = new Map(
+    dbTxns.map(t => [t.id, t])
+  );
+
+  // Check Fossapay transactions
+  for (const fpTxn of fossapayTxns) {
+    const dbTxn = dbMap.get(fpTxn.transaction_id);
+
+    if (dbTxn) {
+      // Check if amounts match
+      if (dbTxn.amount === fpTxn.amount) {
+        matched.push({
+          transaction_id: fpTxn.transaction_id,
+          amount: fpTxn.amount,
+          status: 'matched'
+        });
+      } else {
+        unmatchedFP.push({
+          ...fpTxn,
+          reason: 'amount_mismatch',
+          fp_amount: fpTxn.amount,
+          db_amount: dbTxn.amount
+        });
+      }
+      dbMap.delete(fpTxn.transaction_id);
+    } else {
+      unmatchedFP.push({
+        ...fpTxn,
+        reason: 'missing_in_db'
+      });
+    }
+  }
+
+  // Remaining DB transactions are unmatched
+  for (const [id, dbTxn] of dbMap) {
+    unmatchedDB.push({
+      ...dbTxn,
+      reason: 'missing_in_fossapay'
+    });
+  }
+
+  return {
+    matched,
+    unmatchedFossapay: unmatchedFP,
+    unmatchedDatabase: unmatchedDB,
+    summary: {
+      total_fossapay: fossapayTxns.length,
+      total_database: dbTxns.length,
+      matched: matched.length,
+      unmatched: unmatchedFP.length + unmatchedDB.length
+    }
+  };
+}
+```
+
+## Settlement Reconciliation
+
+### Match Settlements to Transactions
+
+```javascript
+async function reconcileSettlement(settlementId) {
+  // Get settlement details
+  const settlement = await fossapay.settlements.get(settlementId);
+
+  // Get all transactions in settlement
+  const transactions = await fossapay.settlements.getTransactions({
+    settlement_id: settlementId
+  });
+
+  // Calculate expected amount
+  const expectedAmount = transactions.data.reduce(
+    (sum, txn) => sum + txn.amount,
+    0
+  );
+
+  // Verify settlement amount
+  if (settlement.net_amount !== expectedAmount - settlement.fee) {
+    console.error('Settlement amount mismatch', {
+      settlement_id: settlementId,
+      expected: expectedAmount,
+      actual: settlement.gross_amount,
+      fee: settlement.fee
+    });
+
+    await sendAlert({
+      type: 'settlement_mismatch',
+      settlement_id: settlementId
+    });
+  }
+
+  // Update database
+  await db.settlements.create({
+    id: settlementId,
+    amount: settlement.net_amount,
+    fee: settlement.fee,
+    transaction_count: transactions.data.length,
+    settled_at: settlement.settled_at,
+    status: 'reconciled'
+  });
+
+  // Mark transactions as settled
+  await db.transactions.updateMany(
+    {
+      id: { in: transactions.data.map(t => t.transaction_id) }
+    },
+    {
+      settlement_id: settlementId,
+      settled_at: settlement.settled_at
+    }
+  );
+}
+```
+
+## Generating Reports
+
+### Daily Reconciliation Report
+
+```javascript
+async function generateReconciliationReport(reconciliationResult) {
+  const report = {
+    date: new Date().toISOString(),
+    summary: reconciliationResult.summary,
+    matched: reconciliationResult.matched,
+    unmatched: {
+      fossapay: reconciliationResult.unmatchedFossapay,
+      database: reconciliationResult.unmatchedDatabase
+    }
+  };
+
+  // Save to database
+  await db.reconciliationReports.create(report);
+
+  // Generate CSV
+  const csv = await generateCSV(report);
+  await saveFile(`reconciliation-${Date.now()}.csv`, csv);
+
+  // Send email to finance team
+  await sendEmail({
+    to: 'finance@yourcompany.com',
+    subject: `Daily Reconciliation Report - ${new Date().toLocaleDateString()}`,
+    body: formatReport(report),
+    attachments: [
+      {
+        filename: 'reconciliation.csv',
+        content: csv
+      }
+    ]
+  });
+
+  return report;
+}
+
+function formatReport(report) {
+  return `
+    Daily Reconciliation Report
+    ==========================
+
+    Summary:
+    - Total Fossapay Transactions: ${report.summary.total_fossapay}
+    - Total Database Transactions: ${report.summary.total_database}
+    - Matched: ${report.summary.matched}
+    - Unmatched: ${report.summary.unmatched}
+
+    ${report.summary.unmatched > 0 ? `
+    Unmatched Transactions:
+    ${report.unmatched.fossapay.map(t =>
+      `- ${t.transaction_id}: ${t.reason}`
+    ).join('\n')}
+    ${report.unmatched.database.map(t =>
+      `- ${t.id}: ${t.reason}`
+    ).join('\n')}
+    ` : 'All transactions matched successfully!'}
+  `;
+}
+```
+
+## Handling Discrepancies
+
+### Missing Transaction in Database
+
+```javascript
+async function handleMissingInDB(fpTransaction) {
+  console.log('Transaction found in Fossapay but not in database:', fpTransaction);
+
+  // Check if webhook was missed
+  const webhook = await db.webhooks.findOne({
+    event_id: fpTransaction.event_id
+  });
+
+  if (!webhook) {
+    // Webhook was never received, process manually
+    console.log('Webhook was missed, processing manually');
+
+    await handlePaymentReceived({
+      transaction_id: fpTransaction.transaction_id,
+      amount: fpTransaction.amount,
+      virtual_account_number: fpTransaction.virtual_account_number,
+      metadata: fpTransaction.metadata,
+      created_at: fpTransaction.created_at
+    });
+  } else {
+    // Webhook received but not processed
+    console.log('Webhook received but not processed, investigating');
+
+    await sendAlert({
+      type: 'webhook_processing_failure',
+      transaction_id: fpTransaction.transaction_id
+    });
+  }
+}
+```
+
+### Amount Mismatch
+
+```javascript
+async function handleAmountMismatch(fpTxn, dbTxn) {
+  console.error('Amount mismatch detected', {
+    transaction_id: fpTxn.transaction_id,
+    fossapay_amount: fpTxn.amount,
+    database_amount: dbTxn.amount
+  });
+
+  // Trust Fossapay as source of truth
+  await db.transactions.update(
+    { id: fpTxn.transaction_id },
+    {
+      amount: fpTxn.amount,
+      reconciliation_note: 'Amount corrected during reconciliation'
+    }
+  );
+
+  // Adjust customer balance
+  const difference = fpTxn.amount - dbTxn.amount;
+  await db.wallets.increment({
+    customer_id: dbTxn.customer_id,
+    amount: difference
+  });
+
+  // Log for audit
+  await db.auditLog.create({
+    type: 'amount_correction',
+    transaction_id: fpTxn.transaction_id,
+    old_amount: dbTxn.amount,
+    new_amount: fpTxn.amount,
+    difference: difference
+  });
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Reconcile Daily">
+    Run reconciliation every day, even if automated:
+    - Catch issues early
+    - Easier to investigate recent transactions
+    - Better cash flow management
+  </Accordion>
+
+  <Accordion title="Trust Fossapay as Source of Truth">
+    If there's a discrepancy, Fossapay's records are authoritative:
+    ```javascript
+    // Update your records to match Fossapay
+    await db.transactions.update(id, {
+      amount: fossapayAmount
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Keep Reconciliation Logs">
+    Store all reconciliation results for audit purposes:
+    ```javascript
+    await db.reconciliationLogs.create({
+      date: new Date(),
+      matched_count: matched.length,
+      unmatched_count: unmatched.length,
+      details: reconciliationResult
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Alert on Mismatches">
+    Set up alerts for reconciliation failures:
+    ```javascript
+    if (unmatched.length > threshold) {
+      await sendAlert('Reconciliation mismatch detected');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Automate Resolution">
+    Automatically fix common issues:
+    - Missing webhook transactions
+    - Duplicate entries
+    - Amount formatting differences
+  </Accordion>
+</AccordionGroup>
+
+## Reconciliation Checklist
+
+- [ ] Run daily reconciliation
+- [ ] Match all transactions by ID
+- [ ] Verify amounts match exactly
+- [ ] Check settlement totals
+- [ ] Investigate unmatched transactions
+- [ ] Update database with corrections
+- [ ] Generate and archive reports
+- [ ] Alert finance team of issues
+- [ ] Document all discrepancies
+- [ ] Review and approve corrections
+
+## Webhook Reconciliation
+
+### Track Webhook Deliveries
+
+```javascript
+app.post('/webhooks/fossapay', async (req, res) => {
+  const webhook = req.body;
+
+  // Log webhook receipt
+  await db.webhooks.create({
+    event_id: webhook.event_id,
+    event: webhook.event,
+    data: webhook.data,
+    received_at: new Date(),
+    signature: req.headers['x-fossapay-signature']
+  });
+
+  res.status(200).send('OK');
+
+  // Process webhook
+  await processWebhook(webhook);
+});
+
+// Daily check for missed webhooks
+async function checkMissedWebhooks() {
+  const yesterday = getYesterday();
+
+  // Get all Fossapay transactions
+  const fpTxns = await fossapay.transactions.list({
+    start_date: yesterday.start,
+    end_date: yesterday.end
+  });
+
+  // Get all received webhooks
+  const webhooks = await db.webhooks.findAll({
+    received_at: {
+      gte: yesterday.start,
+      lt: yesterday.end
+    }
+  });
+
+  const webhookTxnIds = webhooks.map(w => w.data.transaction_id);
+
+  // Find missed webhooks
+  const missed = fpTxns.data.filter(
+    t => !webhookTxnIds.includes(t.transaction_id)
+  );
+
+  // Process missed transactions
+  for (const txn of missed) {
+    await handleMissingWebhook(txn);
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Settlements" icon="money-bill-transfer" href="/concepts/settlements">
+    Understand settlement reconciliation
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+    Handle webhooks properly
+  </Card>
+  <Card title="Transactions API" icon="code" href="/api-reference/collections/list-transactions">
+    Query transaction history
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
+    View reconciliation reports
+  </Card>
+</CardGroup>

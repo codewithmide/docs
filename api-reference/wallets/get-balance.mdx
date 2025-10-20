@@ -1,0 +1,57 @@
+---
+title: 'Get Wallet Balance'
+api: 'GET https://api.fossapay.com/v1/wallets/{wallet_id}/balance'
+description: 'Retrieve wallet balance'
+---
+
+## Path Parameters
+
+<ParamField path="wallet_id" type="string" required>
+  The unique identifier of the wallet
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="currency" type="string">
+  Filter by specific currency (optional)
+</ParamField>
+
+## Request Example
+
+```bash
+curl "https://api.fossapay.com/v1/wallets/wal_abc123/balance?currency=NGN" \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const balance = await client.wallets.getBalance('wal_abc123', {
+  currency: 'NGN'
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "wallet_id": "wal_abc123",
+    "balances": [
+      {
+        "currency": "NGN",
+        "available_balance": 150000,
+        "ledger_balance": 150000,
+        "pending_balance": 0
+      },
+      {
+        "currency": "USDT",
+        "available_balance": 100.50,
+        "ledger_balance": 100.50,
+        "pending_balance": 0
+      }
+    ]
+  }
+}
+```
+</ResponseExample>

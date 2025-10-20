@@ -1,0 +1,456 @@
+---
+title: 'White-Label Setup'
+description: 'Set up your white-label neobank platform'
+---
+
+## Overview
+
+This guide walks you through setting up your white-label neobank on Fossapay. From initial configuration to going live with your first customers.
+
+## Prerequisites
+
+Before starting:
+- [ ] Completed initial consultation with Fossapay team
+- [ ] Signed white-label agreement
+- [ ] Received your dedicated API credentials
+- [ ] Business verification documents ready
+
+## Step 1: Business Setup
+
+### Complete KYB (Know Your Business)
+
+Submit your business verification documents:
+
+```javascript
+const kyb = await fossapay.business.submitVerification({
+  business_name: 'Your Neobank Ltd',
+  business_type: 'fintech',
+  registration_number: 'RC1234567',
+  tax_id: 'TIN123456',
+  business_address: {
+    street: '123 Business St',
+    city: 'Lagos',
+    state: 'Lagos',
+    country: 'NG'
+  },
+  documents: {
+    cac: cacDocumentBuffer,
+    directors: directorsDocumentBuffer,
+    bank_statement: bankStatementBuffer
+  }
+});
+```
+
+### Configure Business Settings
+
+```javascript
+await fossapay.business.updateSettings({
+  business_name: 'Your Neobank',
+  support_email: 'support@yourneobank.com',
+  support_phone: '+2341234567890',
+  website: 'https://yourneobank.com',
+  logo_url: 'https://yourneobank.com/logo.png'
+});
+```
+
+## Step 2: Branding Configuration
+
+### Set Brand Colors
+
+```javascript
+await fossapay.whitelabel.setBranding({
+  brand_name: 'YourBank',
+  primary_color: '#0080FF',
+  secondary_color: '#00C9A7',
+  logo: {
+    light: 'https://cdn.yourneobank.com/logo-light.png',
+    dark: 'https://cdn.yourneobank.com/logo-dark.png'
+  },
+  account_name_format: 'YOURBANK - {customer_name}' // How virtual accounts appear
+});
+```
+
+### Customize Communications
+
+Set up email templates:
+
+```javascript
+await fossapay.whitelabel.setEmailTemplates({
+  welcome_email: {
+    subject: 'Welcome to YourBank!',
+    template: welcomeEmailTemplate,
+    from_name: 'YourBank Team',
+    from_email: 'hello@yourneobank.com'
+  },
+  payment_received: {
+    subject: 'Payment Received',
+    template: paymentReceivedTemplate
+  },
+  payout_completed: {
+    subject: 'Transfer Completed',
+    template: payoutCompletedTemplate
+  }
+});
+```
+
+## Step 3: Product Configuration
+
+### Configure Wallet Features
+
+```javascript
+await fossapay.whitelabel.configureWallets({
+  currencies: ['NGN', 'USDT', 'USDC'],
+  features: {
+    p2p_transfers: true,
+    bank_transfers: true,
+    bill_payments: true,
+    savings: true,
+    virtual_cards: false // Coming soon
+  },
+  limits: {
+    daily_transfer_limit: 5000000,
+    single_transaction_limit: 1000000,
+    monthly_volume_limit: 50000000
+  }
+});
+```
+
+### Set Up KYC Tiers
+
+```javascript
+await fossapay.whitelabel.configureKYC({
+  tier1: {
+    requirements: ['email', 'phone'],
+    limits: {
+      daily: 50000,
+      monthly: 300000,
+      balance: 300000
+    }
+  },
+  tier2: {
+    requirements: ['bvn', 'address'],
+    limits: {
+      daily: 200000,
+      monthly: 1000000,
+      balance: 1000000
+    }
+  },
+  tier3: {
+    requirements: ['government_id', 'selfie', 'proof_of_address'],
+    limits: {
+      daily: 5000000,
+      monthly: null, // unlimited
+      balance: null
+    }
+  }
+});
+```
+
+### Configure Pricing
+
+```javascript
+await fossapay.whitelabel.setPricing({
+  customer_fees: {
+    transfer_fee: 50, // Charge customers ₦50 per transfer
+    transfer_fee_cap: 100,
+    withdrawal_fee_percentage: 0.5, // 0.5% of withdrawal amount
+    wallet_maintenance: 0 // Free
+  },
+  wholesale_costs: {
+    // What Fossapay charges you (agreed in contract)
+    virtual_account_creation: 0,
+    transfer_fee: 25,
+    payout_fee: 30
+  }
+});
+```
+
+## Step 4: Technical Integration
+
+### Set Up Webhooks
+
+```javascript
+await fossapay.webhooks.configure({
+  url: 'https://api.yourneobank.com/webhooks/fossapay',
+  events: [
+    'payment.received',
+    'payout.completed',
+    'payout.failed',
+    'wallet.credited',
+    'wallet.debited',
+    'kyc.verified',
+    'kyc.failed'
+  ],
+  secret: process.env.WEBHOOK_SECRET
+});
+```
+
+### Implement Customer Onboarding
+
+```javascript
+// When user signs up on your platform
+async function onboardCustomer(user) {
+  // 1. Create customer in Fossapay
+  const customer = await fossapay.customers.create({
+    email: user.email,
+    phone: user.phone,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    metadata: {
+      internal_user_id: user.id
+    }
+  });
+
+  // 2. Create wallet
+  const wallet = await fossapay.wallets.create({
+    type: 'customer',
+    customer_id: customer.customer_id,
+    customer_name: `${user.firstName} ${user.lastName}`,
+    customer_email: user.email,
+    currencies: ['NGN']
+  });
+
+  // 3. Create virtual account for deposits
+  const virtualAccount = await fossapay.virtualAccounts.create({
+    type: 'dedicated',
+    customer_name: `${user.firstName} ${user.lastName}`,
+    customer_email: user.email,
+    metadata: {
+      wallet_id: wallet.wallet_id,
+      user_id: user.id
+    }
+  });
+
+  // 4. Save to your database
+  await db.customers.create({
+    user_id: user.id,
+    fossapay_customer_id: customer.customer_id,
+    wallet_id: wallet.wallet_id,
+    virtual_account_number: virtualAccount.account_number,
+    virtual_account_id: virtualAccount.virtual_account_id
+  });
+
+  return {
+    wallet,
+    virtualAccount
+  };
+}
+```
+
+### Implement Deposits (Auto Top-up)
+
+```javascript
+// Webhook handler for automatic wallet top-ups
+app.post('/webhooks/fossapay', async (req, res) => {
+  const { event, data } = req.body;
+
+  if (event === 'payment.received') {
+    // Get customer from metadata
+    const walletId = data.metadata.wallet_id;
+
+    // Credit wallet
+    await fossapay.wallets.credit({
+      wallet_id: walletId,
+      amount: data.amount,
+      currency: 'NGN',
+      reference: data.transaction_id,
+      narration: 'Account top-up'
+    });
+
+    // Update your database
+    await db.transactions.create({
+      user_id: data.metadata.user_id,
+      type: 'deposit',
+      amount: data.amount,
+      status: 'completed',
+      reference: data.transaction_id
+    });
+
+    // Notify user
+    await sendPushNotification(data.metadata.user_id, {
+      title: 'Deposit Received',
+      body: `Your account has been credited with ₦${data.amount.toLocaleString()}`
+    });
+  }
+
+  res.status(200).send('OK');
+});
+```
+
+### Implement Withdrawals
+
+```javascript
+async function processWithdrawal(userId, amount, bankDetails) {
+  // 1. Get customer wallet
+  const customer = await db.customers.findOne({ user_id: userId });
+
+  // 2. Check balance
+  const balance = await fossapay.wallets.getBalance(customer.wallet_id);
+
+  if (balance.data.balances[0].available_balance < amount) {
+    throw new Error('Insufficient balance');
+  }
+
+  // 3. Debit wallet
+  const debit = await fossapay.wallets.debit({
+    wallet_id: customer.wallet_id,
+    amount: amount,
+    currency: 'NGN',
+    reference: `withdrawal-${Date.now()}`,
+    narration: 'Bank withdrawal'
+  });
+
+  // 4. Process payout
+  const payout = await fossapay.payouts.create({
+    amount: amount,
+    account_number: bankDetails.account_number,
+    account_name: bankDetails.account_name,
+    bank_code: bankDetails.bank_code,
+    reference: debit.reference,
+    narration: 'Withdrawal'
+  });
+
+  // 5. Save transaction
+  await db.transactions.create({
+    user_id: userId,
+    type: 'withdrawal',
+    amount: amount,
+    status: 'pending',
+    payout_id: payout.data.payout_id,
+    reference: debit.reference
+  });
+
+  return payout;
+}
+```
+
+## Step 5: Testing
+
+### Test in Sandbox
+
+```javascript
+// Use test API keys
+const fossapayTest = new Fossapay('fp_test_sk_xxxxxxxx');
+
+// Test customer creation
+const testCustomer = await fossapayTest.customers.create({
+  email: 'test@example.com',
+  phone: '+2348012345678',
+  first_name: 'Test',
+  last_name: 'User'
+});
+
+// Test virtual account creation
+const testVA = await fossapayTest.virtualAccounts.create({
+  customer_name: 'Test User',
+  customer_email: 'test@example.com'
+});
+
+// Simulate payment
+await fossapayTest.sandbox.simulatePayment({
+  virtual_account_number: testVA.data.account_number,
+  amount: 10000,
+  sender_name: 'Test Sender'
+});
+
+// Test payout
+await fossapayTest.payouts.create({
+  amount: 5000,
+  account_number: '0000000001', // Test account
+  account_name: 'Test Recipient',
+  bank_code: '058',
+  reference: `test-payout-${Date.now()}`
+});
+```
+
+### Testing Checklist
+
+- [ ] Customer registration flow
+- [ ] Virtual account creation
+- [ ] Deposit simulation
+- [ ] Wallet crediting
+- [ ] Wallet-to-wallet transfers
+- [ ] Bank withdrawals
+- [ ] KYC verification
+- [ ] Webhook handling
+- [ ] Error scenarios
+- [ ] Rate limiting
+
+## Step 6: Go Live
+
+### Pre-Launch Checklist
+
+- [ ] All features tested in sandbox
+- [ ] Business verification approved
+- [ ] Branding configured
+- [ ] Webhooks configured and tested
+- [ ] Customer support ready
+- [ ] Terms of service published
+- [ ] Privacy policy published
+- [ ] Pricing finalized
+- [ ] Settlement account configured
+
+### Switch to Live
+
+```javascript
+// Replace test keys with live keys
+const fossapayLive = new Fossapay('fp_live_sk_xxxxxxxx');
+
+// Update webhook URL to production
+await fossapayLive.webhooks.configure({
+  url: 'https://api.yourneobank.com/webhooks/fossapay',
+  secret: process.env.PRODUCTION_WEBHOOK_SECRET
+});
+```
+
+### Launch Day Tasks
+
+1. Monitor dashboard for transactions
+2. Watch webhook logs
+3. Have support team ready
+4. Monitor error rates
+5. Check settlement schedules
+
+## Step 7: Operations
+
+### Daily Operations
+
+```javascript
+// Daily reconciliation
+cron.schedule('0 1 * * *', async () => {
+  await reconcileTransactions();
+  await checkSettlements();
+  await generateDailyReport();
+});
+
+// Monitor wallet balances
+async function monitorBalances() {
+  const wallets = await db.customers.findAll();
+
+  for (const customer of wallets) {
+    const fpBalance = await fossapay.wallets.getBalance(customer.wallet_id);
+    const dbBalance = await db.wallets.getBalance(customer.user_id);
+
+    if (fpBalance !== dbBalance) {
+      await alertMismatch(customer.user_id);
+    }
+  }
+}
+```
+
+## Support & Resources
+
+<CardGroup cols={2}>
+  <Card title="Technical Support" icon="headset">
+    24/7 support: support@fossapay.com
+  </Card>
+  <Card title="Documentation" icon="book">
+    Complete API docs and guides
+  </Card>
+  <Card title="Developer Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
+    Join our Telegram community
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
+    Monitor your platform
+  </Card>
+</CardGroup>

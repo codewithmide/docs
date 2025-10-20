@@ -1,0 +1,251 @@
+---
+title: Sandbox Environment
+description: 'Test your integration safely with Fossapay sandbox'
+---
+
+## Overview
+
+The Fossapay sandbox environment allows you to test your integration without processing real transactions or affecting real customer data.
+
+<Info>
+  The sandbox environment mimics production behavior exactly, making it easy to transition to live mode when you're ready.
+</Info>
+
+## Getting Sandbox Access
+
+1. Sign up at [dashboard.fossapay.com](https://dashboard.fossapay.com)
+2. Your account automatically includes sandbox access
+3. Get your test API keys from **Settings** → **API Keys**
+4. Start testing immediately - no approval needed
+
+## Sandbox vs Production
+
+| Feature | Sandbox | Production |
+|---------|---------|------------|
+| API Keys | `fp_test_sk_*` | `fp_live_sk_*` |
+| Real Money | No | Yes |
+| Bank Transfers | Simulated | Real |
+| Webhooks | Fired | Fired |
+| Rate Limits | Same | Same |
+| Base URL | `https://api.fossapay.com/v1` | `https://api.fossapay.com/v1` |
+
+<Note>
+  Both environments use the same base URL. The environment is determined by your API key (test vs live).
+</Note>
+
+## Simulating Transactions
+
+### Simulating Virtual Account Credits
+
+In sandbox mode, you can simulate incoming payments to virtual accounts:
+
+```bash
+curl https://api.fossapay.com/v1/sandbox/simulate-payment \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "sender_name": "Test Customer",
+    "sender_account": "0987654321",
+    "sender_bank": "058"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "message": "Payment simulation successful",
+  "data": {
+    "transaction_id": "txn_test_abc123",
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "status": "successful",
+    "webhook_sent": true
+  }
+}
+```
+
+### Simulating Payout Outcomes
+
+Control payout outcomes in sandbox using special account numbers:
+
+| Account Number | Outcome |
+|----------------|---------|
+| `0000000001` | Success (instant) |
+| `0000000002` | Success (delayed 30s) |
+| `0000000003` | Failed - Invalid account |
+| `0000000004` | Failed - Insufficient funds |
+| `0000000005` | Pending (manual simulation needed) |
+
+**Example:**
+
+```bash
+curl https://api.fossapay.com/v1/payouts \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 25000,
+    "account_number": "0000000001",
+    "account_name": "Test Recipient",
+    "bank_code": "058",
+    "narration": "Test payout",
+    "reference": "payout-test-001"
+  }'
+```
+
+## Test Bank Codes
+
+Use these bank codes for testing in sandbox:
+
+| Bank Code | Bank Name | Notes |
+|-----------|-----------|-------|
+| `058` | Guarantee Trust Bank (GTBank) | Always succeeds |
+| `057` | Zenith Bank | Always succeeds |
+| `044` | Access Bank | Success with 5s delay |
+| `033` | United Bank for Africa (UBA) | Success with 5s delay |
+| `999` | Test Bank | Simulates random outcomes |
+
+## Test Card Details
+
+For testing card-related features:
+
+**Successful Card:**
+```
+Card Number: 5061 0200 0000 0000 222
+CVV: 123
+Expiry: 12/25
+PIN: 1234
+OTP: 123456
+```
+
+**Declined Card:**
+```
+Card Number: 5061 0300 0000 0000 111
+CVV: 123
+Expiry: 12/25
+```
+
+**Insufficient Funds:**
+```
+Card Number: 5061 0400 0000 0000 000
+CVV: 123
+Expiry: 12/25
+```
+
+## Webhook Testing
+
+Webhooks work the same way in sandbox as in production:
+
+1. Configure your webhook URL in the dashboard
+2. Perform actions in sandbox (create accounts, simulate payments, etc.)
+3. Receive webhook events at your configured URL
+
+<Tip>
+  Use tools like [webhook.site](https://webhook.site) or [ngrok](https://ngrok.com) to test webhooks locally.
+</Tip>
+
+### Testing Webhook Endpoints
+
+```bash
+# Configure webhook URL
+curl https://api.fossapay.com/v1/settings/webhooks \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -X PUT \
+  -d '{
+    "url": "https://your-app.com/webhooks/fossapay",
+    "events": ["payment.received", "payout.completed"]
+  }'
+```
+
+## Sandbox Limitations
+
+<Warning>
+  **Sandbox Restrictions:**
+  - No real money is transferred
+  - Some third-party integrations may not work
+  - Data is periodically cleared (every 30 days)
+  - Webhook retries limited to 3 attempts (vs 5 in production)
+</Warning>
+
+## Sandbox Data Reset
+
+Sandbox data is automatically cleared every 30 days. To manually reset your sandbox:
+
+```bash
+curl https://api.fossapay.com/v1/sandbox/reset \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -X POST
+```
+
+<Accordion title="What gets reset?">
+  - All virtual accounts
+  - All transactions
+  - All wallets (balances reset to 0)
+  - All customers
+  - Webhook logs
+
+  **Not reset:**
+  - API keys
+  - Webhook configurations
+  - Business settings
+</Accordion>
+
+## Testing Checklist
+
+Before going live, ensure you've tested:
+
+- [ ] Create virtual accounts
+- [ ] Simulate incoming payments
+- [ ] Receive and verify webhook events
+- [ ] Process single payouts
+- [ ] Process bulk payouts
+- [ ] Handle payout failures
+- [ ] Create and manage wallets
+- [ ] Wallet-to-wallet transfers
+- [ ] Transaction reconciliation
+- [ ] Error handling for all scenarios
+- [ ] Idempotency for duplicate requests
+- [ ] Rate limit handling
+
+## Monitoring Sandbox Activity
+
+View all sandbox activity in your dashboard:
+
+1. Go to [dashboard.fossapay.com](https://dashboard.fossapay.com)
+2. Toggle to **Test Mode** (top right)
+3. View transactions, webhooks, and logs
+
+## Going Live
+
+When you're ready to go live:
+
+<Steps>
+  <Step title="Complete KYB">
+    Submit your business verification documents
+  </Step>
+  <Step title="Get Approved">
+    Wait for approval (usually 24-48 hours)
+  </Step>
+  <Step title="Switch API Keys">
+    Replace test keys with live keys in your environment
+  </Step>
+  <Step title="Deploy">
+    Deploy to production and start processing real transactions
+  </Step>
+</Steps>
+
+<Card title="Ready to Go Live?" icon="rocket" href="https://dashboard.fossapay.com/settings/verification">
+  Start your business verification
+</Card>
+
+## Support
+
+Need help with sandbox testing?
+
+- Email: support@fossapay.com
+- Documentation: Check our [guides](/guides/collections)
+- Dashboard: [dashboard.fossapay.com](https://dashboard.fossapay.com)

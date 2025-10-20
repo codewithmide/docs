@@ -1,0 +1,95 @@
+---
+title: 'Wallet Transactions'
+api: 'GET https://api.fossapay.com/v1/wallets/{wallet_id}/transactions'
+description: 'Retrieve wallet transaction history'
+---
+
+## Path Parameters
+
+<ParamField path="wallet_id" type="string" required>
+  The unique identifier of the wallet
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="currency" type="string">
+  Filter by currency
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filter by transaction type: `credit`, `debit`, `transfer`
+</ParamField>
+
+<ParamField query="start_date" type="string">
+  Start date (ISO 8601)
+</ParamField>
+
+<ParamField query="end_date" type="string">
+  End date (ISO 8601)
+</ParamField>
+
+<ParamField query="limit" type="number" default="50">
+  Results per page (max 100)
+</ParamField>
+
+<ParamField query="offset" type="number" default="0">
+  Pagination offset
+</ParamField>
+
+## Request Example
+
+```bash
+curl "https://api.fossapay.com/v1/wallets/wal_abc123/transactions?currency=NGN&limit=50" \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const transactions = await client.wallets.getTransactions('wal_abc123', {
+  currency: 'NGN',
+  type: 'credit',
+  limit: 50
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": [
+    {
+      "transaction_id": "wtxn_001",
+      "wallet_id": "wal_abc123",
+      "type": "credit",
+      "amount": 50000,
+      "currency": "NGN",
+      "balance_before": 100000,
+      "balance_after": 150000,
+      "narration": "Wallet top-up",
+      "reference": "ref_001",
+      "metadata": {},
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "transaction_id": "wtxn_002",
+      "wallet_id": "wal_abc123",
+      "type": "debit",
+      "amount": 25000,
+      "currency": "NGN",
+      "balance_before": 150000,
+      "balance_after": 125000,
+      "narration": "Transfer to merchant",
+      "reference": "ref_002",
+      "created_at": "2024-01-15T14:20:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 125,
+    "limit": 50,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+</ResponseExample>

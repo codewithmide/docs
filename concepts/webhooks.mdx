@@ -1,0 +1,491 @@
+---
+title: Webhooks
+description: 'Real-time event notifications from Fossapay'
+---
+
+## What are Webhooks?
+
+Webhooks are HTTP callbacks that Fossapay sends to your server when events occur in your account. They enable you to receive real-time notifications about payments, payouts, settlements, and other important events.
+
+<Info>
+  Webhooks eliminate the need for polling and ensure your application stays in sync with Fossapay in real-time.
+</Info>
+
+## Why Use Webhooks?
+
+<CardGroup cols={2}>
+  <Card title="Real-time Updates" icon="bolt">
+    Get notified immediately when events occur
+  </Card>
+  <Card title="Reduce Polling" icon="clock">
+    No need to constantly check for updates
+  </Card>
+  <Card title="Automated Workflows" icon="robot">
+    Trigger actions automatically based on events
+  </Card>
+  <Card title="Better UX" icon="smile">
+    Update your users instantly about transaction status
+  </Card>
+</CardGroup>
+
+## Webhook Events
+
+### Collections Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `payment.received` | Payment credited to virtual account | When a customer transfers money |
+| `payment.reversed` | Payment was reversed | Bank reversal or error |
+| `virtual_account.created` | New virtual account created | After successful creation |
+
+### Payouts Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `payout.pending` | Payout initiated | When payout is created |
+| `payout.processing` | Payout being processed | Sent to beneficiary bank |
+| `payout.completed` | Payout successful | Confirmed by bank |
+| `payout.failed` | Payout failed | Bank rejected or error |
+
+### Wallet Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `wallet.credited` | Wallet balance increased | Successful credit operation |
+| `wallet.debited` | Wallet balance decreased | Successful debit operation |
+| `wallet.frozen` | Wallet frozen | Admin or automated freeze |
+| `wallet.unfrozen` | Wallet unfrozen | Admin unfreeze |
+
+### Settlement Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `settlement.pending` | Settlement initiated | Settlement scheduled |
+| `settlement.processing` | Settlement in progress | Being processed |
+| `settlement.completed` | Settlement successful | Funds transferred |
+| `settlement.failed` | Settlement failed | Transfer failed |
+
+## Setting Up Webhooks
+
+### Configure Webhook URL
+
+Set your webhook endpoint in the dashboard or via API:
+
+**Via Dashboard:**
+1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings/webhooks)
+2. Enter your webhook URL
+3. Select events to subscribe to
+4. Save configuration
+
+**Via API:**
+```javascript
+await fossapay.webhooks.configure({
+  url: 'https://your-app.com/webhooks/fossapay',
+  events: [
+    'payment.received',
+    'payout.completed',
+    'wallet.credited'
+  ],
+  secret: 'your-webhook-secret' // Optional: for signature verification
+});
+```
+
+### Webhook URL Requirements
+
+Your webhook endpoint must:
+- Use HTTPS (HTTP not allowed in production)
+- Respond within 30 seconds
+- Return a 2xx status code for successful receipt
+- Handle duplicate events gracefully
+
+<Warning>
+  Webhook URLs must be publicly accessible. Use services like [ngrok](https://ngrok.com) for local development.
+</Warning>
+
+## Webhook Payload
+
+All webhooks follow this structure:
+
+```json
+{
+  "event": "payment.received",
+  "event_id": "evt_abc123xyz",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    "transaction_id": "txn_001",
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "currency": "NGN",
+    "sender_name": "John Doe",
+    "sender_account": "0987654321",
+    "sender_bank": "GTBank",
+    "reference": "FP-20240115-001",
+    "narration": "Payment from John Doe",
+    "settled": true,
+    "settlement_id": "stl_xyz789",
+    "metadata": {
+      "customer_id": "cus_123",
+      "order_id": "ord_456"
+    },
+    "created_at": "2024-01-15T10:30:40Z"
+  },
+  "business_id": "bus_your_business"
+}
+```
+
+## Implementing Webhook Handler
+
+### Basic Handler (Node.js/Express)
+
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.json());
+
+app.post('/webhooks/fossapay', async (req, res) => {
+  // 1. Verify webhook signature
+  const signature = req.headers['x-fossapay-signature'];
+  if (!verifySignature(req.body, signature)) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  // 2. Respond quickly (within 30 seconds)
+  res.status(200).send('Webhook received');
+
+  // 3. Process webhook asynchronously
+  processWebhook(req.body).catch(err => {
+    console.error('Webhook processing failed:', err);
+  });
+});
+
+async function processWebhook(payload) {
+  const { event, data } = payload;
+
+  switch (event) {
+    case 'payment.received':
+      await handlePaymentReceived(data);
+      break;
+
+    case 'payout.completed':
+      await handlePayoutCompleted(data);
+      break;
+
+    case 'wallet.credited':
+      await handleWalletCredited(data);
+      break;
+
+    default:
+      console.log('Unhandled event:', event);
+  }
+}
+
+async function handlePaymentReceived(data) {
+  // Credit customer wallet
+  await db.transactions.create({
+    id: data.transaction_id,
+    customer_id: data.metadata.customer_id,
+    amount: data.amount,
+    type: 'credit',
+    status: 'completed'
+  });
+
+  await db.wallets.increment({
+    customer_id: data.metadata.customer_id,
+    amount: data.amount
+  });
+
+  // Notify customer
+  await sendNotification(data.metadata.customer_id, {
+    title: 'Payment Received',
+    message: `Your wallet has been credited with ₦${data.amount}`
+  });
+}
+
+function verifySignature(payload, signature) {
+  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return hash === signature;
+}
+
+app.listen(3000);
+```
+
+### Python/Flask Example
+
+```python
+from flask import Flask, request, jsonify
+import hashlib
+import hmac
+import json
+
+app = Flask(__name__)
+
+@app.route('/webhooks/fossapay', methods=['POST'])
+def handle_webhook():
+    # Verify signature
+    signature = request.headers.get('X-Fossapay-Signature')
+    if not verify_signature(request.data, signature):
+        return 'Invalid signature', 401
+
+    # Respond quickly
+    payload = request.json
+
+    # Process asynchronously
+    process_webhook.delay(payload)  # Using Celery
+
+    return 'Webhook received', 200
+
+def verify_signature(payload, signature):
+    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
+    hash = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(hash, signature)
+
+def process_webhook(payload):
+    event = payload['event']
+    data = payload['data']
+
+    if event == 'payment.received':
+        handle_payment_received(data)
+    elif event == 'payout.completed':
+        handle_payout_completed(data)
+```
+
+## Security
+
+### Signature Verification
+
+Fossapay signs all webhooks with HMAC SHA256:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(hash),
+    Buffer.from(signature)
+  );
+}
+```
+
+### IP Whitelisting
+
+Optionally restrict webhooks to Fossapay IPs:
+
+```
+52.49.173.169
+54.171.127.99
+52.214.14.220
+```
+
+<Tip>
+  Use IP whitelisting as an additional layer of security, not as a replacement for signature verification.
+</Tip>
+
+## Retry Logic
+
+If your endpoint doesn't respond with a 2xx status, Fossapay retries:
+
+| Attempt | Delay |
+|---------|-------|
+| 1st retry | 5 minutes |
+| 2nd retry | 30 minutes |
+| 3rd retry | 2 hours |
+| 4th retry | 6 hours |
+| 5th retry | 24 hours |
+
+After 5 failed attempts, the webhook is marked as failed and no more retries occur.
+
+<Warning>
+  Check your webhook logs in the dashboard for failed deliveries and investigate issues promptly.
+</Warning>
+
+## Idempotency
+
+Webhooks may be delivered more than once. Implement idempotent handling:
+
+```javascript
+async function handlePaymentReceived(data) {
+  const existingTransaction = await db.transactions.findOne({
+    id: data.transaction_id
+  });
+
+  if (existingTransaction) {
+    console.log('Transaction already processed');
+    return; // Skip duplicate
+  }
+
+  // Process payment
+  await db.transactions.create({
+    id: data.transaction_id,
+    // ... other fields
+  });
+}
+```
+
+## Testing Webhooks
+
+### Local Testing with ngrok
+
+```bash
+# Start ngrok
+ngrok http 3000
+
+# Use the HTTPS URL in Fossapay dashboard
+# Example: https://abc123.ngrok.io/webhooks/fossapay
+```
+
+### Simulate Webhooks
+
+Test your webhook handler with simulated events:
+
+```bash
+curl -X POST https://api.fossapay.com/v1/webhooks/simulate \
+  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event": "payment.received",
+    "virtual_account_number": "1234567890",
+    "amount": 50000
+  }'
+```
+
+### Webhook Logs
+
+View webhook delivery logs in your dashboard:
+1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings/webhooks)
+2. Click on "Webhook Logs"
+3. Filter by status, event type, or date
+4. Replay failed webhooks
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Respond Quickly">
+    Always return 200 immediately, then process asynchronously:
+    ```javascript
+    app.post('/webhooks', (req, res) => {
+      res.status(200).send('OK');
+      processAsync(req.body); // Don't await
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Verify Signatures">
+    Never trust webhooks without signature verification:
+    ```javascript
+    if (!verifySignature(payload, signature)) {
+      return res.status(401).send('Unauthorized');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Duplicates">
+    Use event_id or transaction_id to detect duplicates:
+    ```javascript
+    const processed = await redis.get(`webhook:${event_id}`);
+    if (processed) return;
+
+    await redis.set(`webhook:${event_id}`, '1', 'EX', 86400);
+    ```
+  </Accordion>
+
+  <Accordion title="Log Everything">
+    Log all webhook receipts for debugging and auditing:
+    ```javascript
+    logger.info('Webhook received', {
+      event_id: payload.event_id,
+      event: payload.event,
+      timestamp: payload.timestamp
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Monitor Failures">
+    Set up alerts for webhook failures:
+    ```javascript
+    if (failureCount > threshold) {
+      await sendAlert('Webhook failures detected');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Webhook Payload Examples
+
+### Payment Received
+
+```json
+{
+  "event": "payment.received",
+  "event_id": "evt_abc123",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    "transaction_id": "txn_001",
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "currency": "NGN",
+    "sender_name": "John Doe",
+    "sender_account": "0987654321",
+    "sender_bank": "GTBank",
+    "reference": "FP-20240115-001",
+    "metadata": {
+      "customer_id": "cus_123"
+    }
+  }
+}
+```
+
+### Payout Completed
+
+```json
+{
+  "event": "payout.completed",
+  "event_id": "evt_xyz789",
+  "timestamp": "2024-01-15T11:45:23Z",
+  "data": {
+    "payout_id": "pay_001",
+    "amount": 25000,
+    "currency": "NGN",
+    "account_number": "0123456789",
+    "account_name": "Jane Smith",
+    "bank_code": "058",
+    "bank_name": "GTBank",
+    "reference": "withdraw-001",
+    "status": "completed",
+    "completed_at": "2024-01-15T11:45:20Z"
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings/webhooks">
+    Set up your webhook endpoint
+  </Card>
+  <Card title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/webhooks/logs">
+    Monitor webhook deliveries
+  </Card>
+  <Card title="Collections Guide" icon="book" href="/guides/collections">
+    Handle payment webhooks
+  </Card>
+  <Card title="Payouts Guide" icon="book" href="/guides/payouts">
+    Handle payout webhooks
+  </Card>
+</CardGroup>

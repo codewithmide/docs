@@ -1,0 +1,112 @@
+---
+title: 'Webhooks Overview'
+description: 'Understanding Fossapay webhooks'
+---
+
+## What are Webhooks?
+
+Webhooks are HTTP callbacks that Fossapay sends to your server when events occur. They enable real-time notifications about payments, payouts, and other important events.
+
+## Webhook Structure
+
+All webhooks follow this format:
+
+```json
+{
+  "event": "payment.received",
+  "event_id": "evt_abc123",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    // Event-specific data
+  },
+  "business_id": "bus_your_business"
+}
+```
+
+## Configuration
+
+### Set Webhook URL
+
+```bash
+curl -X PUT https://api.fossapay.com/v1/settings/webhooks \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/webhooks/fossapay",
+    "events": [
+      "payment.received",
+      "payout.completed",
+      "wallet.credited"
+    ],
+    "secret": "your-webhook-secret"
+  }'
+```
+
+## Verifying Signatures
+
+Always verify webhook signatures:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return hash === signature;
+}
+
+app.post('/webhooks/fossapay', (req, res) => {
+  const signature = req.headers['x-fossapay-signature'];
+
+  if (!verifyWebhook(req.body, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  res.status(200).send('OK');
+  processWebhook(req.body);
+});
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Respond Quickly">
+    Return 200 status immediately, process asynchronously
+  </Accordion>
+
+  <Accordion title="Verify Signatures">
+    Always verify the signature before processing
+  </Accordion>
+
+  <Accordion title="Handle Duplicates">
+    Use event_id to detect duplicate deliveries
+  </Accordion>
+
+  <Accordion title="Implement Retries">
+    Fossapay retries failed webhooks up to 5 times
+  </Accordion>
+</AccordionGroup>
+
+## Testing
+
+Use ngrok for local testing:
+
+```bash
+ngrok http 3000
+```
+
+Then set the ngrok URL as your webhook endpoint in the dashboard.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Webhook Events" href="/api-reference/webhooks/events">
+    View all available webhook events
+  </Card>
+  <Card title="Webhooks Concept" href="/concepts/webhooks">
+    Learn more about webhooks
+  </Card>
+</CardGroup>

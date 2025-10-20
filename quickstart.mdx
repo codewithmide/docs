@@ -1,80 +1,506 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quickstart'
+description: 'Start building with Fossapay in 10 minutes'
 ---
 
-## Get started in three steps
+## Get Started with Fossapay
 
-Get your documentation site running locally and make your first customization.
+This quickstart guide will have you making your first API call in minutes. We'll create a virtual account, simulate a payment, and handle the webhook notification.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before you begin, make sure you have:
+- A Fossapay account ([Sign up here](https://dashboard.fossapay.com/signup))
+- Your API keys from the [dashboard](https://dashboard.fossapay.com/settings/api-keys)
+- Node.js installed (or your preferred programming language)
 
-### Step 2: Deploy your changes
+## Step 1: Get Your API Keys
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Sign up">
+    Create an account at [dashboard.fossapay.com](https://dashboard.fossapay.com/signup)
+  </Step>
+  <Step title="Get Test Keys">
+    Navigate to **Settings** → **API Keys** and copy your test secret key (starts with `fp_test_sk_`)
+  </Step>
+  <Step title="Store Securely">
+    Save your API key as an environment variable:
+    ```bash
+    export FOSSAPAY_SECRET_KEY="fp_test_sk_xxxxxxxx"
+    ```
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Step 2: Install SDK (Optional)
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<CodeGroup>
 
-### Step 3: Go live
+```bash npm
+npm install fossapay-node
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```bash yarn
+yarn add fossapay-node
+```
 
-## Next steps
+```bash pip
+pip install fossapay
+```
 
-Now that you have your docs running, explore these key features:
+</CodeGroup>
+
+Or use cURL for direct API calls.
+
+## Step 3: Create Your First Virtual Account
+
+Let's create a virtual account for collecting payments:
+
+<CodeGroup>
+
+```javascript Node.js
+const Fossapay = require('fossapay-node');
+const fossapay = new Fossapay(process.env.FOSSAPAY_SECRET_KEY);
+
+async function createVirtualAccount() {
+  const account = await fossapay.virtualAccounts.create({
+    type: 'dedicated',
+    customer_name: 'John Doe',
+    customer_email: 'john@example.com',
+    customer_phone: '+2348012345678',
+    metadata: {
+      user_id: '12345'
+    }
+  });
+
+  console.log('Virtual Account Created!');
+  console.log('Account Number:', account.data.account_number);
+  console.log('Bank Name:', account.data.bank_name);
+
+  return account;
+}
+
+createVirtualAccount();
+```
+
+```python Python
+from fossapay import Fossapay
+import os
+
+fossapay = Fossapay(os.environ['FOSSAPAY_SECRET_KEY'])
+
+def create_virtual_account():
+    account = fossapay.virtual_accounts.create(
+        type='dedicated',
+        customer_name='John Doe',
+        customer_email='john@example.com',
+        customer_phone='+2348012345678',
+        metadata={
+            'user_id': '12345'
+        }
+    )
+
+    print('Virtual Account Created!')
+    print(f'Account Number: {account.data.account_number}')
+    print(f'Bank Name: {account.data.bank_name}')
+
+    return account
+
+create_virtual_account()
+```
+
+```bash cURL
+curl -X POST https://api.fossapay.com/v1/virtual-accounts \
+  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "dedicated",
+    "customer_name": "John Doe",
+    "customer_email": "john@example.com",
+    "customer_phone": "+2348012345678",
+    "metadata": {
+      "user_id": "12345"
+    }
+  }'
+```
+
+</CodeGroup>
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "virtual_account_id": "va_abc123",
+    "account_number": "1234567890",
+    "account_name": "FOSSAPAY - JOHN DOE",
+    "bank_name": "Wema Bank",
+    "type": "dedicated",
+    "status": "active"
+  }
+}
+```
+
+<Success>
+  **You created your first virtual account!** Customers can now transfer money to this account number.
+</Success>
+
+## Step 4: Simulate a Payment (Sandbox Only)
+
+In sandbox mode, simulate a payment to test your integration:
+
+<CodeGroup>
+
+```javascript Node.js
+async function simulatePayment(accountNumber) {
+  const payment = await fossapay.sandbox.simulatePayment({
+    virtual_account_number: accountNumber,
+    amount: 50000, // ₦500 in kobo
+    sender_name: 'Test Customer',
+    sender_account: '0987654321',
+    sender_bank: '058'
+  });
+
+  console.log('Payment Simulated!');
+  console.log('Transaction ID:', payment.data.transaction_id);
+
+  return payment;
+}
+
+// Use the account number from Step 3
+simulatePayment('1234567890');
+```
+
+```python Python
+def simulate_payment(account_number):
+    payment = fossapay.sandbox.simulate_payment(
+        virtual_account_number=account_number,
+        amount=50000,  # ₦500 in kobo
+        sender_name='Test Customer',
+        sender_account='0987654321',
+        sender_bank='058'
+    )
+
+    print('Payment Simulated!')
+    print(f'Transaction ID: {payment.data.transaction_id}')
+
+    return payment
+
+# Use the account number from Step 3
+simulate_payment('1234567890')
+```
+
+```bash cURL
+curl -X POST https://api.fossapay.com/v1/sandbox/simulate-payment \
+  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "sender_name": "Test Customer",
+    "sender_account": "0987654321",
+    "sender_bank": "058"
+  }'
+```
+
+</CodeGroup>
+
+## Step 5: Handle Webhook Notification
+
+When a payment is received, Fossapay sends a webhook to your server. Here's how to handle it:
+
+<CodeGroup>
+
+```javascript Express.js
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.json());
+
+app.post('/webhooks/fossapay', (req, res) => {
+  // 1. Verify webhook signature
+  const signature = req.headers['x-fossapay-signature'];
+  const isValid = verifySignature(req.body, signature);
+
+  if (!isValid) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  // 2. Respond immediately
+  res.status(200).send('Webhook received');
+
+  // 3. Process the webhook
+  const { event, data } = req.body;
+
+  if (event === 'payment.received') {
+    console.log('Payment received!');
+    console.log('Amount:', data.amount);
+    console.log('From:', data.sender_name);
+    console.log('Transaction ID:', data.transaction_id);
+
+    // Credit user wallet, update database, send notification, etc.
+    creditUserWallet(data.metadata.user_id, data.amount);
+  }
+});
+
+function verifySignature(payload, signature) {
+  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return hash === signature;
+}
+
+app.listen(3000, () => {
+  console.log('Webhook server running on port 3000');
+});
+```
+
+```python Flask
+from flask import Flask, request
+import hmac
+import hashlib
+import json
+import os
+
+app = Flask(__name__)
+
+@app.route('/webhooks/fossapay', methods=['POST'])
+def handle_webhook():
+    # 1. Verify signature
+    signature = request.headers.get('X-Fossapay-Signature')
+    is_valid = verify_signature(request.data, signature)
+
+    if not is_valid:
+        return 'Invalid signature', 401
+
+    # 2. Respond immediately
+    payload = request.json
+
+    # 3. Process webhook
+    event = payload['event']
+    data = payload['data']
+
+    if event == 'payment.received':
+        print('Payment received!')
+        print(f'Amount: {data["amount"]}')
+        print(f'From: {data["sender_name"]}')
+        print(f'Transaction ID: {data["transaction_id"]}')
+
+        # Credit user wallet, update database, etc.
+        credit_user_wallet(data['metadata']['user_id'], data['amount'])
+
+    return 'Webhook received', 200
+
+def verify_signature(payload, signature):
+    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
+    hash = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(hash, signature)
+
+if __name__ == '__main__':
+    app.run(port=3000)
+```
+
+</CodeGroup>
+
+<Tip>
+  **Local Testing:** Use [ngrok](https://ngrok.com) to expose your local server for webhook testing:
+  ```bash
+  ngrok http 3000
+  ```
+  Then set the ngrok URL in your [webhook settings](https://dashboard.fossapay.com/settings/webhooks).
+</Tip>
+
+## Step 6: Send a Payout
+
+Now let's send money from your wallet to a bank account:
+
+<CodeGroup>
+
+```javascript Node.js
+async function sendPayout() {
+  const payout = await fossapay.payouts.create({
+    amount: 25000, // ₦250
+    account_number: '0000000001', // Test account
+    account_name: 'Test Recipient',
+    bank_code: '058',
+    narration: 'Test payout',
+    reference: `payout-${Date.now()}`
+  });
+
+  console.log('Payout initiated!');
+  console.log('Payout ID:', payout.data.payout_id);
+  console.log('Status:', payout.data.status);
+
+  return payout;
+}
+
+sendPayout();
+```
+
+```python Python
+def send_payout():
+    payout = fossapay.payouts.create(
+        amount=25000,  # ₦250
+        account_number='0000000001',  # Test account
+        account_name='Test Recipient',
+        bank_code='058',
+        narration='Test payout',
+        reference=f'payout-{int(time.time() * 1000)}'
+    )
+
+    print('Payout initiated!')
+    print(f'Payout ID: {payout.data.payout_id}')
+    print(f'Status: {payout.data.status}')
+
+    return payout
+
+send_payout()
+```
+
+```bash cURL
+curl -X POST https://api.fossapay.com/v1/payouts \
+  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 25000,
+    "account_number": "0000000001",
+    "account_name": "Test Recipient",
+    "bank_code": "058",
+    "narration": "Test payout",
+    "reference": "payout-'$(date +%s)'"
+  }'
+```
+
+</CodeGroup>
+
+## Complete Example
+
+Here's a complete example that ties everything together:
+
+```javascript
+const Fossapay = require('fossapay-node');
+const express = require('express');
+
+const fossapay = new Fossapay(process.env.FOSSAPAY_SECRET_KEY);
+const app = express();
+
+app.use(express.json());
+
+// Create virtual account for new user
+async function onboardUser(user) {
+  const account = await fossapay.virtualAccounts.create({
+    type: 'dedicated',
+    customer_name: user.name,
+    customer_email: user.email,
+    metadata: {
+      user_id: user.id
+    }
+  });
+
+  console.log(`Virtual account created for ${user.name}`);
+  console.log(`Account Number: ${account.data.account_number}`);
+
+  return account;
+}
+
+// Handle incoming payments
+app.post('/webhooks/fossapay', async (req, res) => {
+  res.status(200).send('OK');
+
+  const { event, data } = req.body;
+
+  if (event === 'payment.received') {
+    // Credit user's balance
+    await creditUserBalance(data.metadata.user_id, data.amount);
+
+    // Send notification
+    await sendNotification(data.metadata.user_id, {
+      title: 'Payment Received',
+      message: `Your account was credited with ₦${data.amount / 100}`
+    });
+  }
+});
+
+// Process withdrawal
+async function processWithdrawal(userId, amount, bankDetails) {
+  const payout = await fossapay.payouts.create({
+    amount: amount,
+    account_number: bankDetails.accountNumber,
+    account_name: bankDetails.accountName,
+    bank_code: bankDetails.bankCode,
+    reference: `withdrawal-${userId}-${Date.now()}`
+  });
+
+  return payout;
+}
+
+app.listen(3000);
+```
+
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Learn about API authentication and security
+  </Card>
+  <Card title="Collections Guide" icon="book" href="/guides/collections">
+    Complete guide to accepting payments
+  </Card>
+  <Card title="Payouts Guide" icon="money-bill-transfer" href="/guides/payouts">
+    Send money to bank accounts
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+    Handle real-time notifications
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Testing Checklist
+
+Before going to production, make sure you've tested:
+
+- [ ] Creating virtual accounts
+- [ ] Simulating payments in sandbox
+- [ ] Receiving and processing webhooks
+- [ ] Handling webhook failures
+- [ ] Sending payouts
+- [ ] Error handling
+- [ ] Webhook signature verification
+
+## Going Live
+
+When you're ready for production:
+
+1. **Complete business verification** in the [dashboard](https://dashboard.fossapay.com/settings/verification)
+2. **Switch to live API keys** (starts with `fp_live_sk_`)
+3. **Update webhook URL** to your production server
+4. **Test with small amounts** before full launch
+5. **Monitor the dashboard** for any issues
+
+<Card title="Get Live API Keys" icon="rocket" href="https://dashboard.fossapay.com/settings/verification">
+  Complete verification to get live access
+</Card>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Join Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
+    Get help from the Fossapay community
+  </Card>
+  <Card title="Contact Support" icon="headset" href="mailto:support@fossapay.com">
+    Email our support team
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/collections/create-virtual-account">
+    Explore the full API documentation
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
+    View your transactions and settings
+  </Card>
+</CardGroup>

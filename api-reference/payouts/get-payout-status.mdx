@@ -1,0 +1,70 @@
+---
+title: 'Get Payout Status'
+api: 'GET https://api.fossapay.com/v1/payouts/{payout_id}'
+description: 'Check the status of a payout'
+---
+
+## Path Parameters
+
+<ParamField path="payout_id" type="string" required>
+  The unique identifier of the payout
+</ParamField>
+
+## Request Example
+
+```bash
+curl https://api.fossapay.com/v1/payouts/pay_abc123 \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const payout = await client.payouts.getStatus('pay_abc123');
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "data": {
+    "payout_id": "pay_abc123",
+    "amount": 50000,
+    "fee": 50,
+    "status": "completed",
+    "account_number": "0123456789",
+    "account_name": "JANE SMITH",
+    "bank_code": "058",
+    "bank_name": "GTBank",
+    "reference": "payout-jan-2024-001",
+    "narration": "Salary payment",
+    "completed_at": "2024-01-15T11:05:23Z",
+    "created_at": "2024-01-15T11:00:00Z"
+  }
+}
+```
+
+```json Failed Payout
+{
+  "status": "success",
+  "data": {
+    "payout_id": "pay_abc123",
+    "amount": 50000,
+    "status": "failed",
+    "failure_reason": "Invalid account number",
+    "refunded": true,
+    "created_at": "2024-01-15T11:00:00Z",
+    "failed_at": "2024-01-15T11:02:15Z"
+  }
+}
+```
+</ResponseExample>
+
+## Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Payout initiated, not yet processed |
+| `processing` | Being processed by recipient bank |
+| `completed` | Successfully completed |
+| `failed` | Failed (funds refunded) |

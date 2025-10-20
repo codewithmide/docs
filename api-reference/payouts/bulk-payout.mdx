@@ -1,0 +1,113 @@
+---
+title: 'Create Bulk Payout'
+api: 'POST https://api.fossapay.com/v1/payouts/bulk'
+description: 'Send money to multiple recipients at once'
+---
+
+## Request
+
+<ParamField body="payouts" type="array" required>
+  Array of payout objects (max 1000 per batch)
+</ParamField>
+
+<ParamField body="batch_reference" type="string" required>
+  Unique reference for this batch
+</ParamField>
+
+### Payout Object
+
+<ParamField body="amount" type="number" required>
+  Amount to send
+</ParamField>
+
+<ParamField body="account_number" type="string" required>
+  Recipient account number
+</ParamField>
+
+<ParamField body="account_name" type="string" required>
+  Recipient account name
+</ParamField>
+
+<ParamField body="bank_code" type="string" required>
+  Recipient bank code
+</ParamField>
+
+<ParamField body="narration" type="string">
+  Payment description
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  Unique reference for this payout
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api.fossapay.com/v1/payouts/bulk \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "batch_reference": "salary-jan-2024",
+    "payouts": [
+      {
+        "amount": 50000,
+        "account_number": "0123456789",
+        "account_name": "John Doe",
+        "bank_code": "058",
+        "narration": "January salary",
+        "reference": "sal-jan-001"
+      },
+      {
+        "amount": 60000,
+        "account_number": "9876543210",
+        "account_name": "Jane Smith",
+        "bank_code": "057",
+        "narration": "January salary",
+        "reference": "sal-jan-002"
+      }
+    ]
+  }'
+```
+
+```javascript
+const bulk = await client.payouts.createBulk({
+  batch_reference: 'salary-jan-2024',
+  payouts: [
+    {
+      amount: 50000,
+      account_number: '0123456789',
+      account_name: 'John Doe',
+      bank_code: '058',
+      reference: 'sal-jan-001'
+    },
+    {
+      amount: 60000,
+      account_number: '9876543210',
+      account_name: 'Jane Smith',
+      bank_code: '057',
+      reference: 'sal-jan-002'
+    }
+  ]
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Bulk payout initiated",
+  "data": {
+    "batch_id": "batch_xyz789",
+    "batch_reference": "salary-jan-2024",
+    "total_amount": 110000,
+    "total_fee": 100,
+    "total_debit": 110100,
+    "count": 2,
+    "status": "processing",
+    "created_at": "2024-01-15T11:00:00Z"
+  }
+}
+```
+</ResponseExample>

@@ -1,0 +1,180 @@
+---
+title: 'Webhook Events'
+description: 'Complete list of webhook events'
+---
+
+## Collections Events
+
+### payment.received
+
+Fired when a payment is received to a virtual account.
+
+```json
+{
+  "event": "payment.received",
+  "event_id": "evt_abc123",
+  "timestamp": "2024-01-15T10:30:45Z",
+  "data": {
+    "transaction_id": "txn_001",
+    "virtual_account_number": "1234567890",
+    "amount": 50000,
+    "currency": "NGN",
+    "sender_name": "John Doe",
+    "sender_account": "0987654321",
+    "sender_bank": "GTBank",
+    "reference": "FP-20240115-001",
+    "metadata": {
+      "customer_id": "cus_123"
+    }
+  }
+}
+```
+
+### payment.reversed
+
+Fired when a payment is reversed.
+
+```json
+{
+  "event": "payment.reversed",
+  "event_id": "evt_def456",
+  "timestamp": "2024-01-15T11:00:00Z",
+  "data": {
+    "transaction_id": "txn_001",
+    "amount": 50000,
+    "reason": "Bank reversal"
+  }
+}
+```
+
+### virtual_account.created
+
+Fired when a new virtual account is created.
+
+## Payout Events
+
+### payout.pending
+
+Fired when a payout is initiated.
+
+### payout.processing
+
+Fired when a payout is being processed.
+
+### payout.completed
+
+Fired when a payout completes successfully.
+
+```json
+{
+  "event": "payout.completed",
+  "event_id": "evt_xyz789",
+  "data": {
+    "payout_id": "pay_001",
+    "amount": 25000,
+    "account_number": "0123456789",
+    "bank_name": "GTBank",
+    "reference": "payout-001",
+    "completed_at": "2024-01-15T11:05:23Z"
+  }
+}
+```
+
+### payout.failed
+
+Fired when a payout fails.
+
+```json
+{
+  "event": "payout.failed",
+  "event_id": "evt_fail123",
+  "data": {
+    "payout_id": "pay_002",
+    "amount": 25000,
+    "failure_reason": "Invalid account number",
+    "refunded": true
+  }
+}
+```
+
+## Wallet Events
+
+### wallet.credited
+
+Fired when a wallet is credited.
+
+### wallet.debited
+
+Fired when a wallet is debited.
+
+### wallet.frozen
+
+Fired when a wallet is frozen.
+
+### wallet.unfrozen
+
+Fired when a wallet is unfrozen.
+
+## Settlement Events
+
+### settlement.pending
+
+Fired when a settlement is initiated.
+
+### settlement.completed
+
+Fired when a settlement completes.
+
+```json
+{
+  "event": "settlement.completed",
+  "data": {
+    "settlement_id": "stl_abc123",
+    "amount": 500000,
+    "net_amount": 499950,
+    "fee": 50,
+    "completed_at": "2024-01-15T18:05:23Z"
+  }
+}
+```
+
+### settlement.failed
+
+Fired when a settlement fails.
+
+## KYC Events
+
+### kyc.verified
+
+Fired when KYC verification succeeds.
+
+### kyc.failed
+
+Fired when KYC verification fails.
+
+## Example Handler
+
+```javascript
+app.post('/webhooks/fossapay', async (req, res) => {
+  const { event, data } = req.body;
+
+  res.status(200).send('OK');
+
+  switch (event) {
+    case 'payment.received':
+      await handlePaymentReceived(data);
+      break;
+
+    case 'payout.completed':
+      await handlePayoutCompleted(data);
+      break;
+
+    case 'wallet.credited':
+      await handleWalletCredited(data);
+      break;
+
+    default:
+      console.log('Unhandled event:', event);
+  }
+});
+```

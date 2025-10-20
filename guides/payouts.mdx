@@ -1,0 +1,352 @@
+---
+title: Payouts Guide
+description: 'Complete guide to sending money with Fossapay'
+---
+
+## Overview
+
+Send money to any Nigerian bank account in seconds using Fossapay's Payouts API. This guide covers single payouts, bulk disbursements, and handling payout failures.
+
+## Prerequisites
+
+- Sufficient balance in your Fossapay wallet or bank account
+- Verified business account
+- Live API keys (test keys for sandbox)
+
+## Single Payout
+
+### Basic Payout
+
+```javascript
+const fossapay = require('fossapay-node');
+const client = new fossapay(process.env.FOSSAPAY_SECRET_KEY);
+
+const payout = await client.payouts.create({
+  amount: 25000,
+  account_number: '0123456789',
+  account_name: 'Jane Smith',
+  bank_code: '058',
+  narration: 'Salary payment - January 2024',
+  reference: `payout-${Date.now()}`,
+  currency: 'NGN',
+  metadata: {
+    employee_id: 'emp_456',
+    payment_type: 'salary'
+  }
+});
+
+console.log(payout);
+// {
+//   "status": "success",
+//   "data": {
+//     "payout_id": "pay_abc123",
+//     "amount": 25000,
+//     "fee": 50,
+//     "total_debit": 25050,
+//     "status": "pending",
+//     "reference": "payout-1705315200000",
+//     "created_at": "2024-01-15T11:00:00Z"
+//   }
+// }
+```
+
+### Validate Account First
+
+```javascript
+// Verify account name before sending payout
+const validation = await client.payouts.validateAccount({
+  account_number: '0123456789',
+  bank_code: '058'
+});
+
+console.log(validation);
+// {
+//   "status": "success",
+//   "data": {
+//     "account_number": "0123456789",
+//     "account_name": "JANE SMITH",
+//     "bank_code": "058",
+//     "bank_name": "GTBank"
+//   }
+// }
+
+// Proceed with payout if name matches
+if (validation.data.account_name.includes('JANE SMITH')) {
+  await client.payouts.create({...});
+}
+```
+
+## Bulk Payouts
+
+### Process Multiple Payouts
+
+```javascript
+const payouts = [
+  {
+    amount: 50000,
+    account_number: '0123456789',
+    account_name: 'John Doe',
+    bank_code: '058',
+    narration: 'January salary',
+    reference: 'bulk-001-john'
+  },
+  {
+    amount: 60000,
+    account_number: '9876543210',
+    account_name: 'Jane Smith',
+    bank_code: '057',
+    narration: 'January salary',
+    reference: 'bulk-001-jane'
+  }
+];
+
+const bulk = await client.payouts.createBulk({
+  payouts: payouts,
+  batch_reference: 'salary-jan-2024'
+});
+
+console.log(bulk);
+// {
+//   "status": "success",
+//   "data": {
+//     "batch_id": "batch_xyz789",
+//     "total_amount": 110000,
+//     "total_fee": 100,
+//     "count": 2,
+//     "status": "processing",
+//     "created_at": "2024-01-15T11:00:00Z"
+//   }
+// }
+```
+
+### Monitor Bulk Status
+
+```javascript
+const status = await client.payouts.getBulkStatus('batch_xyz789');
+
+console.log(status);
+// {
+//   "batch_id": "batch_xyz789",
+//   "status": "completed",
+//   "summary": {
+//     "total": 2,
+//     "successful": 2,
+//     "failed": 0,
+//     "pending": 0
+//   },
+//   "payouts": [
+//     {
+//       "payout_id": "pay_001",
+//       "reference": "bulk-001-john",
+//       "status": "completed",
+//       "amount": 50000
+//     },
+//     {
+//       "payout_id": "pay_002",
+//       "reference": "bulk-001-jane",
+//       "status": "completed",
+//       "amount": 60000
+//     }
+//   ]
+// }
+```
+
+## Handling Webhooks
+
+```javascript
+app.post('/webhooks/fossapay', async (req, res) => {
+  res.status(200).send('OK');
+
+  const { event, data } = req.body;
+
+  switch (event) {
+    case 'payout.completed':
+      await handlePayoutCompleted(data);
+      break;
+
+    case 'payout.failed':
+      await handlePayoutFailed(data);
+      break;
+  }
+});
+
+async function handlePayoutCompleted(payout) {
+  // Update transaction status
+  await db.transactions.update({
+    reference: payout.reference
+  }, {
+    status: 'completed',
+    completed_at: payout.completed_at,
+    payout_id: payout.payout_id
+  });
+
+  // Notify recipient
+  await sendNotification(payout.metadata.employee_id, {
+    title: 'Payment Sent',
+    message: `₦${payout.amount.toLocaleString()} has been sent to your account`
+  });
+}
+
+async function handlePayoutFailed(payout) {
+  // Update status
+  await db.transactions.update({
+    reference: payout.reference
+  }, {
+    status: 'failed',
+    failure_reason: payout.failure_reason
+  });
+
+  // Refund to wallet if deducted
+  if (payout.refunded) {
+    await db.wallets.increment({
+      customer_id: payout.metadata.customer_id,
+      amount: payout.amount
+    });
+  }
+
+  // Alert admin
+  await sendAlert({
+    type: 'payout_failed',
+    reference: payout.reference,
+    reason: payout.failure_reason
+  });
+}
+```
+
+## Checking Payout Status
+
+```javascript
+const payout = await client.payouts.getStatus('pay_abc123');
+
+console.log(payout);
+// {
+//   "payout_id": "pay_abc123",
+//   "amount": 25000,
+//   "status": "completed",
+//   "account_number": "0123456789",
+//   "bank_name": "GTBank",
+//   "reference": "payout-1705315200000",
+//   "completed_at": "2024-01-15T11:05:23Z"
+// }
+```
+
+## Bank Codes
+
+Common Nigerian bank codes:
+
+| Bank Code | Bank Name |
+|-----------|-----------|
+| 044 | Access Bank |
+| 063 | Access Bank (Diamond) |
+| 050 | Ecobank Nigeria |
+| 070 | Fidelity Bank |
+| 011 | First Bank of Nigeria |
+| 214 | First City Monument Bank |
+| 058 | Guaranty Trust Bank |
+| 030 | Heritage Bank |
+| 301 | Jaiz Bank |
+| 082 | Keystone Bank |
+| 50211 | Kuda Bank |
+| 090175 | Rubies MFB |
+| 221 | Stanbic IBTC Bank |
+| 068 | Standard Chartered |
+| 232 | Sterling Bank |
+| 100 | Suntrust Bank |
+| 032 | Union Bank |
+| 033 | United Bank for Africa |
+| 215 | Unity Bank |
+| 035 | Wema Bank |
+| 057 | Zenith Bank |
+
+<Tip>
+  Get the full list of bank codes via the API: `client.banks.list()`
+</Tip>
+
+## Error Handling
+
+```javascript
+try {
+  const payout = await client.payouts.create({
+    amount: 25000,
+    account_number: '0123456789',
+    bank_code: '058'
+  });
+} catch (error) {
+  if (error.code === 'INSUFFICIENT_BALANCE') {
+    // Handle insufficient balance
+    await notifyAdmin('Insufficient balance for payout');
+  } else if (error.code === 'INVALID_ACCOUNT') {
+    // Handle invalid account
+    await notifyUser('Invalid account details');
+  } else {
+    // Handle other errors
+    console.error('Payout failed:', error);
+  }
+}
+```
+
+## Common Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `INSUFFICIENT_BALANCE` | Not enough funds | Top up your balance |
+| `INVALID_ACCOUNT` | Account doesn't exist | Verify account details |
+| `DAILY_LIMIT_EXCEEDED` | Exceeded daily limit | Wait or request increase |
+| `BANK_UNAVAILABLE` | Bank temporarily unavailable | Retry later |
+| `DUPLICATE_REFERENCE` | Reference already used | Use unique reference |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Validate Accounts">
+    Use account validation before payouts to prevent failures:
+    ```javascript
+    const validation = await client.payouts.validateAccount({
+      account_number: accountNumber,
+      bank_code: bankCode
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Use Unique References">
+    Generate unique references for each payout:
+    ```javascript
+    const reference = `payout-${Date.now()}-${userId}`;
+    ```
+  </Accordion>
+
+  <Accordion title="Check Balance First">
+    Verify sufficient balance before initiating payouts:
+    ```javascript
+    const balance = await client.wallets.getBalance();
+    if (balance.available >= totalAmount) {
+      // Proceed with payout
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Webhooks">
+    Always implement webhook handlers for real-time status updates.
+  </Accordion>
+
+  <Accordion title="Store Payout IDs">
+    Save payout IDs for reconciliation and support.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Single Payout API" icon="code" href="/api-reference/payouts/single-payout">
+    API reference for single payouts
+  </Card>
+  <Card title="Bulk Payout API" icon="code" href="/api-reference/payouts/bulk-payout">
+    API reference for bulk payouts
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+    Handle payout webhooks
+  </Card>
+  <Card title="Wallets" icon="wallet" href="/concepts/wallets">
+    Fund payouts from wallets
+  </Card>
+</CardGroup>

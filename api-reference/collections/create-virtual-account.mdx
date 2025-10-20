@@ -1,0 +1,217 @@
+---
+title: 'Create Virtual Account'
+api: 'POST https://api.fossapay.com/v1/virtual-accounts'
+description: 'Create a virtual account for collecting payments'
+---
+
+## Request
+
+<ParamField body="type" type="string" required>
+  Account type: `dedicated` for permanent accounts, `temporary` for one-time payments
+</ParamField>
+
+<ParamField body="customer_name" type="string" required>
+  Full name of the customer (2-100 characters)
+</ParamField>
+
+<ParamField body="customer_email" type="string" required>
+  Customer's email address
+</ParamField>
+
+<ParamField body="customer_phone" type="string">
+  Customer's phone number in international format (e.g., +2348012345678)
+</ParamField>
+
+<ParamField body="customer_id" type="string">
+  Your internal customer ID for reference
+</ParamField>
+
+<ParamField body="amount" type="number">
+  Expected payment amount (required for temporary accounts)
+</ParamField>
+
+<ParamField body="expires_at" type="string">
+  Expiration date for temporary accounts (ISO 8601 format)
+</ParamField>
+
+<ParamField body="account_name" type="string">
+  Custom account name (defaults to business name + customer name)
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Custom data to store with the virtual account (max 10 keys)
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api.fossapay.com/v1/virtual-accounts \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "dedicated",
+    "customer_name": "John Doe",
+    "customer_email": "john@example.com",
+    "customer_phone": "+2348012345678",
+    "customer_id": "cus_123",
+    "metadata": {
+      "user_id": "12345",
+      "purpose": "wallet_topup"
+    }
+  }'
+```
+
+```javascript
+const fossapay = require('fossapay-node');
+const client = new fossapay('fp_live_sk_xxxxxxxx');
+
+const account = await client.virtualAccounts.create({
+  type: 'dedicated',
+  customer_name: 'John Doe',
+  customer_email: 'john@example.com',
+  customer_phone: '+2348012345678',
+  metadata: {
+    user_id: '12345'
+  }
+});
+```
+
+```python
+from fossapay import Fossapay
+
+client = Fossapay('fp_live_sk_xxxxxxxx')
+
+account = client.virtual_accounts.create(
+    type='dedicated',
+    customer_name='John Doe',
+    customer_email='john@example.com',
+    customer_phone='+2348012345678',
+    metadata={
+        'user_id': '12345'
+    }
+)
+```
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="virtual_account_id" type="string">
+      Unique identifier for the virtual account
+    </ResponseField>
+
+    <ResponseField name="account_number" type="string">
+      The virtual account number (10 digits)
+    </ResponseField>
+
+    <ResponseField name="account_name" type="string">
+      Account name shown on bank statements
+    </ResponseField>
+
+    <ResponseField name="bank_name" type="string">
+      Providing bank name (e.g., "Wema Bank")
+    </ResponseField>
+
+    <ResponseField name="bank_code" type="string">
+      Bank code (e.g., "035")
+    </ResponseField>
+
+    <ResponseField name="type" type="string">
+      Account type: `dedicated` or `temporary`
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      Account status: `active`, `inactive`, `expired`
+    </ResponseField>
+
+    <ResponseField name="customer_name" type="string">
+      Customer name
+    </ResponseField>
+
+    <ResponseField name="customer_email" type="string">
+      Customer email
+    </ResponseField>
+
+    <ResponseField name="amount" type="number">
+      Expected amount for temporary accounts
+    </ResponseField>
+
+    <ResponseField name="expires_at" type="string">
+      Expiration timestamp for temporary accounts
+    </ResponseField>
+
+    <ResponseField name="metadata" type="object">
+      Custom metadata attached to the account
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      Account creation timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Virtual account created successfully",
+  "data": {
+    "virtual_account_id": "va_abc123xyz",
+    "account_number": "1234567890",
+    "account_name": "FOSSAPAY - JOHN DOE",
+    "bank_name": "Wema Bank",
+    "bank_code": "035",
+    "type": "dedicated",
+    "status": "active",
+    "customer_name": "John Doe",
+    "customer_email": "john@example.com",
+    "customer_phone": "+2348012345678",
+    "metadata": {
+      "user_id": "12345",
+      "purpose": "wallet_topup"
+    },
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "message": "Invalid customer email address",
+  "code": "INVALID_EMAIL",
+  "errors": {
+    "customer_email": "Must be a valid email address"
+  }
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INVALID_EMAIL` | Email address is invalid |
+| `INVALID_PHONE` | Phone number is invalid |
+| `CUSTOMER_NAME_TOO_SHORT` | Customer name must be at least 2 characters |
+| `ACCOUNT_LIMIT_REACHED` | Maximum number of virtual accounts reached |
+| `INVALID_EXPIRY_DATE` | Expiry date must be in the future |
+| `AMOUNT_REQUIRED` | Amount is required for temporary accounts |
+
+<Note>
+  **Rate Limit:** 100 requests per minute
+</Note>
+
+<Tip>
+  Store the `virtual_account_id` in your database for future reference and transaction matching.
+</Tip>

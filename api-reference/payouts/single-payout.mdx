@@ -1,0 +1,187 @@
+---
+title: 'Create Single Payout'
+api: 'POST https://api.fossapay.com/v1/payouts'
+description: 'Send money to a bank account'
+---
+
+## Request
+
+<ParamField body="amount" type="number" required>
+  Amount to send in kobo (e.g., 50000 = ₦500)
+</ParamField>
+
+<ParamField body="account_number" type="string" required>
+  Recipient's bank account number (10 digits)
+</ParamField>
+
+<ParamField body="account_name" type="string" required>
+  Recipient's account name (for validation)
+</ParamField>
+
+<ParamField body="bank_code" type="string" required>
+  Recipient's bank code (e.g., "058" for GTBank)
+</ParamField>
+
+<ParamField body="narration" type="string">
+  Payment description (max 50 characters)
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  Unique reference for this payout (max 100 characters)
+</ParamField>
+
+<ParamField body="currency" type="string" default="NGN">
+  Currency code (NGN, USD, etc.)
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Custom data to store with the payout
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api.fossapay.com/v1/payouts \
+  -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 50000,
+    "account_number": "0123456789",
+    "account_name": "Jane Smith",
+    "bank_code": "058",
+    "narration": "Salary payment",
+    "reference": "payout-jan-2024-001",
+    "currency": "NGN",
+    "metadata": {
+      "employee_id": "emp_456"
+    }
+  }'
+```
+
+```javascript
+const payout = await client.payouts.create({
+  amount: 50000,
+  account_number: '0123456789',
+  account_name: 'Jane Smith',
+  bank_code: '058',
+  narration: 'Salary payment',
+  reference: `payout-${Date.now()}`
+});
+```
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="payout_id" type="string">
+      Unique payout identifier
+    </ResponseField>
+
+    <ResponseField name="amount" type="number">
+      Payout amount
+    </ResponseField>
+
+    <ResponseField name="fee" type="number">
+      Transaction fee charged
+    </ResponseField>
+
+    <ResponseField name="total_debit" type="number">
+      Total amount debited (amount + fee)
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      Payout status: `pending`, `processing`, `completed`, `failed`
+    </ResponseField>
+
+    <ResponseField name="reference" type="string">
+      Your unique reference
+    </ResponseField>
+
+    <ResponseField name="account_number" type="string">
+      Recipient account number
+    </ResponseField>
+
+    <ResponseField name="bank_name" type="string">
+      Recipient bank name
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      Creation timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "message": "Payout initiated successfully",
+  "data": {
+    "payout_id": "pay_abc123",
+    "amount": 50000,
+    "fee": 50,
+    "total_debit": 50050,
+    "status": "pending",
+    "reference": "payout-jan-2024-001",
+    "account_number": "0123456789",
+    "account_name": "JANE SMITH",
+    "bank_code": "058",
+    "bank_name": "GTBank",
+    "currency": "NGN",
+    "narration": "Salary payment",
+    "metadata": {
+      "employee_id": "emp_456"
+    },
+    "created_at": "2024-01-15T11:00:00Z"
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "message": "Insufficient balance",
+  "code": "INSUFFICIENT_BALANCE",
+  "data": {
+    "required": 50050,
+    "available": 25000
+  }
+}
+```
+</ResponseExample>
+
+## Webhooks
+
+Listen for payout status changes:
+
+```javascript
+app.post('/webhooks/fossapay', (req, res) => {
+  const { event, data } = req.body;
+
+  if (event === 'payout.completed') {
+    console.log('Payout completed:', data.payout_id);
+  }
+
+  if (event === 'payout.failed') {
+    console.log('Payout failed:', data.failure_reason);
+  }
+
+  res.status(200).send('OK');
+});
+```
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INSUFFICIENT_BALANCE` | Not enough funds in wallet |
+| `INVALID_ACCOUNT` | Invalid account number |
+| `DUPLICATE_REFERENCE` | Reference already used |
+| `BANK_UNAVAILABLE` | Bank temporarily unavailable |
+| `DAILY_LIMIT_EXCEEDED` | Daily payout limit exceeded |

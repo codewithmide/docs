@@ -1,0 +1,194 @@
+---
+title: Authentication
+description: 'Learn how to authenticate your API requests with Fossapay'
+---
+
+## API Authentication
+
+Fossapay uses API keys to authenticate requests. You can view and manage your API keys in the [Fossapay Dashboard](https://dashboard.fossapay.com/settings/api-keys).
+
+<Warning>
+  **Keep your API keys secure!** Your secret keys can perform any API request without restriction. Keep them secure and never share them publicly or commit them to version control.
+</Warning>
+
+## API Key Types
+
+Fossapay provides two types of API keys:
+
+<CardGroup cols={2}>
+  <Card title="Test Keys" icon="flask">
+    Use test keys in sandbox mode to test your integration without affecting real data or transactions.
+  </Card>
+  <Card title="Live Keys" icon="circle-check">
+    Use live keys in production to process real transactions and manage actual customer data.
+  </Card>
+</CardGroup>
+
+## Getting Your API Keys
+
+1. Sign up or log in to your [Fossapay Dashboard](https://dashboard.fossapay.com)
+2. Navigate to **Settings** → **API Keys**
+3. Copy your **Secret Key** and **Public Key**
+4. Use the test keys for development and live keys for production
+
+## Making Authenticated Requests
+
+Include your secret key in the `Authorization` header of your API requests using the `Bearer` authentication scheme:
+
+```bash
+curl https://api.fossapay.com/v1/virtual-accounts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json"
+```
+
+### Authentication Header Format
+
+```
+Authorization: Bearer fp_live_1234567890abcdef
+```
+
+## API Key Format
+
+Fossapay API keys follow this format:
+
+- **Test Secret Key**: `fp_test_sk_xxxxxxxxxxxxxxxx`
+- **Live Secret Key**: `fp_live_sk_xxxxxxxxxxxxxxxx`
+- **Test Public Key**: `fp_test_pk_xxxxxxxxxxxxxxxx`
+- **Live Public Key**: `fp_live_pk_xxxxxxxxxxxxxxxx`
+
+<Info>
+  Public keys are safe to use in client-side code, while secret keys must only be used server-side.
+</Info>
+
+## Request Headers
+
+Every API request should include these headers:
+
+| Header | Value | Required |
+|--------|-------|----------|
+| `Authorization` | `Bearer YOUR_SECRET_KEY` | Yes |
+| `Content-Type` | `application/json` | Yes |
+| `X-Idempotency-Key` | Unique request identifier | Recommended |
+
+### Example Request
+
+```javascript
+const axios = require('axios');
+
+const response = await axios.post(
+  'https://api.fossapay.com/v1/virtual-accounts',
+  {
+    customer_name: 'John Doe',
+    customer_email: 'john@example.com'
+  },
+  {
+    headers: {
+      'Authorization': 'Bearer fp_test_sk_xxxxxxxxxxxxxxxx',
+      'Content-Type': 'application/json',
+      'X-Idempotency-Key': 'unique-request-id-12345'
+    }
+  }
+);
+```
+
+## Idempotency
+
+To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, Fossapay will return the same response without processing the request again.
+
+```bash
+curl https://api.fossapay.com/v1/payouts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: payout-20240119-001" \
+  -d '{
+    "amount": 10000,
+    "account_number": "0123456789",
+    "bank_code": "058"
+  }'
+```
+
+<Tip>
+  Use idempotency keys for all POST requests, especially for payouts, to prevent accidental duplicate transactions.
+</Tip>
+
+## Error Handling
+
+### Authentication Errors
+
+If authentication fails, you'll receive a `401 Unauthorized` response:
+
+```json
+{
+  "status": "error",
+  "message": "Invalid API key",
+  "code": "INVALID_API_KEY"
+}
+```
+
+Common authentication errors:
+
+| Error Code | Description |
+|------------|-------------|
+| `INVALID_API_KEY` | The API key provided is invalid |
+| `EXPIRED_API_KEY` | The API key has expired |
+| `MISSING_API_KEY` | No API key was provided |
+| `TEST_KEY_IN_PRODUCTION` | Attempted to use test key in live mode |
+| `LIVE_KEY_IN_TEST` | Attempted to use live key in test mode |
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store Keys Securely">
+    - Never hardcode API keys in your application
+    - Use environment variables or secure key management systems
+    - Rotate keys regularly
+  </Accordion>
+
+  <Accordion title="Use HTTPS Only">
+    - All API requests must use HTTPS
+    - HTTP requests will be rejected
+  </Accordion>
+
+  <Accordion title="Restrict API Key Access">
+    - Limit API key permissions to only what's needed
+    - Use different keys for different environments
+    - Monitor API key usage in your dashboard
+  </Accordion>
+
+  <Accordion title="Implement Rate Limiting">
+    - Fossapay implements rate limiting to protect against abuse
+    - Current limit: 100 requests per minute
+    - Contact support for higher limits
+  </Accordion>
+</AccordionGroup>
+
+## Testing Authentication
+
+Test your authentication setup with this simple request:
+
+```bash
+curl https://api.fossapay.com/v1/auth/test \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+
+**Successful Response:**
+
+```json
+{
+  "status": "success",
+  "message": "Authentication successful",
+  "environment": "test",
+  "business_name": "Your Business Name"
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Sandbox Environment" icon="flask" href="/sandbox">
+    Learn how to test your integration safely
+  </Card>
+  <Card title="Create Virtual Account" icon="code" href="/api-reference/collections/create-virtual-account">
+    Make your first API call
+  </Card>
+</CardGroup>
