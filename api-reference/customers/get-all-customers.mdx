@@ -1,0 +1,164 @@
+---
+title: 'Get All Customers'
+api: 'GET https://api-staging.fossapay.com/api/v1/customers'
+description: 'Retrieve a list of all customers'
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Overview
+
+Retrieve a list of all customer accounts in your system.
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key for authentication
+</ParamField>
+
+### Parameters
+
+<ParamField query="sortOrder" type="string">
+  Sort order: `asc` or `desc` (default: `desc`)
+</ParamField>
+
+<ParamField query="sortBy" type="string">
+  Field to sort by: `createdAt`, `firstName`, `lastName`, `emailAddress` (default: `createdAt`)
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search term to filter customers by name or email
+</ParamField>
+
+<ParamField query="limit" type="number">
+  Number of customers to return per page (default: 10, max: 100)
+</ParamField>
+
+<ParamField query="page" type="number">
+  Page number to retrieve (default: 1)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (200 for successful retrieval)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of customer objects
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  <Expandable title="properties">
+    <ResponseField name="page" type="number">
+      Current page number
+    </ResponseField>
+
+    <ResponseField name="limit" type="number">
+      Number of items per page
+    </ResponseField>
+
+    <ResponseField name="total" type="number">
+      Total number of customers
+    </ResponseField>
+
+    <ResponseField name="totalPages" type="number">
+      Total number of pages
+    </ResponseField>
+
+    <ResponseField name="hasNextPage" type="boolean">
+      Whether there is a next page
+    </ResponseField>
+
+    <ResponseField name="hasPrevPage" type="boolean">
+      Whether there is a previous page
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Customers retrieved successfully",
+  "data": [
+    {
+      "id": "fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df",
+      "businessId": "xse5f9867-f6b3-4dda-9d1e-aa335fbf7a3a",
+      "firstName": "John",
+      "lastName": "Ben",
+      "middleName": "Doe",
+      "emailAddress": "john.doe@gmail.com",
+      "mobileNumber": "0918458251",
+      "dob": "1991-08-15",
+      "customerType": "individual",
+      "address": "12 customer rd.",
+      "city": "Lagos",
+      "tierId": 0,
+      "createdAt": "2021-01-08T21:39:52+01:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 7,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPrevPage": false
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+</ResponseExample>
+
+## Example
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET "https://api-staging.fossapay.com/api/v1/customers?sortOrder=desc&sortBy=createdAt&search=john&page=1&limit=10" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+<TabItem value="nodejs" label="Node.js">
+
+```javascript
+const response = await fetch('https://api-staging.fossapay.com/api/v1/customers?sortOrder=desc&sortBy=createdAt&search=john&page=1&limit=10', {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY'
+  }
+});
+
+const customers = await response.json();
+console.log(customers);
+```
+
+</TabItem>
+</Tabs>
+
+## Rate Limits
+
+- Maximum 100 requests per minute per API key
+- Burst limit of 20 requests per second

@@ -1,0 +1,133 @@
+---
+title: 'Get Customer Tier Status'
+api: 'GET https://api-staging.fossapay.com/api/v1/customers/{customerId}/tier-status'
+description: 'Retrieve the tier status and limits for a specific customer'
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Overview
+
+Retrieve detailed tier information and usage limits for a specific customer.
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key for authentication
+</ParamField>
+
+<ParamField path="customerId" type="string" required>
+  The unique identifier of the customer
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (200 for successful retrieval)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="tierId" type="number">
+      Customer's tier level identifier
+    </ResponseField>
+
+    <ResponseField name="hasNin" type="boolean">
+      Whether the customer has provided their National Identification Number
+    </ResponseField>
+
+    <ResponseField name="hasBvn" type="boolean">
+      Whether the customer has provided their Bank Verification Number
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Customer tier status retrieved successfully",
+  "data": {
+    "tierId": 0,
+    "hasNin": false,
+    "hasBvn": false
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 404,
+  "message": "Customer not found"
+}
+```
+</ResponseExample>
+
+## Tier Information
+
+### Tier Levels
+
+- **basic**: Standard tier with basic transaction limits
+- **premium**: Enhanced features and higher transaction limits
+- **enterprise**: Custom solutions with maximum limits
+
+### Status Values
+
+- **active**: Customer account is active and can transact
+- **suspended**: Customer account is temporarily suspended
+- **pending**: Customer account is under review
+
+## Example
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET https://api-staging.fossapay.com/api/v1/customers/fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df/tier-status \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+<TabItem value="nodejs" label="Node.js">
+
+```javascript
+const customerId = 'fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df';
+const response = await fetch(`https://api-staging.fossapay.com/api/v1/customers/${customerId}/tier-status`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY'
+  }
+});
+
+const tierStatus = await response.json();
+console.log(tierStatus);
+```
+
+</TabItem>
+</Tabs>
+
+## Rate Limits
+
+- Maximum 100 requests per minute per API key
+- Burst limit of 20 requests per second

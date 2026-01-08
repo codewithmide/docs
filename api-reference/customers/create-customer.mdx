@@ -1,0 +1,235 @@
+---
+title: 'Create Customer Account'
+api: 'POST https://api-staging.fossapay.com/api/v1/customers'
+description: 'Create a new customer account'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key for authentication
+</ParamField>
+
+<ParamField body="firstName" type="string" required>
+  First name of the customer
+</ParamField>
+
+<ParamField body="lastName" type="string" required>
+  Last name of the customer
+</ParamField>
+
+<ParamField body="middleName" type="string">
+  Middle name of the customer
+</ParamField>
+
+<ParamField body="emailAddress" type="string" required>
+  Email address of the customer
+</ParamField>
+
+<ParamField body="mobileNumber" type="string" required>
+  Mobile number of the customer
+</ParamField>
+
+<ParamField body="dob" type="string" required>
+  Date of birth in YYYY-MM-DD format (e.g., 1990-08-15)
+</ParamField>
+
+<ParamField body="address" type="string" required>
+  Address of the customer
+</ParamField>
+
+<ParamField body="city" type="string" required>
+  City of the customer
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  Country of the customer
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Customer Account type
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "middleName": "Michael",
+    "emailAddress": "john.doe@example.com",
+    "mobileNumber": "+2348012345678",
+    "dob": "1990-08-15",
+    "address": "123 Main Street",
+    "city": "Lagos",
+    "country": "Nigeria",
+    "type": "individual"
+  }'
+```
+
+```javascript
+const response = await fetch('https://api-staging.fossapay.com/api/v1/customers', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    firstName: 'John',
+    lastName: 'Doe',
+    middleName: 'Michael',
+    emailAddress: 'john.doe@example.com',
+    mobileNumber: '+2348012345678',
+    dob: '1990-08-15',
+    address: '123 Main Street',
+    city: 'Lagos',
+    country: 'Nigeria',
+    type: 'individual'
+  })
+});
+
+const customer = await response.json();
+console.log(customer);
+```
+
+```python
+import requests
+
+headers = {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+}
+
+data = {
+    'firstName': 'John',
+    'lastName': 'Doe',
+    'middleName': 'Michael',
+    'emailAddress': 'john.doe@example.com',
+    'mobileNumber': '+2348012345678',
+    'dob': '1990-08-15',
+    'address': '123 Main Street',
+    'city': 'Lagos',
+    'country': 'Nigeria',
+    'type': 'individual'
+}
+
+response = requests.post('https://api-staging.fossapay.com/api/v1/customers', headers=headers, json=data)
+customer = response.json()
+print(customer)
+```
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (201 for successful creation)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Unique identifier for the customer
+    </ResponseField>
+
+    <ResponseField name="firstName" type="string">
+      Customer's first name
+    </ResponseField>
+
+    <ResponseField name="lastName" type="string">
+      Customer's last name
+    </ResponseField>
+
+    <ResponseField name="middleName" type="string">
+      Customer's middle name
+    </ResponseField>
+
+    <ResponseField name="emailAddress" type="string">
+      Customer's email address
+    </ResponseField>
+
+    <ResponseField name="mobileNumber" type="string">
+      Customer's mobile number
+    </ResponseField>
+
+    <ResponseField name="dob" type="string">
+      Customer's date of birth
+    </ResponseField>
+
+    <ResponseField name="address" type="string">
+      Customer's address
+    </ResponseField>
+
+    <ResponseField name="customerType" type="string">
+      Customer account type
+    </ResponseField>
+
+    <ResponseField name="businessId" type="string">
+      Associated business identifier
+    </ResponseField>
+
+    <ResponseField name="createdAt" type="string">
+      Customer creation timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Customer created successfully",
+  "data": {
+    "id": "ch2eda1f-e2a3-47ac-b8de-3149a3fb7esf",
+    "firstName": "John",
+    "lastName": "Henry",
+    "middleName": "Doe",
+    "emailAddress": "john.doe@gmail.com",
+    "mobileNumber": "09184728251",
+    "dob": "1991-08-15",
+    "address": "12 customer rd.",
+    "customerType": "individual",
+    "businessId": "x93f9867-e4b3-24da-9d1e-aax032bf7a3a",
+    "createdAt": "2026-01-08T21:39:52+01:00"
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "error"
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INVALID_EMAIL` | Email address is invalid |
+| `INVALID_PHONE` | Phone number is invalid |
+| `INVALID_DOB` | Date of birth format is invalid |
+| `MISSING_REQUIRED_FIELD` | Required field is missing |
+| `INVALID_CUSTOMER_TYPE` | Customer type is invalid |
+
+<Note>
+  **Rate Limit:** 100 requests per minute
+</Note>
+
+<Tip>
+  Store the `customer_id` in your database for future reference and customer management.
+</Tip>

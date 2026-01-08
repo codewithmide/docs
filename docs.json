@@ -26,6 +26,7 @@
             "group": "Core Concepts",
             "pages": [
               "concepts/virtual-accounts",
+              "concepts/customers",
               "concepts/wallets",
               "concepts/settlements",
               "concepts/webhooks"
@@ -45,6 +46,18 @@
       {
         "tab": "API Reference",
         "groups": [
+          {
+            "group": "Customers",
+            "pages": [
+              "api-reference/customers/index",
+              "api-reference/customers/create-customer",
+              "api-reference/customers/get-all-customers",
+              "api-reference/customers/get-customer-by-id",
+              "api-reference/customers/get-tier-status",
+              "api-reference/customers/oauth"
+            ]
+
+            },
           {
             "group": "Collections",
             "pages": [

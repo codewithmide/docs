@@ -1,0 +1,211 @@
+---
+title: 'Customers API'
+description: 'Customer management endpoints'
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Overview
+
+The Customers API provides endpoints for managing third-party customer accounts, including creating new customers, retrieving customer information, and checking tier status.
+
+## Authentication
+
+All endpoints require API key authentication via the `x-api-key` header.
+
+## Endpoints
+
+### Create Customer
+
+Create a new customer account.
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X POST https://api.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "metadata": {
+      "source": "api"
+    }
+  }'
+```
+
+</TabItem>
+<TabItem value="nodejs" label="Node.js">
+
+```javascript
+const response = await fetch('https://api.fossapay.com/api/v1/customers', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1234567890',
+    metadata: {
+      source: 'api'
+    }
+  })
+});
+```
+
+</TabItem>
+</Tabs>
+
+**Response (201 Created):**
+
+```json
+{
+  "id": "cust_123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1234567890",
+  "tier": "basic",
+  "createdAt": "2023-01-01T00:00:00.000Z",
+  "updatedAt": "2023-01-01T00:00:00.000Z"
+}
+```
+
+### Get All Customers
+
+Retrieve a list of all customers.
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET https://api.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": "cust_123456789",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "tier": "basic",
+    "createdAt": "2023-01-01T00:00:00.000Z",
+    "updatedAt": "2023-01-01T00:00:00.000Z"
+  }
+]
+```
+
+### Get Customer by ID
+
+Retrieve a specific customer by their ID.
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET https://api.fossapay.com/api/v1/customers/cust_123456789 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+**Response (200 OK):**
+
+```json
+{
+  "id": "cust_123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1234567890",
+  "tier": "basic",
+  "createdAt": "2023-01-01T00:00:00.000Z",
+  "updatedAt": "2023-01-01T00:00:00.000Z"
+}
+```
+
+### Get Customer Tier Status
+
+Retrieve the tier status and limits for a specific customer.
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET https://api.fossapay.com/api/v1/customers/cust_123456789/tier-status \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+**Response (200 OK):**
+
+```json
+{
+  "tier": "basic",
+  "limits": {
+    "maxTransactions": 100,
+    "maxAmount": 10000
+  },
+  "status": "active"
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+```json
+{
+  "error": 400,
+  "message": "Validation failed"
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": 401,
+  "message": "Invalid API key"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "error": 404,
+  "message": "Customer not found"
+}
+```
+
+## Customer Tiers
+
+- **Basic**: Standard tier with basic limits
+- **Premium**: Enhanced features and higher limits
+- **Enterprise**: Custom solutions and maximum limits
+
+## Rate Limits
+
+- Maximum 100 requests per minute per API key
+- Burst limit of 20 requests per second
+
+## Webhooks
+
+Customer-related events are available via webhooks:
+- `customer.created`: Triggered when a new customer is created
+- `customer.updated`: Triggered when customer information is updated
+- `customer.tier_changed`: Triggered when customer tier is modified

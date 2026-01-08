@@ -1,0 +1,117 @@
+---
+title: 'Get Customer by ID'
+api: 'GET https://api-staging.fossapay.com/api/v1/customers/{customerId}'
+description: 'Retrieve a specific customer by their ID'
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Overview
+
+Retrieve detailed information about a specific customer using their unique customer ID.
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key for authentication
+</ParamField>
+
+<ParamField path="customerId" type="string" required>
+  The unique identifier of the customer
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  Response status: `success` or `error`
+</ResponseField>
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (200 for successful retrieval)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Customer object
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Customer retrieved successfully",
+  "data": {
+    "id": "fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df",
+    "businessId": "xse5f9867-f6b3-4dda-9d1e-aa335fbf7a3a",
+    "firstName": "John",
+    "lastName": "Ben",
+    "middleName": "Doe",
+    "emailAddress": "john.doe@gmail.com",
+    "mobileNumber": "0918458251",
+    "dob": "1991-08-15",
+    "customerType": "individual",
+    "address": "12 customer rd.",
+    "city": "Lagos",
+    "tierId": 0,
+    "createdAt": "2021-01-08T21:39:52+01:00"
+  }
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+```json Error Response
+{
+  "status": "error",
+  "statusCode": 404,
+  "message": "Customer not found"
+}
+```
+</ResponseExample>
+
+## Example
+
+<Tabs>
+<TabItem value="curl" label="cURL">
+
+```bash
+curl -X GET https://api-staging.fossapay.com/api/v1/customers/fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+</TabItem>
+<TabItem value="nodejs" label="Node.js">
+
+```javascript
+const customerId = 'fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df';
+const response = await fetch(`https://api-staging.fossapay.com/api/v1/customers/${customerId}`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY'
+  }
+});
+
+const customer = await response.json();
+console.log(customer);
+```
+
+</TabItem>
+</Tabs>
+
+## Rate Limits
+
+- Maximum 100 requests per minute per API key
+- Burst limit of 20 requests per second
