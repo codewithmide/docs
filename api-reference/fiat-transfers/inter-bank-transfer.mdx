@@ -1,0 +1,122 @@
+---
+title: 'Inter-Bank Transfer'
+api: 'POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank'
+description: 'Execute inter-bank transfer'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="customerId" type="string" required>
+  UUID of the customer initiating the transfer
+</ParamField>
+
+<ParamField body="destinationBankCode" type="string" required>
+  The bank code of the destination bank
+</ParamField>
+
+<ParamField body="destinationAccountName" type="string" required>
+  The name of the destination account holder
+</ParamField>
+
+<ParamField body="destinationAccountNumber" type="string" required>
+  The destination account number
+</ParamField>
+
+<ParamField body="destinationBankName" type="string" required>
+  The name of the destination bank
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  A unique reference for the transfer
+</ParamField>
+
+<ParamField body="remarks" type="string" required>
+  Additional remarks or description for the transfer
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  The amount to transfer
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+  -H "x-api-key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "destinationBankCode": "044",
+    "destinationAccountName": "JOHN DOE",
+    "destinationAccountNumber": "1234567890",
+    "destinationBankName": "ACCESS BANK",
+    "reference": "TRF-2024-001",
+    "remarks": "Salary payment",
+    "amount": 50000.00
+  }'
+```
+
+```javascript
+const transfer = await client.fiatTransfers.interBankTransfer({
+  customerId: '550e8400-e29b-41d4-a716-446655440000',
+  destinationBankCode: '044',
+  destinationAccountName: 'JOHN DOE',
+  destinationAccountNumber: '1234567890',
+  destinationBankName: 'ACCESS BANK',
+  reference: 'TRF-2024-001',
+  remarks: 'Salary payment',
+  amount: 50000.00
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Transfer request is being processed",
+  "data": {
+    "reference": "TRF-2024-001"
+  }
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (400)
+{
+  "status": false,
+  "statusCode": 400,
+  "message": "Bad request",
+  "error": "Invalid transfer details"
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (404)
+{
+  "status": false,
+  "statusCode": 404,
+  "message": "Customer or account not found",
+  "error": "Destination account not found"
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (500)
+{
+  "status": false,
+  "statusCode": 500,
+  "message": "Internal server error",
+  "error": "Transfer processing failed"
+}
+```
+</ResponseExample>

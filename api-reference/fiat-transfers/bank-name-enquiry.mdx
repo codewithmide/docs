@@ -1,0 +1,81 @@
+---
+title: 'Bank Name Enquiry'
+api: 'POST https://api-staging.fossapay.com/v1/transfers/fiat/bank-name-enquiry'
+description: 'Perform bank account name enquiry'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="bankCode" type="string" required>
+  The bank code for the account enquiry
+</ParamField>
+
+<ParamField body="accountNumber" type="string" required>
+  The account number to enquire about
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/bank-name-enquiry \
+  -H "x-api-key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bankCode": "00014",
+    "accountNumber": "1232129310"
+  }'
+```
+
+```javascript
+const enquiry = await client.fiatTransfers.bankNameEnquiry({
+  bankCode: '00014',
+  accountNumber: '1232129310'
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "statusCode": 201,
+  "message": "Bank name enquiry completed successfully",
+  "data": {
+    "sessionID": "000003677112224942366991412665",
+    "destinationInstitutionCode": "00014",
+    "channelCode": 2,
+    "accountNumber": "1232129310",
+    "accountName": "JANE ELIM DOE",
+    "kycLevel": "3",
+    "responseCode": "00"
+  }
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (400)
+{
+  "status": false,
+  "statusCode": 400,
+  "message": "Bad request",
+  "error": "Invalid bank code or account number"
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (500)
+{
+  "status": false,
+  "statusCode": 500,
+  "message": "Internal server error",
+  "error": "Bank name enquiry failed"
+}
+```
+</ResponseExample>

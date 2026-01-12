@@ -1,0 +1,97 @@
+---
+title: 'Crypto Transfer'
+api: 'POST https://api-staging.fossapay.com/v1/transfers/crypto'
+description: 'Make crypto transfer in USDT and USDC'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="customerId" type="string" required>
+  UUID of the customer making the transfer
+</ParamField>
+
+<ParamField body="recipient" type="string" required>
+  Recipient wallet address
+</ParamField>
+
+<ParamField body="network" type="string" required>
+  The blockchain network for the transfer. Must be one of: `solana`, `evm`
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  The cryptocurrency to transfer. Must be one of: `usdc`, `usdt`
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  The amount to transfer
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/crypto \
+  -H "x-api-key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "recipient": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    "network": "solana",
+    "currency": "usdc",
+    "amount": 100.50
+  }'
+```
+
+```javascript
+const transfer = await client.cryptoTransfers.execute({
+  customerId: '550e8400-e29b-41d4-a716-446655440000',
+  recipient: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+  network: 'solana',
+  currency: 'usdc',
+  amount: 100.50
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "message": "processing crypto transaction",
+  "data": {
+    "token": {
+      "symbol": "usdc",
+      "amount": 100.50
+    },
+    "network": "solana",
+    "recipientAddress": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    "senderAddress": "0x1234567890abcdef1234567890abcdef12345678",
+    "status": "processing"
+  }
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (400)
+{
+  "status": false,
+  "message": "Bad request",
+  "error": "Invalid customer ID"
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (500)
+{
+  "status": false,
+  "message": "Internal server error",
+  "error": "Transaction processing failed"
+}
+```
+</ResponseExample>

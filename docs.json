@@ -85,6 +85,14 @@
             ]
           },
           {
+            "group": "Fiat Transfers",
+            "pages": [
+              "api-reference/fiat-transfers/get-supported-banks",
+              "api-reference/fiat-transfers/bank-name-enquiry",
+              "api-reference/fiat-transfers/inter-bank-transfer"
+            ]
+          },
+          {
             "group": "Crypto Wallets",
             "pages": [
               "api-reference/crypto-wallets/create-wallet",
@@ -93,6 +101,12 @@
               "api-reference/crypto-wallets/get-wallet-by-address",
               "api-reference/crypto-wallets/wallet-transactions",
               "api-reference/crypto-wallets/wallet-transaction"
+            ]
+          },
+          {
+            "group": "Crypto Transfers",
+            "pages": [
+              "api-reference/crypto-transfers/crypto-transfer"
             ]
           },
           {

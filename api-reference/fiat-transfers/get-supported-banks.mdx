@@ -1,0 +1,78 @@
+---
+title: 'Get Supported Banks'
+api: 'GET https://api-staging.fossapay.com/v1/transfers/fiat/banks'
+description: 'Get supported banks for transfers'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X GET https://api-staging.fossapay.com/v1/transfers/fiat/banks \
+  -H "x-api-key: your_api_key_here"
+```
+
+```javascript
+const banks = await client.fiatTransfers.getSupportedBanks();
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Supported banks retrieved successfully",
+  "data": [
+    {
+      "bankname": "9 payment service Bank",
+      "bankcode": "120001"
+    },
+    {
+      "bankname": "AB MICROFINANCE BANK",
+      "bankcode": "090270"
+    },
+    {
+      "bankname": "ABBEY MORTGAGE BANK",
+      "bankcode": "090304"
+    },
+    {
+      "bankname": "ACCESS BANK",
+      "bankcode": "044"
+    },
+    {
+      "bankname": "ACCESS BANK (DIAMOND)",
+      "bankcode": "063"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (400)
+{
+  "status": false,
+  "statusCode": 400,
+  "message": "Bad request",
+  "error": "Invalid API key"
+}
+```
+</ResponseExample>
+
+<ResponseExample>
+```json Error Response (500)
+{
+  "status": false,
+  "statusCode": 500,
+  "message": "Internal server error",
+  "error": "Failed to retrieve supported banks"
+}
+```
+</ResponseExample>
