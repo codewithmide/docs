@@ -1,6 +1,6 @@
 ---
 title: 'Create Bulk Payout'
-api: 'POST https://api.fossapay.com/v1/payouts/bulk'
+api: 'POST https://api-staging.fossapay.com/v1/payouts/bulk'
 description: 'Send money to multiple recipients at once'
 ---
 
@@ -43,7 +43,7 @@ description: 'Send money to multiple recipients at once'
 ### Request Example
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/payouts/bulk \
+curl -X POST https://api-staging.fossapay.com/v1/payouts/bulk \
   -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{

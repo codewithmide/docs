@@ -1,0 +1,146 @@
+---
+title: 'Get All Wallet Transactions'
+api: 'GET https://api.fossapay.com/v1/wallets/crypto/{walletId}/transactions'
+description: 'Retrieve all transactions for a crypto wallet'
+---
+
+## Path Parameters
+
+<ParamField path="walletId" type="string" required>
+  Crypto wallet ID (crypto address entity ID)
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="page" type="number" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  Number of items per page
+</ParamField>
+
+<ParamField query="transactionType" type="string">
+  Filter by transaction type: `DEPOSIT`, `WITHDRAWAL`, `TRANSFER`
+</ParamField>
+
+<ParamField query="startDate" type="string">
+  Start date filter (ISO string)
+</ParamField>
+
+<ParamField query="endDate" type="string">
+  End date filter (ISO string)
+</ParamField>
+
+## Request Example
+
+```bash
+curl -X GET "https://api.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
+  -H "x-api-key: your_api_key_here"
+```
+
+```javascript
+const transactions = await client.cryptoWallets.getTransactions('user:u3d', {
+  page: 1,
+  limit: 10,
+  transactionType: 'DEPOSIT',
+  startDate: '2024-01-01T00:00:00Z',
+  endDate: '2024-12-31T23:59:59Z'
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Wallet transactions retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": "9495d974-4807-4c44-bd01-f5a69283aecc",
+        "reference": "PTY_CRYPTO_16TY0WY7MM717C9",
+        "externalReference": "76c230a2-dcbd-4b40-a671-7db8d055d1c6",
+        "transactionType": "deposit",
+        "status": "failed",
+        "amountInCrypto": "10.00000000",
+        "tokenSymbol": "usdxm",
+        "tokenAddress": "z23BZbAiFRb6u5CBH64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenDecimals": 6,
+        "senderAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "transactionHash": null,
+        "explorerLink": null,
+        "blockchain": "solana",
+        "sourceWalletAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletId": null,
+        "recipientWalletId": null,
+        "createdAt": "2026-01-08T00:43:44+01:00",
+        "updatedAt": "2026-01-08T00:43:56+01:00"
+      },
+      {
+        "id": "85503565-cb04-4ba7-abfb-b75193553086",
+        "reference": "PTY_CRYPTO_NWC3GZ6832M9VFQ",
+        "externalReference": "58fdb6f8-9925-4982-a516-95aabf4a22d3",
+        "transactionType": "deposit",
+        "status": "failed",
+        "amountInCrypto": "10.00000000",
+        "tokenSymbol": "usdxm",
+        "tokenAddress": "z23BZbAiFRb6u5CBH64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenDecimals": 6,
+        "senderAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "transactionHash": null,
+        "explorerLink": null,
+        "blockchain": "solana",
+        "sourceWalletAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletId": null,
+        "recipientWalletId": null,
+        "createdAt": "2026-01-08T00:38:24+01:00",
+        "updatedAt": "2026-01-08T00:38:39+01:00"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 1,
+      "totalItems": 2,
+      "itemsPerPage": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+</ResponseExample>
+
+## Error Responses
+
+<ErrorResponse code="400">
+```json Bad Request
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Invalid request parameters"
+}
+```
+</ErrorResponse>
+
+<ErrorResponse code="404">
+```json Not Found
+{
+  "status": "error",
+  "statusCode": 404,
+  "message": "Wallet not found"
+}
+```
+</ErrorResponse>

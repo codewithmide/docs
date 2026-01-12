@@ -1,0 +1,115 @@
+---
+title: 'Wallet to Wallet Transfer'
+api: 'POST /api/v1/wallets/fiat/transfers/wallet-to-wallet'
+description: 'Transfer funds between wallets'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="fromAccount" type="string" required>
+  Source wallet account number
+</ParamField>
+
+<ParamField body="toAccount" type="string" required>
+  Destination wallet account number
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  Transfer amount
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  Transfer reference
+</ParamField>
+
+<ParamField body="narration" type="string">
+  Transfer narration/description
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet \
+  -H "x-api-key: fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fromAccount": "1234567890",
+    "toAccount": "0987654321",
+    "amount": 5000,
+    "reference": "transfer_ref_001",
+    "narration": "Payment for services"
+  }'
+```
+
+```javascript
+const transfer = await client.wallets.walletToWalletTransfer({
+  fromAccount: '1234567890',
+  toAccount: '0987654321',
+  amount: 5000,
+  reference: 'transfer_ref_001',
+  narration: 'Payment for services'
+});
+```
+
+```python
+transfer = client.wallets.wallet_to_wallet_transfer(
+    fromAccount='1234567890',
+    toAccount='0987654321',
+    amount=5000,
+    reference='transfer_ref_001',
+    narration='Payment for services'
+)
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the transfer was successful
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "success": true,
+  "message": "Wallet transfer successfull"
+}
+```
+
+```json Error Response
+{
+  "success": false,
+  "message": "Insufficient funds",
+  "code": "INSUFFICIENT_FUNDS",
+  "errors": {
+    "amount": "Insufficient funds for transfer"
+  }
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INSUFFICIENT_FUNDS` | Insufficient funds for transfer |
+| `INVALID_ACCOUNT` | Invalid source or destination account |
+| `UNAUTHORIZED` | Invalid API key or insufficient permissions |
+| `TRANSFER_LIMIT_EXCEEDED` | Transfer amount exceeds limit |
+
+<Note>
+  **Rate Limit:** 50 requests per minute
+</Note>
+
+<Tip>
+  Always verify the destination account number before initiating transfers.
+</Tip>

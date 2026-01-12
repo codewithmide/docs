@@ -1,0 +1,133 @@
+---
+title: 'Create Wallet'
+api: 'POST /api/v1/wallets/fiat/create'
+description: 'Create a fiat wallet for a customer'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="customerId" type="string" required>
+  Unique identifier for the customer
+</ParamField>
+
+<ParamField body="walletName" type="string" required>
+  Name of the wallet
+</ParamField>
+
+<ParamField body="walletReference" type="string" required>
+  Reference for the wallet
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+  -H "x-api-key: fp_live_sk_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cus_123456789",
+    "walletName": "Main Wallet",
+    "walletReference": "wallet_ref_001"
+  }'
+```
+
+```javascript
+const fossapay = require('fossapay-node');
+const client = new fossapay('fp_live_sk_xxxxxxxx');
+
+const wallet = await client.wallets.createFiatWallet({
+  customerId: 'cus_123456789',
+  walletName: 'Main Wallet',
+  walletReference: 'wallet_ref_001'
+});
+```
+
+```python
+from fossapay import Fossapay
+
+client = Fossapay('fp_live_sk_xxxxxxxx')
+
+wallet = client.wallets.create_fiat_wallet(
+    customerId='cus_123456789',
+    walletName='Main Wallet',
+    walletReference='wallet_ref_001'
+)
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="walletId" type="string">
+      Unique identifier for the wallet
+    </ResponseField>
+
+    <ResponseField name="bankName" type="string">
+      Name of the bank
+    </ResponseField>
+
+    <ResponseField name="bankCode" type="string">
+      Bank code
+    </ResponseField>
+
+    <ResponseField name="accountNumber" type="string">
+      Wallet account number
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "success": true,
+  "message": "Fiat wallet created successfully",
+  "data": {
+    "walletId": "wal_abc123xyz",
+    "bankName": "Wema Bank",
+    "bankCode": "035",
+    "accountNumber": "1234567890"
+  }
+}
+```
+
+```json Error Response
+{
+  "success": false,
+  "message": "Invalid customer ID",
+  "code": "INVALID_CUSTOMER",
+  "errors": {
+    "customerId": "Customer ID is invalid"
+  }
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INVALID_CUSTOMER` | Customer ID is invalid |
+| `MISSING_FIELDS` | Required fields are missing |
+| `UNAUTHORIZED` | Invalid API key or insufficient permissions |
+
+<Note>
+  **Rate Limit:** 100 requests per minute
+</Note>
+
+<Tip>
+  Store the `walletId` in your database for future reference and transaction matching.
+</Tip>

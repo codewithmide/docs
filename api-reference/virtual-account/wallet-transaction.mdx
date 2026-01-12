@@ -1,0 +1,177 @@
+---
+title: 'Fetch Wallet Single Transaction'
+api: 'GET /api/v1/wallets/fiat/transactions/{transactionId}'
+description: 'Retrieve details of a single wallet transaction'
+---
+
+## Path Parameters
+
+<ParamField path="transactionId" type="string" required>
+  The unique identifier of the transaction
+</ParamField>
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Request Example
+
+```bash
+curl https://api-staging.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc123 \
+  -H "x-api-key: fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const transaction = await client.wallets.getTransaction('txn_abc123');
+```
+
+```python
+transaction = client.wallets.get_transaction('txn_abc123')
+```
+
+## Response
+
+<ResponseField name="transactionId" type="string">
+  Unique transaction identifier
+</ResponseField>
+
+<ResponseField name="transactionType" type="string">
+  Transaction type: `deposit` or `withdrawal`
+</ResponseField>
+
+<ResponseField name="walletId" type="string">
+  Wallet ID (virtual account ID)
+</ResponseField>
+
+<ResponseField name="accountNumber" type="string">
+  Virtual account number
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Transaction status
+</ResponseField>
+
+<ResponseField name="amount" type="number">
+  Transaction amount
+</ResponseField>
+
+<ResponseField name="fee" type="number">
+  Transaction fee
+</ResponseField>
+
+<ResponseField name="beneficiary" type="object">
+  <Expandable title="properties">
+    <ResponseField name="accountNumber" type="string">
+      Beneficiary account number (for withdrawals)
+    </ResponseField>
+
+    <ResponseField name="accountName" type="string">
+      Beneficiary account name
+    </ResponseField>
+
+    <ResponseField name="bankName" type="string">
+      Beneficiary bank name
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="originator" type="object">
+  <Expandable title="properties">
+    <ResponseField name="accountNumber" type="string">
+      Originator account number (for deposits)
+    </ResponseField>
+
+    <ResponseField name="accountName" type="string">
+      Originator account name
+    </ResponseField>
+
+    <ResponseField name="bankName" type="string">
+      Originator bank name
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="toWalletAccountNumber" type="string">
+  Destination wallet account number (for internal transfers)
+</ResponseField>
+
+<ResponseField name="narration" type="string">
+  Transaction narration
+</ResponseField>
+
+<ResponseField name="reference" type="string">
+  Transaction reference
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Transaction timestamp
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "transactionId": "txn_abc123",
+  "transactionType": "deposit",
+  "walletId": "wal_xyz789",
+  "accountNumber": "1234567890",
+  "status": "completed",
+  "amount": 50000,
+  "fee": 0,
+  "originator": {
+    "accountNumber": "0987654321",
+    "accountName": "JOHN DOE",
+    "bankName": "GTBank"
+  },
+  "narration": "Payment from John Doe",
+  "reference": "FP-20240115-001",
+  "createdAt": "2024-01-15T10:30:45Z"
+}
+```
+
+```json Withdrawal Response
+{
+  "transactionId": "txn_def456",
+  "transactionType": "withdrawal",
+  "walletId": "wal_xyz789",
+  "accountNumber": "1234567890",
+  "status": "completed",
+  "amount": 75000,
+  "fee": 50,
+  "beneficiary": {
+    "accountNumber": "1122334455",
+    "accountName": "JANE SMITH",
+    "bankName": "Zenith Bank"
+  },
+  "narration": "Payment to Jane Smith",
+  "reference": "FP-20240115-002",
+  "createdAt": "2024-01-15T14:20:30Z"
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "message": "Transaction not found",
+  "code": "TRANSACTION_NOT_FOUND"
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `TRANSACTION_NOT_FOUND` | Transaction with this ID does not exist |
+| `UNAUTHORIZED` | Invalid API key or insufficient permissions |
+
+<Note>
+  Store transaction details for reconciliation and audit purposes.
+</Note>
+
+<Tip>
+  Use this endpoint to verify specific transactions when needed.
+</Tip>

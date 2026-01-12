@@ -1,6 +1,6 @@
 ---
 title: 'Create Single Payout'
-api: 'POST https://api.fossapay.com/v1/payouts'
+api: 'POST https://api-staging.fossapay.com/v1/payouts'
 description: 'Send money to a bank account'
 ---
 
@@ -41,7 +41,7 @@ description: 'Send money to a bank account'
 ### Request Example
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/payouts \
+curl -X POST https://api-staging.fossapay.com/v1/payouts \
   -H "Authorization: Bearer fp_live_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{

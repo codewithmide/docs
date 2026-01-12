@@ -1,0 +1,54 @@
+---
+title: 'Create Crypto Wallet'
+api: 'POST https://api-staging.fossapay.com/v1/wallets/crypto/create'
+description: 'Create a new crypto wallet for a merchant'
+---
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+<ParamField body="network" type="string" required>
+  The blockchain network for the crypto wallet. Must be one of: `solana`, `evm`
+</ParamField>
+
+<ParamField body="customerId" type="string" required>
+  UUID of the customer for whom the wallet is being created
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/wallets/crypto/create \
+  -H "x-api-key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "network": "solana",
+    "customerId": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+```javascript
+const cryptoWallet = await client.cryptoWallets.create({
+  network: 'solana',
+  customerId: '550e8400-e29b-41d4-a716-446655440000'
+});
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "success": true,
+  "message": "Crypto wallet created successfully",
+  "data": {
+    "walletId": "user:u3d",
+    "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    "network": "solana"
+  }
+}
+```
+</ResponseExample>

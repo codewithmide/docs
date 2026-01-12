@@ -36,7 +36,7 @@ Fossapay provides two types of API keys:
 Include your secret key in the `Authorization` header of your API requests using the `Bearer` authentication scheme:
 
 ```bash
-curl https://api.fossapay.com/v1/virtual-accounts \
+curl https://api-staging.fossapay.com/v1/virtual-accounts \
   -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -H "Content-Type: application/json"
 ```
@@ -76,7 +76,7 @@ Every API request should include these headers:
 const axios = require('axios');
 
 const response = await axios.post(
-  'https://api.fossapay.com/v1/virtual-accounts',
+  'https://api-staging.fossapay.com/v1/virtual-accounts',
   {
     customer_name: 'John Doe',
     customer_email: 'john@example.com'
@@ -96,7 +96,7 @@ const response = await axios.post(
 To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, Fossapay will return the same response without processing the request again.
 
 ```bash
-curl https://api.fossapay.com/v1/payouts \
+curl https://api-staging.fossapay.com/v1/payouts \
   -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: payout-20240119-001" \
@@ -167,7 +167,7 @@ Common authentication errors:
 Test your authentication setup with this simple request:
 
 ```bash
-curl https://api.fossapay.com/v1/auth/test \
+curl https://api-staging.fossapay.com/v1/auth/test \
   -H "Authorization: Bearer YOUR_SECRET_KEY"
 ```
 

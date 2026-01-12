@@ -56,14 +56,24 @@
               "api-reference/customers/get-tier-status",
               "api-reference/customers/oauth"
             ]
-
-            },
+          },
           {
-            "group": "Collections",
+            "group": "Customers KYC",
             "pages": [
-              "api-reference/collections/create-virtual-account",
-              "api-reference/collections/get-virtual-account",
-              "api-reference/collections/list-transactions"
+              "api-reference/customers/kyc/verify-nin",
+              "api-reference/customers/kyc/verify-bvn",
+              "api-reference/customers/kyc/verify-address"
+            ]
+          },
+          {
+            "group": "Virtual Wallets",
+            "pages": [
+              "api-reference/virtual-account/create-wallet",
+              "api-reference/virtual-account/get-wallet",
+              "api-reference/virtual-account/get-wallet-by-account",
+              "api-reference/virtual-account/wallet-transactions",
+              "api-reference/virtual-account/wallet-transaction",
+              "api-reference/virtual-account/wallet-transfer"
             ]
           },
           {
@@ -75,11 +85,14 @@
             ]
           },
           {
-            "group": "Wallets",
+            "group": "Crypto Wallets",
             "pages": [
-              "api-reference/wallets/create-wallet",
-              "api-reference/wallets/get-balance",
-              "api-reference/wallets/wallet-transactions"
+              "api-reference/crypto-wallets/create-wallet",
+              "api-reference/crypto-wallets/get-balance",
+              "api-reference/crypto-wallets/get-wallet-by-id",
+              "api-reference/crypto-wallets/get-wallet-by-address",
+              "api-reference/crypto-wallets/wallet-transactions",
+              "api-reference/crypto-wallets/wallet-transaction"
             ]
           },
           {
@@ -157,3 +170,4 @@
     }
   }
 }
+

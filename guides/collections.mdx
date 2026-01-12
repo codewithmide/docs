@@ -5,7 +5,7 @@ description: 'Complete guide to accepting payments with Fossapay'
 
 ## Overview
 
-This guide walks you through accepting payments using Fossapay's Collections API. You'll learn how to create virtual accounts, receive payments, handle webhooks, and reconcile transactions.
+This guide walks you through accepting payments using Fossapay's Fiat Wallet API. You'll learn how to create fiat wallets, receive payments, handle webhooks, and reconcile transactions.
 
 ## Quick Start
 
@@ -461,7 +461,7 @@ async function handlePaymentReceived(payment) {
 ### Simulate Payment in Sandbox
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/sandbox/simulate-payment \
+curl -X POST https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{

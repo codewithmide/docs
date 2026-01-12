@@ -5,7 +5,7 @@ description: 'Start building with Fossapay in 10 minutes'
 
 ## Get Started with Fossapay
 
-This quickstart guide will have you making your first API call in minutes. We'll create a virtual account, simulate a payment, and handle the webhook notification.
+This quickstart guide will have you making your first API call in minutes. We'll create a fiat wallet, simulate a payment, and handle the webhook notification.
 
 ## Prerequisites
 
@@ -109,7 +109,7 @@ create_virtual_account()
 ```
 
 ```bash cURL
-curl -X POST https://api.fossapay.com/v1/virtual-accounts \
+curl -X POST https://api-staging.fossapay.com/v1/virtual-accounts \
   -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -190,7 +190,7 @@ simulate_payment('1234567890')
 ```
 
 ```bash cURL
-curl -X POST https://api.fossapay.com/v1/sandbox/simulate-payment \
+curl -X POST https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
   -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -239,7 +239,7 @@ app.post('/webhooks/fossapay', (req, res) => {
     console.log('Transaction ID:', data.transaction_id);
 
     // Credit user wallet, update database, send notification, etc.
-    creditUserWallet(data.metadata.user_id, data.amount);
+    creditUserWallet(data.metadata.customer_id, data.amount);
   }
 });
 
@@ -366,7 +366,7 @@ send_payout()
 ```
 
 ```bash cURL
-curl -X POST https://api.fossapay.com/v1/payouts \
+curl -X POST https://api-staging.fossapay.com/v1/payouts \
   -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{

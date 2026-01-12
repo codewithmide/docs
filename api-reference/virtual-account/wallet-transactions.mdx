@@ -1,0 +1,255 @@
+---
+title: 'Fetch Wallet Transactions'
+api: 'GET /api/v1/wallets/fiat/{walletId}/transactions'
+description: 'Retrieve all transactions for a wallet with pagination'
+---
+
+## Path Parameters
+
+<ParamField path="walletId" type="string" required>
+  The unique identifier of the wallet
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="page" type="number" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  Number of transactions per page (max 100)
+</ParamField>
+
+<ParamField query="transactionType" type="string">
+  Filter by transaction type: `deposit` or `withdrawal`
+</ParamField>
+
+<ParamField query="startDate" type="string">
+  Start date filter (YYYY-MM-DD format)
+</ParamField>
+
+<ParamField query="endDate" type="string">
+  End date filter (YYYY-MM-DD format)
+</ParamField>
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Request Example
+
+```bash
+curl "https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit" \
+  -H "x-api-key: fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const transactions = await client.wallets.getTransactions('wal_abc123xyz', {
+  page: 1,
+  limit: 10,
+  transactionType: 'deposit',
+  startDate: '2024-01-01',
+  endDate: '2024-01-31'
+});
+```
+
+```python
+transactions = client.wallets.get_transactions(
+    wallet_id='wal_abc123xyz',
+    page=1,
+    limit=10,
+    transaction_type='deposit',
+    start_date='2024-01-01',
+    end_date='2024-01-31'
+)
+```
+
+## Response
+
+<ResponseField name="transactions" type="array">
+  <Expandable title="transaction object">
+    <ResponseField name="transactionId" type="string">
+      Unique transaction identifier
+    </ResponseField>
+
+    <ResponseField name="transactionType" type="string">
+      Transaction type: `deposit` or `withdrawal`
+    </ResponseField>
+
+    <ResponseField name="walletId" type="string">
+      Wallet ID (virtual account ID)
+    </ResponseField>
+
+    <ResponseField name="accountNumber" type="string">
+      Virtual account number
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      Transaction status
+    </ResponseField>
+
+    <ResponseField name="amount" type="number">
+      Transaction amount
+    </ResponseField>
+
+    <ResponseField name="fee" type="number">
+      Transaction fee
+    </ResponseField>
+
+    <ResponseField name="beneficiary" type="object">
+      <Expandable title="properties">
+        <ResponseField name="accountNumber" type="string">
+          Beneficiary account number (for withdrawals)
+        </ResponseField>
+
+        <ResponseField name="accountName" type="string">
+          Beneficiary account name
+        </ResponseField>
+
+        <ResponseField name="bankName" type="string">
+          Beneficiary bank name
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="originator" type="object">
+      <Expandable title="properties">
+        <ResponseField name="accountNumber" type="string">
+          Originator account number (for deposits)
+        </ResponseField>
+
+        <ResponseField name="accountName" type="string">
+          Originator account name
+        </ResponseField>
+
+        <ResponseField name="bankName" type="string">
+          Originator bank name
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="toWalletAccountNumber" type="string">
+      Destination wallet account number (for internal transfers)
+    </ResponseField>
+
+    <ResponseField name="narration" type="string">
+      Transaction narration
+    </ResponseField>
+
+    <ResponseField name="reference" type="string">
+      Transaction reference
+    </ResponseField>
+
+    <ResponseField name="createdAt" type="string">
+      Transaction timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of transactions
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number
+</ResponseField>
+
+<ResponseField name="limit" type="number">
+  Transactions per page
+</ResponseField>
+
+<ResponseField name="totalPages" type="number">
+  Total number of pages
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "transactions": [
+    {
+      "transactionId": "txn_abc123",
+      "transactionType": "deposit",
+      "walletId": "wal_xyz789",
+      "accountNumber": "1234567890",
+      "status": "completed",
+      "amount": 50000,
+      "fee": 0,
+      "originator": {
+        "accountNumber": "0987654321",
+        "accountName": "JOHN DOE",
+        "bankName": "GTBank"
+      },
+      "narration": "Payment from John Doe",
+      "reference": "FP-20240115-001",
+      "createdAt": "2024-01-15T10:30:45Z"
+    },
+    {
+      "transactionId": "txn_def456",
+      "transactionType": "withdrawal",
+      "walletId": "wal_xyz789",
+      "accountNumber": "1234567890",
+      "status": "completed",
+      "amount": 75000,
+      "fee": 50,
+      "beneficiary": {
+        "accountNumber": "1122334455",
+        "accountName": "JANE SMITH",
+        "bankName": "Zenith Bank"
+      },
+      "narration": "Payment to Jane Smith",
+      "reference": "FP-20240115-002",
+      "createdAt": "2024-01-15T14:20:30Z"
+    }
+  ],
+  "total": 125,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 13
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "message": "Wallet not found",
+  "code": "WALLET_NOT_FOUND"
+}
+```
+</ResponseExample>
+
+## Pagination Example
+
+```javascript
+// Get all transactions with pagination
+let page = 1;
+let allTransactions = [];
+
+while (true) {
+  const response = await client.wallets.getTransactions('wal_abc123xyz', {
+    page: page,
+    limit: 50
+  });
+
+  allTransactions.push(...response.transactions);
+
+  if (page >= response.totalPages) {
+    break;
+  }
+
+  page++;
+}
+
+console.log(`Retrieved ${allTransactions.length} transactions`);
+```
+
+<Note>
+  For better performance, use specific date ranges and transaction type filters when possible.
+</Note>
+
+<Tip>
+  Store transaction IDs for reconciliation and audit purposes.
+</Tip>

@@ -1,0 +1,78 @@
+---
+title: 'Get Wallet by Address'
+api: 'GET https://api.fossapay.com/v1/wallets/crypto/address/{address}'
+description: 'Retrieve crypto wallet details by wallet address'
+---
+
+## Path Parameters
+
+<ParamField path="address" type="string" required>
+  Crypto wallet address (e.g., blockchain address)
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Request Example
+
+```bash
+curl -X GET https://api.fossapay.com/v1/wallets/crypto/address/CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2 \
+  -H "x-api-key: your_api_key_here"
+```
+
+```javascript
+const wallet = await client.cryptoWallets.getByAddress('CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2');
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Crypto wallet retrieved successfully",
+  "data": [
+    {
+      "address": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+      "network": "solana",
+      "tokens": {
+        "usdc": {
+          "amount": "0",
+          "rawAmount": "0"
+        },
+        "usdt": {
+          "amount": "0",
+          "rawAmount": "0"
+        }
+      }
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Error Responses
+
+<ErrorResponse code="400">
+```json Bad Request
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Invalid wallet address format"
+}
+```
+</ErrorResponse>
+
+<ErrorResponse code="404">
+```json Not Found
+{
+  "status": "error",
+  "statusCode": 404,
+  "message": "Wallet not found"
+}
+```
+</ErrorResponse>

@@ -1,0 +1,125 @@
+---
+title: 'Get Wallet by Account Number'
+api: 'GET /api/v1/wallets/fiat/account/{accountNumber}'
+description: 'Retrieve wallet details by account number'
+---
+
+## Path Parameters
+
+<ParamField path="accountNumber" type="string" required>
+  The account number of the wallet
+</ParamField>
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Request Example
+
+```bash
+curl https://api-staging.fossapay.com/api/v1/wallets/fiat/account/1234567890 \
+  -H "x-api-key: fp_live_sk_xxxxxxxx"
+```
+
+```javascript
+const wallet = await client.wallets.getByAccountNumber('1234567890');
+```
+
+```python
+wallet = client.wallets.get_by_account_number('1234567890')
+```
+
+## Response
+
+<ResponseField name="status" type="boolean">
+  Response status
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Unique identifier for the wallet
+    </ResponseField>
+
+    <ResponseField name="customerId" type="string">
+      Customer ID associated with the wallet
+    </ResponseField>
+
+    <ResponseField name="availableBalance" type="string">
+      Available balance in the wallet
+    </ResponseField>
+
+    <ResponseField name="ledgerBalance" type="string">
+      Ledger balance in the wallet
+    </ResponseField>
+
+    <ResponseField name="walletName" type="string">
+      Name of the wallet
+    </ResponseField>
+
+    <ResponseField name="customerType" type="string">
+      Type of customer
+    </ResponseField>
+
+    <ResponseField name="virtualAccount" type="object">
+      <Expandable title="properties">
+        <ResponseField name="accountNumber" type="string">
+          Virtual account number
+        </ResponseField>
+
+        <ResponseField name="bankCode" type="string">
+          Bank code
+        </ResponseField>
+
+        <ResponseField name="bankName" type="string">
+          Bank name
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "message": "wallet retrieved successfully",
+  "data": {
+    "id": "wal_abc123xyz",
+    "customerId": "cus_123456789",
+    "availableBalance": "10000.00",
+    "ledgerBalance": "10000.00",
+    "walletName": "Main Wallet",
+    "customerType": "individual",
+    "virtualAccount": {
+      "accountNumber": "1234567890",
+      "bankCode": "035",
+      "bankName": "Wema Bank"
+    }
+  }
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "message": "Wallet not found",
+  "code": "WALLET_NOT_FOUND"
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `WALLET_NOT_FOUND` | Wallet with this account number does not exist |
+| `UNAUTHORIZED` | Invalid API key or insufficient permissions |

@@ -27,7 +27,7 @@ The Fossapay sandbox environment allows you to test your integration without pro
 | Bank Transfers | Simulated | Real |
 | Webhooks | Fired | Fired |
 | Rate Limits | Same | Same |
-| Base URL | `https://api.fossapay.com/v1` | `https://api.fossapay.com/v1` |
+| Base URL | `https://api-staging.fossapay.com/v1` | `https://api-staging.fossapay.com/v1` |
 
 <Note>
   Both environments use the same base URL. The environment is determined by your API key (test vs live).
@@ -40,7 +40,7 @@ The Fossapay sandbox environment allows you to test your integration without pro
 In sandbox mode, you can simulate incoming payments to virtual accounts:
 
 ```bash
-curl https://api.fossapay.com/v1/sandbox/simulate-payment \
+curl https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -83,7 +83,7 @@ Control payout outcomes in sandbox using special account numbers:
 **Example:**
 
 ```bash
-curl https://api.fossapay.com/v1/payouts \
+curl https://api-staging.fossapay.com/v1/payouts \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -151,7 +151,7 @@ Webhooks work the same way in sandbox as in production:
 
 ```bash
 # Configure webhook URL
-curl https://api.fossapay.com/v1/settings/webhooks \
+curl https://api-staging.fossapay.com/v1/settings/webhooks \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -X PUT \
@@ -176,7 +176,7 @@ curl https://api.fossapay.com/v1/settings/webhooks \
 Sandbox data is automatically cleared every 30 days. To manually reset your sandbox:
 
 ```bash
-curl https://api.fossapay.com/v1/sandbox/reset \
+curl https://api-staging.fossapay.com/v1/sandbox/reset \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -X POST
 ```
