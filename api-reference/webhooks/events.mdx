@@ -3,154 +3,203 @@ title: 'Webhook Events'
 description: 'Complete list of webhook events'
 ---
 
-## Collections Events
+## Deposit Events
 
-### payment.received
+### deposit.completed
 
-Fired when a payment is received to a virtual account.
+Fired when a deposit is completed successfully.
+
+#### Crypto Deposit
 
 ```json
 {
-  "event": "payment.received",
+  "event": "deposit.completed",
   "event_id": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
     "transaction_id": "txn_001",
-    "virtual_account_number": "1234567890",
-    "amount": 50000,
-    "currency": "NGN",
-    "sender_name": "John Doe",
-    "sender_account": "0987654321",
-    "sender_bank": "GTBank",
-    "reference": "FP-20240115-001",
-    "metadata": {
-      "customer_id": "cus_123"
-    }
+    "customer_id": "cus_123",
+    "sender": {
+      "address": "0x123...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0x456...",
+      "chain": "Ethereum"
+    },
+    "amount": 1000000,
+    "currency": "USDT",
+    "reference": "dep-20240115-001",
+    "status": "completed",
+    "transaction_type": "deposit",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0x789...",
+    "explorer_link": "https://etherscan.io/tx/0x789...",
+    "timestamp": "2024-01-15T10:30:40Z"
   }
 }
 ```
 
-### payment.reversed
-
-Fired when a payment is reversed.
+#### Fiat Deposit
 
 ```json
 {
-  "event": "payment.reversed",
+  "event": "deposit.completed",
   "event_id": "evt_def456",
   "timestamp": "2024-01-15T11:00:00Z",
   "data": {
-    "transaction_id": "txn_001",
+    "transaction_id": "txn_002",
+    "customer_id": "cus_456",
+    "sender": {
+      "account_name": "John Doe",
+      "account_number": "0987654321",
+      "bank_name": "GTBank"
+    },
+    "recipient": {
+      "account_name": "Jane Smith",
+      "account_number": "0123456789",
+      "bank_name": "GTBank"
+    },
     "amount": 50000,
-    "reason": "Bank reversal"
+    "currency": "NGN",
+    "reference": "dep-20240115-002",
+    "status": "completed",
+    "transaction_type": "deposit",
+    "notes": "Bank transfer deposit",
+    "timestamp": "2024-01-15T11:00:00Z"
   }
 }
 ```
 
-### virtual_account.created
+## Withdrawal Events
 
-Fired when a new virtual account is created.
+### withdrawal.completed
 
-## Payout Events
-
-### payout.pending
-
-Fired when a payout is initiated.
-
-### payout.processing
-
-Fired when a payout is being processed.
-
-### payout.completed
-
-Fired when a payout completes successfully.
+Fired when a withdrawal is completed successfully.
 
 ```json
 {
-  "event": "payout.completed",
+  "event": "withdrawal.completed",
   "event_id": "evt_xyz789",
+  "timestamp": "2024-01-15T11:45:23Z",
   "data": {
-    "payout_id": "pay_001",
+    "transaction_id": "txn_003",
+    "customer_id": "cus_789",
+    "recipient": {
+      "account_name": "Jane Smith",
+      "account_number": "0123456789",
+      "bank_name": "GTBank"
+    },
     "amount": 25000,
-    "account_number": "0123456789",
-    "bank_name": "GTBank",
-    "reference": "payout-001",
-    "completed_at": "2024-01-15T11:05:23Z"
+    "currency": "NGN",
+    "reference": "wth-20240115-001",
+    "status": "completed",
+    "transaction_type": "withdrawal",
+    "timestamp": "2024-01-15T11:45:20Z"
   }
 }
 ```
 
-### payout.failed
+## Transfer Events
 
-Fired when a payout fails.
+### transfer.completed
+
+Fired when a transfer is completed successfully.
 
 ```json
 {
-  "event": "payout.failed",
-  "event_id": "evt_fail123",
+  "event": "transfer.completed",
+  "event_id": "evt_transfer1",
+  "timestamp": "2024-01-15T12:30:00Z",
   "data": {
-    "payout_id": "pay_002",
-    "amount": 25000,
-    "failure_reason": "Invalid account number",
-    "refunded": true
+    "transaction_id": "txn_004",
+    "customer_id": "cus_123",
+    "sender": {
+      "address": "0x123...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0x456...",
+      "chain": "Ethereum"
+    },
+    "amount": 500000,
+    "currency": "USDT",
+    "reference": "trf-20240115-001",
+    "status": "completed",
+    "transaction_type": "transfer",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0xabc...",
+    "timestamp": "2024-01-15T12:30:00Z"
+  }
+}
+```
+
+### transfer.failed
+
+Fired when a transfer fails.
+
+```json
+{
+  "event": "transfer.failed",
+  "event_id": "evt_transfer2",
+  "timestamp": "2024-01-15T13:15:00Z",
+  "data": {
+    "transaction_id": "txn_005",
+    "customer_id": "cus_456",
+    "sender": {
+      "address": "0x789...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0xabc...",
+      "chain": "Ethereum"
+    },
+    "amount": 300000,
+    "currency": "USDT",
+    "reference": "trf-20240115-002",
+    "status": "failed",
+    "transaction_type": "transfer",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0xdef...",
+    "timestamp": "2024-01-15T13:15:00Z"
   }
 }
 ```
 
 ## Wallet Events
 
-### wallet.credited
+### wallet.balance.updated
 
-Fired when a wallet is credited.
-
-### wallet.debited
-
-Fired when a wallet is debited.
-
-### wallet.frozen
-
-Fired when a wallet is frozen.
-
-### wallet.unfrozen
-
-Fired when a wallet is unfrozen.
-
-## Settlement Events
-
-### settlement.pending
-
-Fired when a settlement is initiated.
-
-### settlement.completed
-
-Fired when a settlement completes.
+Fired when a wallet balance is updated.
 
 ```json
 {
-  "event": "settlement.completed",
+  "event": "wallet.balance.updated",
+  "event_id": "evt_balance1",
+  "timestamp": "2024-01-15T14:00:00Z",
   "data": {
-    "settlement_id": "stl_abc123",
-    "amount": 500000,
-    "net_amount": 499950,
-    "fee": 50,
-    "completed_at": "2024-01-15T18:05:23Z"
+    "from_account": {
+      "id": "acc_001",
+      "account_number": "0123456789",
+      "account_name": "Main Wallet",
+      "bank_name": "GTBank",
+      "customer_id": "cus_123"
+    },
+    "to_account": {
+      "id": "acc_002",
+      "account_number": "0987654321",
+      "account_name": "Savings Wallet",
+      "bank_name": "GTBank",
+      "customer_id": "cus_123"
+    },
+    "amount": 25000,
+    "currency": "NGN",
+    "reference": "bal-20240115-001",
+    "narration": "Transfer between accounts",
+    "timestamp": "2024-01-15T14:00:00Z"
   }
 }
 ```
-
-### settlement.failed
-
-Fired when a settlement fails.
-
-## KYC Events
-
-### kyc.verified
-
-Fired when KYC verification succeeds.
-
-### kyc.failed
-
-Fired when KYC verification fails.
 
 ## Example Handler
 
@@ -161,20 +210,27 @@ app.post('/webhooks/fossapay', async (req, res) => {
   res.status(200).send('OK');
 
   switch (event) {
-    case 'payment.received':
-      await handlePaymentReceived(data);
+    case 'deposit.completed':
+      await handleDepositCompleted(data);
       break;
 
-    case 'payout.completed':
-      await handlePayoutCompleted(data);
+    case 'withdrawal.completed':
+      await handleWithdrawalCompleted(data);
       break;
 
-    case 'wallet.credited':
-      await handleWalletCredited(data);
+    case 'transfer.completed':
+      await handleTransferCompleted(data);
+      break;
+
+    case 'transfer.failed':
+      await handleTransferFailed(data);
+      break;
+
+    case 'wallet.balance.updated':
+      await handleWalletBalanceUpdated(data);
       break;
 
     default:
       console.log('Unhandled event:', event);
   }
 });
-```

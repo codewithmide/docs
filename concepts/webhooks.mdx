@@ -30,40 +30,30 @@ Webhooks are HTTP callbacks that Fossapay sends to your server when events occur
 
 ## Webhook Events
 
-### Collections Events
+### Deposit Events
 
 | Event | Description | When it fires |
 |-------|-------------|---------------|
-| `payment.received` | Payment credited to virtual account | When a customer transfers money |
-| `payment.reversed` | Payment was reversed | Bank reversal or error |
-| `virtual_account.created` | New virtual account created | After successful creation |
+| `deposit.completed` | Deposit completed successfully | When a deposit is successfully processed |
 
-### Payouts Events
+### Withdrawal Events
 
 | Event | Description | When it fires |
 |-------|-------------|---------------|
-| `payout.pending` | Payout initiated | When payout is created |
-| `payout.processing` | Payout being processed | Sent to beneficiary bank |
-| `payout.completed` | Payout successful | Confirmed by bank |
-| `payout.failed` | Payout failed | Bank rejected or error |
+| `withdrawal.completed` | Withdrawal completed successfully | When a withdrawal is successfully processed |
+
+### Transfer Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `transfer.completed` | Transfer completed successfully | When a transfer is successfully processed |
+| `transfer.failed` | Transfer failed | When a transfer fails to process |
 
 ### Wallet Events
 
 | Event | Description | When it fires |
 |-------|-------------|---------------|
-| `wallet.credited` | Wallet balance increased | Successful credit operation |
-| `wallet.debited` | Wallet balance decreased | Successful debit operation |
-| `wallet.frozen` | Wallet frozen | Admin or automated freeze |
-| `wallet.unfrozen` | Wallet unfrozen | Admin unfreeze |
-
-### Settlement Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `settlement.pending` | Settlement initiated | Settlement scheduled |
-| `settlement.processing` | Settlement in progress | Being processed |
-| `settlement.completed` | Settlement successful | Funds transferred |
-| `settlement.failed` | Settlement failed | Transfer failed |
+| `wallet.balance.updated` | Wallet balance updated | When a wallet balance is updated |
 
 ## Setting Up Webhooks
 
@@ -82,9 +72,11 @@ Set your webhook endpoint in the dashboard or via API:
 await fossapay.webhooks.configure({
   url: 'https://your-app.com/webhooks/fossapay',
   events: [
-    'payment.received',
-    'payout.completed',
-    'wallet.credited'
+    'deposit.completed',
+    'withdrawal.completed',
+    'transfer.completed',
+    'transfer.failed',
+    'wallet.balance.updated'
   ],
   secret: 'your-webhook-secret' // Optional: for signature verification
 });
@@ -108,26 +100,29 @@ All webhooks follow this structure:
 
 ```json
 {
-  "event": "payment.received",
+  "event": "deposit.completed",
   "event_id": "evt_abc123xyz",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
     "transaction_id": "txn_001",
-    "virtual_account_number": "1234567890",
-    "amount": 50000,
-    "currency": "NGN",
-    "sender_name": "John Doe",
-    "sender_account": "0987654321",
-    "sender_bank": "GTBank",
-    "reference": "FP-20240115-001",
-    "narration": "Payment from John Doe",
-    "settled": true,
-    "settlement_id": "stl_xyz789",
-    "metadata": {
-      "customer_id": "cus_123",
-      "order_id": "ord_456"
+    "customer_id": "cus_123",
+    "sender": {
+      "address": "0x123...",
+      "chain": "Ethereum"
     },
-    "created_at": "2024-01-15T10:30:40Z"
+    "recipient": {
+      "address": "0x456...",
+      "chain": "Ethereum"
+    },
+    "amount": 1000000,
+    "currency": "USDT",
+    "reference": "dep-20240115-001",
+    "status": "completed",
+    "transaction_type": "deposit",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0x789...",
+    "explorer_link": "https://etherscan.io/tx/0x789...",
+    "timestamp": "2024-01-15T10:30:40Z"
   },
   "business_id": "bus_your_business"
 }
@@ -147,7 +142,8 @@ app.use(express.json());
 app.post('/webhooks/fossapay', async (req, res) => {
   // 1. Verify webhook signature
   const signature = req.headers['x-fossapay-signature'];
-  if (!verifySignature(req.body, signature)) {
+  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
+  if (!verifySignature(req.body, signature, secret)) {
     return res.status(401).send('Invalid signature');
   }
 
@@ -164,16 +160,24 @@ async function processWebhook(payload) {
   const { event, data } = payload;
 
   switch (event) {
-    case 'payment.received':
-      await handlePaymentReceived(data);
+    case 'deposit.completed':
+      await handleDepositCompleted(data);
       break;
 
-    case 'payout.completed':
-      await handlePayoutCompleted(data);
+    case 'withdrawal.completed':
+      await handleWithdrawalCompleted(data);
       break;
 
-    case 'wallet.credited':
-      await handleWalletCredited(data);
+    case 'transfer.completed':
+      await handleTransferCompleted(data);
+      break;
+
+    case 'transfer.failed':
+      await handleTransferFailed(data);
+      break;
+
+    case 'wallet.balance.updated':
+      await handleWalletBalanceUpdated(data);
       break;
 
     default:
@@ -181,36 +185,38 @@ async function processWebhook(payload) {
   }
 }
 
-async function handlePaymentReceived(data) {
+async function handleDepositCompleted(data) {
   // Credit customer wallet
   await db.transactions.create({
     id: data.transaction_id,
-    customer_id: data.metadata.customer_id,
+    customer_id: data.customer_id,
     amount: data.amount,
     type: 'credit',
     status: 'completed'
   });
 
   await db.wallets.increment({
-    customer_id: data.metadata.customer_id,
+    customer_id: data.customer_id,
     amount: data.amount
   });
 
   // Notify customer
-  await sendNotification(data.metadata.customer_id, {
-    title: 'Payment Received',
-    message: `Your wallet has been credited with ₦${data.amount}`
+  await sendNotification(data.customer_id, {
+    title: 'Deposit Received',
+    message: `Your wallet has been credited with ${data.amount} ${data.currency}`
   });
 }
 
-function verifySignature(payload, signature) {
-  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
+function verifySignature(payload, signature, secret) {
   const hash = crypto
     .createHmac('sha256', secret)
     .update(JSON.stringify(payload))
     .digest('hex');
 
-  return hash === signature;
+  return crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(hash, 'hex')
+  );
 }
 
 app.listen(3000);
@@ -230,7 +236,8 @@ app = Flask(__name__)
 def handle_webhook():
     # Verify signature
     signature = request.headers.get('X-Fossapay-Signature')
-    if not verify_signature(request.data, signature):
+    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
+    if not verify_signature(request.data, signature, secret):
         return 'Invalid signature', 401
 
     # Respond quickly
@@ -241,8 +248,7 @@ def handle_webhook():
 
     return 'Webhook received', 200
 
-def verify_signature(payload, signature):
-    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
+def verify_signature(payload, signature, secret):
     hash = hmac.new(
         secret.encode(),
         payload,
@@ -255,10 +261,16 @@ def process_webhook(payload):
     event = payload['event']
     data = payload['data']
 
-    if event == 'payment.received':
-        handle_payment_received(data)
-    elif event == 'payout.completed':
-        handle_payout_completed(data)
+    if event == 'deposit.completed':
+        handle_deposit_completed(data)
+    elif event == 'withdrawal.completed':
+        handle_withdrawal_completed(data)
+    elif event == 'transfer.completed':
+        handle_transfer_completed(data)
+    elif event == 'transfer.failed':
+        handle_transfer_failed(data)
+    elif event == 'wallet.balance.updated':
+        handle_wallet_balance_updated(data)
 ```
 
 ## Security
@@ -320,7 +332,7 @@ After 5 failed attempts, the webhook is marked as failed and no more retries occ
 Webhooks may be delivered more than once. Implement idempotent handling:
 
 ```javascript
-async function handlePaymentReceived(data) {
+async function handleDepositCompleted(data) {
   const existingTransaction = await db.transactions.findOne({
     id: data.transaction_id
   });
@@ -330,7 +342,7 @@ async function handlePaymentReceived(data) {
     return; // Skip duplicate
   }
 
-  // Process payment
+  // Process deposit
   await db.transactions.create({
     id: data.transaction_id,
     // ... other fields
@@ -359,9 +371,10 @@ curl -X POST https://api-staging.fossapay.com/v1/webhooks/simulate \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "event": "payment.received",
-    "virtual_account_number": "1234567890",
-    "amount": 50000
+    "event": "deposit.completed",
+    "customer_id": "cus_123",
+    "amount": 1000000,
+    "currency": "USDT"
   }'
 ```
 
@@ -389,7 +402,7 @@ View webhook delivery logs in your dashboard:
   <Accordion title="Verify Signatures">
     Never trust webhooks without signature verification:
     ```javascript
-    if (!verifySignature(payload, signature)) {
+    if (!verifySignature(payload, signature, secret)) {
       return res.status(401).send('Unauthorized');
     }
     ```
@@ -428,47 +441,180 @@ View webhook delivery logs in your dashboard:
 
 ## Webhook Payload Examples
 
-### Payment Received
+### Deposit Completed (Crypto)
 
 ```json
 {
-  "event": "payment.received",
+  "event": "deposit.completed",
   "event_id": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
     "transaction_id": "txn_001",
-    "virtual_account_number": "1234567890",
-    "amount": 50000,
-    "currency": "NGN",
-    "sender_name": "John Doe",
-    "sender_account": "0987654321",
-    "sender_bank": "GTBank",
-    "reference": "FP-20240115-001",
-    "metadata": {
-      "customer_id": "cus_123"
-    }
+    "customer_id": "cus_123",
+    "sender": {
+      "address": "0x123...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0x456...",
+      "chain": "Ethereum"
+    },
+    "amount": 1000000,
+    "currency": "USDT",
+    "reference": "dep-20240115-001",
+    "status": "completed",
+    "transaction_type": "deposit",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0x789...",
+    "explorer_link": "https://etherscan.io/tx/0x789...",
+    "timestamp": "2024-01-15T10:30:40Z"
   }
 }
 ```
 
-### Payout Completed
+### Deposit Completed (Fiat)
 
 ```json
 {
-  "event": "payout.completed",
+  "event": "deposit.completed",
+  "event_id": "evt_def456",
+  "timestamp": "2024-01-15T11:00:00Z",
+  "data": {
+    "transaction_id": "txn_002",
+    "customer_id": "cus_456",
+    "sender": {
+      "account_name": "John Doe",
+      "account_number": "0987654321",
+      "bank_name": "GTBank"
+    },
+    "recipient": {
+      "account_name": "Jane Smith",
+      "account_number": "0123456789",
+      "bank_name": "GTBank"
+    },
+    "amount": 50000,
+    "currency": "NGN",
+    "reference": "dep-20240115-002",
+    "status": "completed",
+    "transaction_type": "deposit",
+    "notes": "Bank transfer deposit",
+    "timestamp": "2024-01-15T11:00:00Z"
+  }
+}
+```
+
+### Withdrawal Completed
+
+```json
+{
+  "event": "withdrawal.completed",
   "event_id": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
-    "payout_id": "pay_001",
+    "transaction_id": "txn_003",
+    "customer_id": "cus_789",
+    "recipient": {
+      "account_name": "Jane Smith",
+      "account_number": "0123456789",
+      "bank_name": "GTBank"
+    },
     "amount": 25000,
     "currency": "NGN",
-    "account_number": "0123456789",
-    "account_name": "Jane Smith",
-    "bank_code": "058",
-    "bank_name": "GTBank",
-    "reference": "withdraw-001",
+    "reference": "wth-20240115-001",
     "status": "completed",
-    "completed_at": "2024-01-15T11:45:20Z"
+    "transaction_type": "withdrawal",
+    "timestamp": "2024-01-15T11:45:20Z"
+  }
+}
+```
+
+### Transfer Completed
+
+```json
+{
+  "event": "transfer.completed",
+  "event_id": "evt_transfer1",
+  "timestamp": "2024-01-15T12:30:00Z",
+  "data": {
+    "transaction_id": "txn_004",
+    "customer_id": "cus_123",
+    "sender": {
+      "address": "0x123...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0x456...",
+      "chain": "Ethereum"
+    },
+    "amount": 500000,
+    "currency": "USDT",
+    "reference": "trf-20240115-001",
+    "status": "completed",
+    "transaction_type": "transfer",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0xabc...",
+    "timestamp": "2024-01-15T12:30:00Z"
+  }
+}
+```
+
+### Transfer Failed
+
+```json
+{
+  "event": "transfer.failed",
+  "event_id": "evt_transfer2",
+  "timestamp": "2024-01-15T13:15:00Z",
+  "data": {
+    "transaction_id": "txn_005",
+    "customer_id": "cus_456",
+    "sender": {
+      "address": "0x789...",
+      "chain": "Ethereum"
+    },
+    "recipient": {
+      "address": "0xabc...",
+      "chain": "Ethereum"
+    },
+    "amount": 300000,
+    "currency": "USDT",
+    "reference": "trf-20240115-002",
+    "status": "failed",
+    "transaction_type": "transfer",
+    "blockchain": "Ethereum",
+    "transaction_hash": "0xdef...",
+    "timestamp": "2024-01-15T13:15:00Z"
+  }
+}
+```
+
+### Wallet Balance Updated
+
+```json
+{
+  "event": "wallet.balance.updated",
+  "event_id": "evt_balance1",
+  "timestamp": "2024-01-15T14:00:00Z",
+  "data": {
+    "from_account": {
+      "id": "acc_001",
+      "account_number": "0123456789",
+      "account_name": "Main Wallet",
+      "bank_name": "GTBank",
+      "customer_id": "cus_123"
+    },
+    "to_account": {
+      "id": "acc_002",
+      "account_number": "0987654321",
+      "account_name": "Savings Wallet",
+      "bank_name": "GTBank",
+      "customer_id": "cus_123"
+    },
+    "amount": 25000,
+    "currency": "NGN",
+    "reference": "bal-20240115-001",
+    "narration": "Transfer between accounts",
+    "timestamp": "2024-01-15T14:00:00Z"
   }
 }
 ```

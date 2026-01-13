@@ -13,7 +13,7 @@ All webhooks follow this format:
 
 ```json
 {
-  "event": "payment.received",
+  "event": "deposit.completed",
   "event_id": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
@@ -34,9 +34,11 @@ curl -X PUT https://api-staging.fossapay.com/v1/settings/webhooks \
   -d '{
     "url": "https://your-app.com/webhooks/fossapay",
     "events": [
-      "payment.received",
-      "payout.completed",
-      "wallet.credited"
+      "deposit.completed",
+      "withdrawal.completed",
+      "transfer.completed",
+      "transfer.failed",
+      "wallet.balance.updated"
     ],
     "secret": "your-webhook-secret"
   }'
