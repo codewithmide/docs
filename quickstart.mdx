@@ -1,17 +1,17 @@
 ---
 title: 'Quickstart'
-description: 'Start building with Fossapay in 10 minutes'
+description: 'Start building with FossaPay in 10 minutes'
 ---
 
-## Get Started with Fossapay
+## Get Started with FossaPay
 
 This quickstart guide will have you making your first API call in minutes. We'll create a fiat wallet, simulate a payment, and handle the webhook notification.
 
 ## Prerequisites
 
 Before you begin, make sure you have:
-- A Fossapay account ([Sign up here](https://dashboard.fossapay.com/signup))
-- Your API keys from the [dashboard](https://dashboard.fossapay.com/settings/api-keys)
+- A FossaPay account ([Sign up here](https://dashboard.fossapay.com/signup))
+- Your API keys from the [dashboard](https://dashboard.fossapay.com/settings/settings?tab=api-keys)
 - Node.js installed (or your preferred programming language)
 
 ## Step 1: Get Your API Keys
@@ -87,7 +87,7 @@ curl -X POST https://api-staging.fossapay.com/api/v1/sandbox/simulate-payment \
 
 ## Step 5: Handle Webhook Notification
 
-When a payment is received, Fossapay sends a webhook to your server. Here's how to handle it:
+When a payment is received, FossaPay sends a webhook to your server. Here's how to handle it:
 
 <CodeGroup>
 
@@ -151,7 +151,7 @@ app = Flask(__name__)
 @app.route('/webhooks/fossapay', methods=['POST'])
 def handle_webhook():
     # 1. Verify signature
-    signature = request.headers.get('X-Fossapay-Signature')
+    signature = request.headers.get('X-FossaPay-Signature')
     is_valid = verify_signature(request.data, signature)
 
     if not is_valid:
@@ -253,16 +253,16 @@ app.listen(3000);
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Authentication" icon="lock" href="/authentication">
+  <Card color="#0080FF" title="Authentication" icon="lock" href="/authentication">
     Learn about API authentication and security
   </Card>
-  <Card title="Collections Guide" icon="book" href="/guides/collections">
+  <Card color="#0080FF" title="Collections Guide" icon="book" href="/guides/collections">
     Complete guide to accepting payments
   </Card>
-  <Card title="Payouts Guide" icon="money-bill-transfer" href="/guides/payouts">
+  <Card color="#0080FF" title="Payouts Guide" icon="money-bill-transfer" href="/guides/payouts">
     Send money to bank accounts
   </Card>
-  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+  <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
     Handle real-time notifications
   </Card>
 </CardGroup>
@@ -283,29 +283,29 @@ Before going to production, make sure you've tested:
 
 When you're ready for production:
 
-1. **Complete business verification** in the [dashboard](https://dashboard.fossapay.com/settings/verification)
+1. **Complete business verification** in the [dashboard](https://dashboard.fossapay.com)
 2. **Switch to live API keys** (starts with `fp_live_sk_`)
 3. **Update webhook URL** to your production server
 4. **Test with small amounts** before full launch
 5. **Monitor the dashboard** for any issues
 
-<Card title="Get Live API Keys" icon="rocket" href="https://dashboard.fossapay.com/settings/verification">
+<Card color="#0080FF" title="Get Live API Keys" icon="rocket" href="https://dashboard.fossapay.com/settings?tab=api-keys">
   Complete verification to get live access
 </Card>
 
 ## Need Help?
 
 <CardGroup cols={2}>
-  <Card title="Join Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
-    Get help from the Fossapay community
+  <Card color="#0080FF" title="Join Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
+    Get help from the FossaPay community
   </Card>
-  <Card title="Contact Support" icon="headset" href="mailto:support@fossapay.com">
+  <Card color="#0080FF" title="Contact Support" icon="headset" href="mailto:support@fossapay.com">
     Email our support team
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/collections/create-virtual-account">
+  <Card color="#0080FF" title="API Reference" icon="code" href="/api-reference/">
     Explore the full API documentation
   </Card>
-  <Card title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
+  <Card color="#0080FF" title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
     View your transactions and settings
   </Card>
 </CardGroup>

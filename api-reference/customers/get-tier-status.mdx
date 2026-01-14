@@ -4,9 +4,6 @@ api: 'GET https://api-staging.fossapay.com/api/v1/customers/{customerId}/tier-st
 description: 'Retrieve the tier status and limits for a specific customer'
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 ## Overview
 
 Retrieve detailed tier information and usage limits for a specific customer.
@@ -101,15 +98,15 @@ Retrieve detailed tier information and usage limits for a specific customer.
 ## Example
 
 <Tabs>
-<TabItem value="curl" label="cURL">
+<Tab title="cURL">
 
 ```bash
 curl -X GET https://api-staging.fossapay.com/api/v1/customers/fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df/tier-status \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
-</TabItem>
-<TabItem value="nodejs" label="Node.js">
+</Tab>
+<Tab title="Node.js">
 
 ```javascript
 const customerId = 'fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df';
@@ -124,7 +121,7 @@ const tierStatus = await response.json();
 console.log(tierStatus);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Rate Limits

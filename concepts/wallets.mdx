@@ -5,7 +5,7 @@ description: 'Multi-currency wallet infrastructure for your fintech'
 
 ## What are Wallets?
 
-Wallets are digital accounts that hold customer balances in multiple currencies. With Fossapay's wallet infrastructure, you can create customer wallets, hold balances in NGN and stablecoins, and manage internal ledgers seamlessly.
+Wallets are digital accounts that hold customer balances in multiple currencies. With FossaPay's wallet infrastructure, you can create customer wallets, hold balances in NGN and stablecoins, and manage internal ledgers seamlessly.
 
 <Info>
   Wallets enable you to build neobank features like balance holding, peer-to-peer transfers, and multi-currency accounts without managing complex ledger infrastructure.
@@ -14,16 +14,16 @@ Wallets are digital accounts that hold customer balances in multiple currencies.
 ## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Multi-Currency Support" icon="coins">
+  <Card color="#0080FF" title="Multi-Currency Support" icon="coins">
     Hold balances in NGN, USDT, USDC, and other stablecoins
   </Card>
-  <Card title="Instant Transfers" icon="bolt">
+  <Card color="#0080FF" title="Instant Transfers" icon="bolt">
     Move money between wallets in milliseconds
   </Card>
-  <Card title="Real-time Balance" icon="gauge">
+  <Card color="#0080FF" title="Real-time Balance" icon="gauge">
     Query balances and transaction history instantly
   </Card>
-  <Card title="Double-Entry Ledger" icon="book">
+  <Card color="#0080FF" title="Double-Entry Ledger" icon="book">
     Bank-grade accounting with full audit trail
   </Card>
 </CardGroup>
@@ -40,18 +40,6 @@ Individual wallets for your end users. Each wallet can hold multiple currencies.
   "customer_name": "John Doe",
   "customer_email": "john@example.com",
   "currencies": ["NGN", "USDT", "USDC"]
-}
-```
-
-### Merchant Wallets
-Business wallets for merchants or sellers on your platform.
-
-```json
-{
-  "type": "merchant",
-  "business_name": "Acme Store",
-  "business_email": "acme@example.com",
-  "currencies": ["NGN"]
 }
 ```
 
@@ -333,7 +321,7 @@ await fossapay.wallets.convert({
   </Accordion>
 
   <Accordion title="Store Transaction IDs">
-    Always store transaction IDs returned by Fossapay for reconciliation and support.
+    Always store transaction IDs returned by FossaPay for reconciliation and support.
   </Accordion>
 
   <Accordion title="Implement Webhooks">
@@ -397,16 +385,16 @@ await fossapay.wallets.transfer({
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
+  <Card color="#0080FF" title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
     Create your first wallet via API
   </Card>
-  <Card title="Collections" icon="building-columns" href="/guides/collections">
+  <Card color="#0080FF" title="Collections" icon="building-columns" href="/guides/collections">
     Accept payments into wallets
   </Card>
-  <Card title="Payouts" icon="money-bill-transfer" href="/guides/payouts">
+  <Card color="#0080FF" title="Payouts" icon="money-bill-transfer" href="/guides/payouts">
     Withdraw from wallets to bank accounts
   </Card>
-  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+  <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
     Listen to wallet events
   </Card>
 </CardGroup>
