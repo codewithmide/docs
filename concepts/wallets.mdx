@@ -82,21 +82,17 @@ Internal wallets for fees, commissions, or reserves.
 
 Add funds to a wallet from various sources:
 
-**From Virtual Account Payment:**
+**From Fiat Wallet Payment:**
 ```javascript
 // Automatic via webhook when payment is received
 // Webhook handler
 app.post('/webhooks/fossapay', (req, res) => {
   const { event, data } = req.body;
 
-  if (event === 'payment.received') {
-    await fossapay.wallets.credit({
-      wallet_id: data.metadata.wallet_id,
-      amount: data.amount,
-      currency: 'NGN',
-      reference: data.transaction_id,
-      narration: 'Wallet top-up'
-    });
+  if (event === 'deposit.completed') {
+    // Credit the customer's wallet
+    // Use the wallet ID from your database
+    await creditCustomerWallet(data.customerId, data.amount);
   }
 });
 ```
@@ -122,22 +118,24 @@ Remove funds from a wallet:
 
 **For Payout:**
 ```javascript
-// Debit wallet and send money out
-const debit = await fossapay.wallets.debit({
-  wallet_id: 'wal_xyz789',
-  amount: 25000,
-  currency: 'NGN',
-  reference: 'withdrawal-001',
-  narration: 'Bank withdrawal'
-});
+// When customer requests withdrawal
+// 1. Debit the wallet (conceptually)
+// 2. Process inter-bank transfer
 
-// Process payout
-await fossapay.payouts.create({
-  amount: 25000,
-  account_number: '0123456789',
-  bank_code: '058',
-  reference: debit.reference
-});
+// API call to initiate transfer
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cus_123",
+    "destinationBankCode": "044",
+    "destinationAccountName": "Customer Name",
+    "destinationAccountNumber": "0123456789",
+    "destinationBankName": "ACCESS BANK",
+    "reference": "withdrawal-001",
+    "remarks": "Bank withdrawal",
+    "amount": 25000
+  }'
 ```
 
 **For Fees:**
@@ -351,19 +349,17 @@ await fossapay.wallets.convert({
 
 ### Neobank Wallet
 ```javascript
-// Create wallet when user signs up
-const wallet = await fossapay.wallets.create({
-  type: 'customer',
-  customer_id: user.id,
-  customer_name: user.fullName,
-  currencies: ['NGN', 'USDT']
-});
+// Create fiat wallet when user signs up
+curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cus_123",
+    "walletName": "Main Wallet",
+    "walletReference": "wallet_'$(date +%s)'"
+  }'
 
-// Create virtual account for top-ups
-const virtualAccount = await fossapay.virtualAccounts.create({
-  customer_id: user.id,
-  metadata: { wallet_id: wallet.id }
-});
+// The wallet account number can be used for collections
 ```
 
 ### Marketplace Split Payments
@@ -401,11 +397,11 @@ await fossapay.wallets.transfer({
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Wallet" icon="code" href="/api-reference/wallets/create-wallet">
+  <Card title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
     Create your first wallet via API
   </Card>
-  <Card title="Virtual Accounts" icon="building-columns" href="/concepts/virtual-accounts">
-    Fund wallets with virtual accounts
+  <Card title="Collections" icon="building-columns" href="/guides/collections">
+    Accept payments into wallets
   </Card>
   <Card title="Payouts" icon="money-bill-transfer" href="/guides/payouts">
     Withdraw from wallets to bank accounts

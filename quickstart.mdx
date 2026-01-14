@@ -31,167 +31,50 @@ Before you begin, make sure you have:
   </Step>
 </Steps>
 
-## Step 2: Install SDK (Optional)
+## Step 2: Make Your First API Call
 
-<CodeGroup>
+Use cURL for direct API calls.
 
-```bash npm
-npm install fossapay-node
-```
+## Step 3: Create Your First Fiat Wallet
 
-```bash yarn
-yarn add fossapay-node
-```
+Let's create a fiat wallet for collecting payments:
 
-```bash pip
-pip install fossapay
-```
-
-</CodeGroup>
-
-Or use cURL for direct API calls.
-
-## Step 3: Create Your First Virtual Account
-
-Let's create a virtual account for collecting payments:
-
-<CodeGroup>
-
-```javascript Node.js
-const Fossapay = require('fossapay-node');
-const fossapay = new Fossapay(process.env.FOSSAPAY_SECRET_KEY);
-
-async function createVirtualAccount() {
-  const account = await fossapay.virtualAccounts.create({
-    type: 'dedicated',
-    customer_name: 'John Doe',
-    customer_email: 'john@example.com',
-    customer_phone: '+2348012345678',
-    metadata: {
-      user_id: '12345'
-    }
-  });
-
-  console.log('Virtual Account Created!');
-  console.log('Account Number:', account.data.account_number);
-  console.log('Bank Name:', account.data.bank_name);
-
-  return account;
-}
-
-createVirtualAccount();
-```
-
-```python Python
-from fossapay import Fossapay
-import os
-
-fossapay = Fossapay(os.environ['FOSSAPAY_SECRET_KEY'])
-
-def create_virtual_account():
-    account = fossapay.virtual_accounts.create(
-        type='dedicated',
-        customer_name='John Doe',
-        customer_email='john@example.com',
-        customer_phone='+2348012345678',
-        metadata={
-            'user_id': '12345'
-        }
-    )
-
-    print('Virtual Account Created!')
-    print(f'Account Number: {account.data.account_number}')
-    print(f'Bank Name: {account.data.bank_name}')
-
-    return account
-
-create_virtual_account()
-```
-
-```bash cURL
-curl -X POST https://api-staging.fossapay.com/v1/virtual-accounts \
-  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "dedicated",
-    "customer_name": "John Doe",
-    "customer_email": "john@example.com",
-    "customer_phone": "+2348012345678",
-    "metadata": {
-      "user_id": "12345"
-    }
+    "customerId": "cus_123456789",
+    "walletName": "Main Wallet",
+    "walletReference": "wallet_ref_001"
   }'
 ```
-
-</CodeGroup>
 
 **Expected Response:**
 ```json
 {
-  "status": "success",
+  "success": true,
+  "message": "Fiat wallet created successfully",
   "data": {
-    "virtual_account_id": "va_abc123",
-    "account_number": "1234567890",
-    "account_name": "FOSSAPAY - JOHN DOE",
-    "bank_name": "Wema Bank",
-    "type": "dedicated",
-    "status": "active"
+    "walletId": "wal_abc123xyz",
+    "bankName": "Wema Bank",
+    "bankCode": "035",
+    "accountNumber": "1234567890"
   }
 }
 ```
 
 <Success>
-  **You created your first virtual account!** Customers can now transfer money to this account number.
+  **You created your first fiat wallet!** Customers can now transfer money to this account number.
 </Success>
 
 ## Step 4: Simulate a Payment (Sandbox Only)
 
 In sandbox mode, simulate a payment to test your integration:
 
-<CodeGroup>
-
-```javascript Node.js
-async function simulatePayment(accountNumber) {
-  const payment = await fossapay.sandbox.simulatePayment({
-    virtual_account_number: accountNumber,
-    amount: 50000, // ₦500 in kobo
-    sender_name: 'Test Customer',
-    sender_account: '0987654321',
-    sender_bank: '058'
-  });
-
-  console.log('Payment Simulated!');
-  console.log('Transaction ID:', payment.data.transaction_id);
-
-  return payment;
-}
-
-// Use the account number from Step 3
-simulatePayment('1234567890');
-```
-
-```python Python
-def simulate_payment(account_number):
-    payment = fossapay.sandbox.simulate_payment(
-        virtual_account_number=account_number,
-        amount=50000,  # ₦500 in kobo
-        sender_name='Test Customer',
-        sender_account='0987654321',
-        sender_bank='058'
-    )
-
-    print('Payment Simulated!')
-    print(f'Transaction ID: {payment.data.transaction_id}')
-
-    return payment
-
-# Use the account number from Step 3
-simulate_payment('1234567890')
-```
-
-```bash cURL
+```bash
 curl -X POST https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
-  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "virtual_account_number": "1234567890",
@@ -201,8 +84,6 @@ curl -X POST https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
     "sender_bank": "058"
   }'
 ```
-
-</CodeGroup>
 
 ## Step 5: Handle Webhook Notification
 
@@ -322,94 +203,31 @@ if __name__ == '__main__':
 
 Now let's send money from your wallet to a bank account:
 
-<CodeGroup>
-
-```javascript Node.js
-async function sendPayout() {
-  const payout = await fossapay.payouts.create({
-    amount: 25000, // ₦250
-    account_number: '0000000001', // Test account
-    account_name: 'Test Recipient',
-    bank_code: '058',
-    narration: 'Test payout',
-    reference: `payout-${Date.now()}`
-  });
-
-  console.log('Payout initiated!');
-  console.log('Payout ID:', payout.data.payout_id);
-  console.log('Status:', payout.data.status);
-
-  return payout;
-}
-
-sendPayout();
-```
-
-```python Python
-def send_payout():
-    payout = fossapay.payouts.create(
-        amount=25000,  # ₦250
-        account_number='0000000001',  # Test account
-        account_name='Test Recipient',
-        bank_code='058',
-        narration='Test payout',
-        reference=f'payout-{int(time.time() * 1000)}'
-    )
-
-    print('Payout initiated!')
-    print(f'Payout ID: {payout.data.payout_id}')
-    print(f'Status: {payout.data.status}')
-
-    return payout
-
-send_payout()
-```
-
-```bash cURL
-curl -X POST https://api-staging.fossapay.com/v1/payouts \
-  -H "Authorization: Bearer $FOSSAPAY_SECRET_KEY" \
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "amount": 25000,
-    "account_number": "0000000001",
-    "account_name": "Test Recipient",
-    "bank_code": "058",
-    "narration": "Test payout",
-    "reference": "payout-'$(date +%s)'"
+    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "destinationBankCode": "044",
+    "destinationAccountName": "Test Recipient",
+    "destinationAccountNumber": "0000000001",
+    "destinationBankName": "ACCESS BANK",
+    "reference": "payout-'$(date +%s)'",
+    "remarks": "Test payout",
+    "amount": 25000
   }'
 ```
-
-</CodeGroup>
 
 ## Complete Example
 
 Here's a complete example that ties everything together:
 
 ```javascript
-const Fossapay = require('fossapay-node');
 const express = require('express');
-
-const fossapay = new Fossapay(process.env.FOSSAPAY_SECRET_KEY);
 const app = express();
 
 app.use(express.json());
-
-// Create virtual account for new user
-async function onboardUser(user) {
-  const account = await fossapay.virtualAccounts.create({
-    type: 'dedicated',
-    customer_name: user.name,
-    customer_email: user.email,
-    metadata: {
-      user_id: user.id
-    }
-  });
-
-  console.log(`Virtual account created for ${user.name}`);
-  console.log(`Account Number: ${account.data.account_number}`);
-
-  return account;
-}
 
 // Handle incoming payments
 app.post('/webhooks/fossapay', async (req, res) => {
@@ -417,30 +235,17 @@ app.post('/webhooks/fossapay', async (req, res) => {
 
   const { event, data } = req.body;
 
-  if (event === 'payment.received') {
+  if (event === 'deposit.completed') {
     // Credit user's balance
-    await creditUserBalance(data.metadata.user_id, data.amount);
+    await creditUserBalance(data.customerId, data.amount);
 
     // Send notification
-    await sendNotification(data.metadata.user_id, {
+    await sendNotification(data.customerId, {
       title: 'Payment Received',
       message: `Your account was credited with ₦${data.amount / 100}`
     });
   }
 });
-
-// Process withdrawal
-async function processWithdrawal(userId, amount, bankDetails) {
-  const payout = await fossapay.payouts.create({
-    amount: amount,
-    account_number: bankDetails.accountNumber,
-    account_name: bankDetails.accountName,
-    bank_code: bankDetails.bankCode,
-    reference: `withdrawal-${userId}-${Date.now()}`
-  });
-
-  return payout;
-}
 
 app.listen(3000);
 ```

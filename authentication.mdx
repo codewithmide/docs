@@ -1,4 +1,4 @@
----
+ n a---
 title: Authentication
 description: 'Learn how to authenticate your API requests with Fossapay'
 ---
@@ -33,18 +33,18 @@ Fossapay provides two types of API keys:
 
 ## Making Authenticated Requests
 
-Include your secret key in the `Authorization` header of your API requests using the `Bearer` authentication scheme:
+Include your secret key in the `x-api-key` header of your API requests:
 
 ```bash
-curl https://api-staging.fossapay.com/v1/virtual-accounts \
-  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+curl https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+  -H "x-api-key: YOUR_SECRET_KEY" \
   -H "Content-Type: application/json"
 ```
 
 ### Authentication Header Format
 
 ```
-Authorization: Bearer fp_live_1234567890abcdef
+x-api-key: fp_live_1234567890abcdef
 ```
 
 ## API Key Format
@@ -66,7 +66,7 @@ Every API request should include these headers:
 
 | Header | Value | Required |
 |--------|-------|----------|
-| `Authorization` | `Bearer YOUR_SECRET_KEY` | Yes |
+| `x-api-key` | `YOUR_SECRET_KEY` | Yes |
 | `Content-Type` | `application/json` | Yes |
 | `X-Idempotency-Key` | Unique request identifier | Recommended |
 
@@ -76,14 +76,15 @@ Every API request should include these headers:
 const axios = require('axios');
 
 const response = await axios.post(
-  'https://api-staging.fossapay.com/v1/virtual-accounts',
+  'https://api-staging.fossapay.com/api/v1/wallets/fiat/create',
   {
-    customer_name: 'John Doe',
-    customer_email: 'john@example.com'
+    customerId: 'cus_123456789',
+    walletName: 'Main Wallet',
+    walletReference: 'wallet_ref_001'
   },
   {
     headers: {
-      'Authorization': 'Bearer fp_test_sk_xxxxxxxxxxxxxxxx',
+      'x-api-key': 'fp_test_sk_xxxxxxxxxxxxxxxx',
       'Content-Type': 'application/json',
       'X-Idempotency-Key': 'unique-request-id-12345'
     }
@@ -96,14 +97,19 @@ const response = await axios.post(
 To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, Fossapay will return the same response without processing the request again.
 
 ```bash
-curl https://api-staging.fossapay.com/v1/payouts \
-  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+curl https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+  -H "x-api-key: YOUR_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: payout-20240119-001" \
   -d '{
-    "amount": 10000,
-    "account_number": "0123456789",
-    "bank_code": "058"
+    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "destinationBankCode": "044",
+    "destinationAccountName": "JOHN DOE",
+    "destinationAccountNumber": "1234567890",
+    "destinationBankName": "ACCESS BANK",
+    "reference": "TRF-2024-001",
+    "remarks": "Salary payment",
+    "amount": 10000
   }'
 ```
 
@@ -119,7 +125,7 @@ If authentication fails, you'll receive a `401 Unauthorized` response:
 
 ```json
 {
-  "status": "error",
+  "success": false,
   "message": "Invalid API key",
   "code": "INVALID_API_KEY"
 }
@@ -167,18 +173,17 @@ Common authentication errors:
 Test your authentication setup with this simple request:
 
 ```bash
-curl https://api-staging.fossapay.com/v1/auth/test \
-  -H "Authorization: Bearer YOUR_SECRET_KEY"
+curl https://api-staging.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_SECRET_KEY"
 ```
 
 **Successful Response:**
 
 ```json
 {
-  "status": "success",
-  "message": "Authentication successful",
-  "environment": "test",
-  "business_name": "Your Business Name"
+  "success": true,
+  "message": "List of customers retrieved successfully",
+  "data": []
 }
 ```
 
@@ -188,7 +193,7 @@ curl https://api-staging.fossapay.com/v1/auth/test \
   <Card title="Sandbox Environment" icon="flask" href="/sandbox">
     Learn how to test your integration safely
   </Card>
-  <Card title="Create Virtual Account" icon="code" href="/api-reference/collections/create-virtual-account">
+  <Card title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
     Make your first API call
   </Card>
 </CardGroup>

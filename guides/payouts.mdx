@@ -15,141 +15,67 @@ Send money to any Nigerian bank account in seconds using Fossapay's Payouts API.
 
 ## Single Payout
 
-### Basic Payout
+### Basic Transfer
 
-```javascript
-const fossapay = require('fossapay-node');
-const client = new fossapay(process.env.FOSSAPAY_SECRET_KEY);
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cus_123",
+    "destinationBankCode": "058",
+    "destinationAccountName": "Jane Smith",
+    "destinationAccountNumber": "0123456789",
+    "destinationBankName": "GTBank",
+    "reference": "transfer-1705315200000",
+    "remarks": "Salary payment - January 2024",
+    "amount": 25000
+  }'
+```
 
-const payout = await client.payouts.create({
-  amount: 25000,
-  account_number: '0123456789',
-  account_name: 'Jane Smith',
-  bank_code: '058',
-  narration: 'Salary payment - January 2024',
-  reference: `payout-${Date.now()}`,
-  currency: 'NGN',
-  metadata: {
-    employee_id: 'emp_456',
-    payment_type: 'salary'
+**Response:**
+```json
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Transfer request is being processed",
+  "data": {
+    "reference": "transfer-1705315200000"
   }
-});
-
-console.log(payout);
-// {
-//   "status": "success",
-//   "data": {
-//     "payout_id": "pay_abc123",
-//     "amount": 25000,
-//     "fee": 50,
-//     "total_debit": 25050,
-//     "status": "pending",
-//     "reference": "payout-1705315200000",
-//     "created_at": "2024-01-15T11:00:00Z"
-//   }
-// }
+}
 ```
 
 ### Validate Account First
 
-```javascript
-// Verify account name before sending payout
-const validation = await client.payouts.validateAccount({
-  account_number: '0123456789',
-  bank_code: '058'
-});
+```bash
+curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/bank-name-enquiry \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountNumber": "0123456789",
+    "bankCode": "058"
+  }'
+```
 
-console.log(validation);
-// {
-//   "status": "success",
-//   "data": {
-//     "account_number": "0123456789",
-//     "account_name": "JANE SMITH",
-//     "bank_code": "058",
-//     "bank_name": "GTBank"
-//   }
-// }
-
-// Proceed with payout if name matches
-if (validation.data.account_name.includes('JANE SMITH')) {
-  await client.payouts.create({...});
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Account details retrieved successfully",
+  "data": {
+    "accountNumber": "0123456789",
+    "accountName": "JANE SMITH",
+    "bankCode": "058",
+    "bankName": "GTBank"
+  }
 }
 ```
 
-## Bulk Payouts
+Proceed with transfer if name matches.
 
-### Process Multiple Payouts
+## Multiple Transfers
 
-```javascript
-const payouts = [
-  {
-    amount: 50000,
-    account_number: '0123456789',
-    account_name: 'John Doe',
-    bank_code: '058',
-    narration: 'January salary',
-    reference: 'bulk-001-john'
-  },
-  {
-    amount: 60000,
-    account_number: '9876543210',
-    account_name: 'Jane Smith',
-    bank_code: '057',
-    narration: 'January salary',
-    reference: 'bulk-001-jane'
-  }
-];
-
-const bulk = await client.payouts.createBulk({
-  payouts: payouts,
-  batch_reference: 'salary-jan-2024'
-});
-
-console.log(bulk);
-// {
-//   "status": "success",
-//   "data": {
-//     "batch_id": "batch_xyz789",
-//     "total_amount": 110000,
-//     "total_fee": 100,
-//     "count": 2,
-//     "status": "processing",
-//     "created_at": "2024-01-15T11:00:00Z"
-//   }
-// }
-```
-
-### Monitor Bulk Status
-
-```javascript
-const status = await client.payouts.getBulkStatus('batch_xyz789');
-
-console.log(status);
-// {
-//   "batch_id": "batch_xyz789",
-//   "status": "completed",
-//   "summary": {
-//     "total": 2,
-//     "successful": 2,
-//     "failed": 0,
-//     "pending": 0
-//   },
-//   "payouts": [
-//     {
-//       "payout_id": "pay_001",
-//       "reference": "bulk-001-john",
-//       "status": "completed",
-//       "amount": 50000
-//     },
-//     {
-//       "payout_id": "pay_002",
-//       "reference": "bulk-001-jane",
-//       "status": "completed",
-//       "amount": 60000
-//     }
-//   ]
-// }
-```
+For multiple transfers, make individual API calls or implement batch processing in your application.
 
 ## Handling Webhooks
 
@@ -160,55 +86,46 @@ app.post('/webhooks/fossapay', async (req, res) => {
   const { event, data } = req.body;
 
   switch (event) {
-    case 'payout.completed':
-      await handlePayoutCompleted(data);
+    case 'withdrawal.completed':
+      await handleTransferCompleted(data);
       break;
 
-    case 'payout.failed':
-      await handlePayoutFailed(data);
+    case 'withdrawal.failed':
+      await handleTransferFailed(data);
       break;
   }
 });
 
-async function handlePayoutCompleted(payout) {
+async function handleTransferCompleted(transfer) {
   // Update transaction status
   await db.transactions.update({
-    reference: payout.reference
+    reference: transfer.reference
   }, {
     status: 'completed',
-    completed_at: payout.completed_at,
-    payout_id: payout.payout_id
+    completed_at: transfer.completed_at
   });
 
   // Notify recipient
-  await sendNotification(payout.metadata.employee_id, {
-    title: 'Payment Sent',
-    message: `₦${payout.amount.toLocaleString()} has been sent to your account`
+  await sendNotification(transfer.customerId, {
+    title: 'Transfer Completed',
+    message: `₦${transfer.amount.toLocaleString()} has been sent to your account`
   });
 }
 
-async function handlePayoutFailed(payout) {
+async function handleTransferFailed(transfer) {
   // Update status
   await db.transactions.update({
-    reference: payout.reference
+    reference: transfer.reference
   }, {
     status: 'failed',
-    failure_reason: payout.failure_reason
+    failure_reason: transfer.failure_reason
   });
-
-  // Refund to wallet if deducted
-  if (payout.refunded) {
-    await db.wallets.increment({
-      customer_id: payout.metadata.customer_id,
-      amount: payout.amount
-    });
-  }
 
   // Alert admin
   await sendAlert({
-    type: 'payout_failed',
-    reference: payout.reference,
-    reason: payout.failure_reason
+    type: 'transfer_failed',
+    reference: transfer.reference,
+    reason: transfer.failure_reason
   });
 }
 ```
@@ -259,7 +176,7 @@ Common Nigerian bank codes:
 | 057 | Zenith Bank |
 
 <Tip>
-  Get the full list of bank codes via the API: `client.banks.list()`
+  Get the full list of supported banks via the API: `/v1/transfers/fiat/get-supported-banks`
 </Tip>
 
 ## Error Handling
@@ -337,16 +254,16 @@ try {
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Single Payout API" icon="code" href="/api-reference/payouts/single-payout">
-    API reference for single payouts
+  <Card title="Inter-Bank Transfer API" icon="code" href="/api-reference/fiat-transfers/inter-bank-transfer">
+    API reference for transfers
   </Card>
-  <Card title="Bulk Payout API" icon="code" href="/api-reference/payouts/bulk-payout">
-    API reference for bulk payouts
+  <Card title="Bank Name Enquiry API" icon="code" href="/api-reference/fiat-transfers/bank-name-enquiry">
+    Validate account details
   </Card>
   <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
-    Handle payout webhooks
+    Handle transfer webhooks
   </Card>
   <Card title="Wallets" icon="wallet" href="/concepts/wallets">
-    Fund payouts from wallets
+    Fund transfers from wallets
   </Card>
 </CardGroup>

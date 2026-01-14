@@ -18,17 +18,14 @@
             "pages": [
               "introduction",
               "quickstart",
-              "authentication",
-              "sandbox"
+              "authentication"
             ]
           },
           {
             "group": "Core Concepts",
             "pages": [
-              "concepts/virtual-accounts",
               "concepts/customers",
               "concepts/wallets",
-              "concepts/settlements",
               "concepts/webhooks"
             ]
           },
@@ -37,7 +34,6 @@
             "pages": [
               "guides/collections",
               "guides/payouts",
-              "guides/reconciliation",
               "guides/kyc-compliance"
             ]
           }

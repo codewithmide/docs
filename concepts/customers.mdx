@@ -1,4 +1,87 @@
 ---
 title: Customers
-description: 'Create customer account'
+description: 'Understanding customer management in Fossapay'
 ---
+
+## What are Customers?
+
+Customers represent your end users within the Fossapay ecosystem. Every wallet, transaction, and compliance check is associated with a customer account.
+
+<Info>
+  Customer accounts are required before you can create wallets or perform transactions on behalf of your users.
+</Info>
+
+## Customer Lifecycle
+
+### 1. Customer Creation
+Create a customer account with basic information:
+
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+2348012345678"
+  }'
+```
+
+### 2. KYC Verification
+Perform identity verification for compliance:
+
+- **BVN Verification**: Bank Verification Number
+- **NIN Verification**: National Identity Number
+- **Address Verification**: Proof of address
+
+### 3. Wallet Creation
+Once verified, create wallets for the customer:
+
+```bash
+curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cus_123456789",
+    "walletName": "Main Wallet",
+    "walletReference": "wallet_ref_001"
+  }'
+```
+
+## Customer Tiers
+
+Currently, Fossapay supports individual customer accounts. All customers are created with the `individual` tier.
+
+<Note>
+  Additional tiers (business, enterprise) will be available in future updates.
+</Note>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store Customer IDs">
+    Always store Fossapay customer IDs in your database for future API calls.
+  </Accordion>
+
+  <Accordion title="Implement KYC Early">
+    Complete customer verification before enabling transactions to avoid limits.
+  </Accordion>
+
+  <Accordion title="Use Metadata">
+    Store additional customer data in metadata for easier management.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Customer API" icon="code" href="/api-reference/customers/create-customer">
+    API reference for customer creation
+  </Card>
+  <Card title="KYC Compliance Guide" icon="book" href="/guides/kyc-compliance">
+    Complete customer verification
+  </Card>
+  <Card title="Wallets" icon="wallet" href="/concepts/wallets">
+    Create wallets for customers
+  </Card>
+</CardGroup>
