@@ -77,14 +77,6 @@
             ]
           },
           {
-            "group": "Payouts",
-            "pages": [
-              "api-reference/payouts/single-payout",
-              "api-reference/payouts/bulk-payout",
-              "api-reference/payouts/get-payout-status"
-            ]
-          },
-          {
             "group": "Fiat Transfers",
             "pages": [
               "api-reference/fiat-transfers/get-supported-banks",
