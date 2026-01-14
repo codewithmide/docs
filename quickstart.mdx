@@ -73,7 +73,7 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
 In sandbox mode, simulate a payment to test your integration:
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/sandbox/simulate-payment \
+curl -X POST https://api-staging.fossapay.com/api/v1/sandbox/simulate-payment \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 Now let's send money from your wallet to a bank account:
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{

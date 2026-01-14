@@ -18,7 +18,7 @@ Send money to any Nigerian bank account in seconds using Fossapay's Payouts API.
 ### Basic Transfer
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -48,7 +48,7 @@ curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
 ### Validate Account First
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/bank-name-enquiry \
+curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

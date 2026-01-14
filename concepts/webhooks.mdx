@@ -367,7 +367,7 @@ ngrok http 3000
 Test your webhook handler with simulated events:
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/webhooks/simulate \
+curl -X POST https://api-staging.fossapay.com/api/v1/webhooks/simulate \
   -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{

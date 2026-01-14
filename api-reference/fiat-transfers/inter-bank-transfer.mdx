@@ -1,6 +1,6 @@
 ---
 title: 'Inter-Bank Transfer'
-api: 'POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank'
+api: 'POST https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank'
 description: 'Execute inter-bank transfer'
 ---
 
@@ -45,7 +45,7 @@ description: 'Execute inter-bank transfer'
 ### Request Example
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{

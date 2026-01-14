@@ -5,7 +5,7 @@ description: 'Understanding KYC requirements and compliance in Fossapay'
 
 ## Overview
 
-Fossapay is built with compliance at its core. This guide covers KYC (Know Your Customer) requirements, compliance standards, and best practices for maintaining regulatory compliance.
+Fossapay provides KYC verification through integration with Nigerian government systems. This guide covers the available KYC verification methods and best practices for compliance.
 
 ## Why KYC Matters
 
@@ -24,431 +24,157 @@ Fossapay is built with compliance at its core. This guide covers KYC (Know Your 
   </Card>
 </CardGroup>
 
-## KYC Tiers
+## Available KYC Verifications
 
-Fossapay supports three KYC tiers based on transaction limits:
+Fossapay currently supports three types of KYC verification:
 
-### Tier 1 - Basic
+### BVN Verification
 
-**Requirements:**
-- Phone number verification
-- Email verification
+Verify customer identity using their Bank Verification Number (BVN).
 
-**Limits:**
-- Daily limit: ₦50,000
-- Monthly limit: ₦300,000
-- Maximum balance: ₦300,000
-
-### Tier 2 - Intermediate
-
-**Requirements:**
-- Full name
-- Date of birth
-- BVN (Bank Verification Number)
-- Residential address
-
-**Limits:**
-- Daily limit: ₦200,000
-- Monthly limit: ₦1,000,000
-- Maximum balance: ₦1,000,000
-
-### Tier 3 - Full
-
-**Requirements:**
-- All Tier 2 requirements
-- Government-issued ID (NIN, Driver's License, or Passport)
-- Proof of address (utility bill, bank statement)
-- Selfie verification
-
-**Limits:**
-- Daily limit: ₦5,000,000
-- Monthly limit: ₦unlimited
-- Maximum balance: Unlimited
-
-## Implementing KYC
-
-### Create Customer with KYC
-
-```javascript
-const customer = await fossapay.customers.create({
-  email: 'john@example.com',
-  phone: '+2348012345678',
-  first_name: 'John',
-  last_name: 'Doe',
-  date_of_birth: '1990-01-15',
-  bvn: '22222222222',
-  address: {
-    street: '123 Main Street',
-    city: 'Lagos',
-    state: 'Lagos',
-    country: 'NG'
-  },
-  metadata: {
-    user_id: 'user_123'
-  }
-});
-
-console.log(customer);
-// {
-//   "customer_id": "cus_abc123",
-//   "kyc_tier": 2,
-//   "kyc_status": "verified",
-//   "daily_limit": 200000,
-//   "monthly_limit": 1000000
-// }
+```bash
+curl -X POST https://api.fossapay.com/v1/customers/kyc/bvn \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cust_123456789",
+    "bvn": "12345678901"
+  }'
 ```
 
-### Upgrade to Tier 3
-
-```javascript
-// Upload ID document
-const idUpload = await fossapay.customers.uploadDocument({
-  customer_id: 'cus_abc123',
-  document_type: 'national_id',
-  document_number: 'ABC1234567890',
-  file: idImageBuffer // or file path
-});
-
-// Upload selfie
-const selfieUpload = await fossapay.customers.uploadDocument({
-  customer_id: 'cus_abc123',
-  document_type: 'selfie',
-  file: selfieImageBuffer
-});
-
-// Request tier upgrade
-const upgrade = await fossapay.customers.upgradeKYC({
-  customer_id: 'cus_abc123',
-  target_tier: 3
-});
-
-// Check verification status
-const status = await fossapay.customers.getKYCStatus('cus_abc123');
-```
-
-## BVN Verification
-
-### Verify BVN
-
-```javascript
-const verification = await fossapay.kyc.verifyBVN({
-  bvn: '22222222222',
-  first_name: 'John',
-  last_name: 'Doe',
-  date_of_birth: '1990-01-15'
-});
-
-console.log(verification);
-// {
-//   "status": "success",
-//   "matched": true,
-//   "bvn": "22222222222",
-//   "data": {
-//     "first_name": "JOHN",
-//     "last_name": "DOE",
-//     "date_of_birth": "15-Jan-1990",
-//     "phone_number": "080********78"
-//   }
-// }
-```
-
-### Handle BVN Mismatch
-
-```javascript
-if (!verification.matched) {
-  await db.customers.update(customerId, {
-    kyc_status: 'failed',
-    kyc_failure_reason: 'BVN details do not match'
-  });
-
-  await sendNotification(customerId, {
-    title: 'KYC Verification Failed',
-    message: 'The details you provided do not match your BVN records. Please contact support.'
-  });
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "BVN verification completed successfully"
 }
 ```
 
-## NIN Verification
+### NIN Verification
 
-```javascript
-const ninVerification = await fossapay.kyc.verifyNIN({
-  nin: '12345678901',
-  first_name: 'John',
-  last_name: 'Doe'
-});
+Verify customer identity using their National Identification Number (NIN).
 
-console.log(ninVerification);
-// {
-//   "status": "success",
-//   "matched": true,
-//   "nin": "12345678901",
-//   "data": {
-//     "full_name": "JOHN DOE",
-//     "date_of_birth": "1990-01-15",
-//     "gender": "Male"
-//   }
-// }
+```bash
+curl -X POST https://api.fossapay.com/v1/customers/kyc/nin \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cust_123456789",
+    "nin": "12345678901",
+    "firstName": "John",
+    "lastName": "Doe",
+    "dob": "1990-01-15"
+  }'
 ```
 
-## Transaction Monitoring
-
-### Monitor for Suspicious Activity
-
-```javascript
-async function monitorTransaction(transaction) {
-  const customer = await db.customers.findOne({
-    id: transaction.customer_id
-  });
-
-  // Check if exceeds tier limits
-  const dailyTotal = await calculateDailyTotal(customer.id);
-
-  if (dailyTotal + transaction.amount > customer.daily_limit) {
-    // Block transaction
-    await fossapay.customers.freeze({
-      customer_id: customer.id,
-      reason: 'Daily limit exceeded'
-    });
-
-    await sendAlert({
-      type: 'limit_exceeded',
-      customer_id: customer.id,
-      amount: transaction.amount,
-      daily_total: dailyTotal
-    });
-
-    throw new Error('Daily transaction limit exceeded');
-  }
-
-  // Check for suspicious patterns
-  if (isHourBetween(0, 4) && transaction.amount > 100000) {
-    await flagForReview({
-      transaction_id: transaction.id,
-      reason: 'Large transaction at unusual hour'
-    });
-  }
-
-  // Check for rapid transactions
-  const recentCount = await countRecentTransactions(customer.id, 10); // last 10 mins
-  if (recentCount > 5) {
-    await flagForReview({
-      transaction_id: transaction.id,
-      reason: 'Multiple rapid transactions'
-    });
-  }
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "NIN verification completed successfully"
 }
 ```
 
-## Compliance Standards
+### Address Verification
 
-### PCI-DSS Compliance
+Verify customer address using electricity meter number.
 
-Fossapay is PCI-DSS Level 1 compliant:
-- All data encrypted in transit (TLS 1.2+)
-- All data encrypted at rest (AES-256)
-- Regular security audits
-- No card data storage
+```bash
+curl -X POST https://api.fossapay.com/v1/customers/kyc/address \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "cust_123456789",
+    "meterNumber": "1234567890",
+    "houseAddress": "123 Main Street, Victoria Island",
+    "state": "LAGOS"
+  }'
+```
 
-### NDPR Compliance
-
-Nigerian Data Protection Regulation compliance:
-- Data minimization
-- Purpose limitation
-- Storage limitation
-- Consent management
-
-### CBN Regulations
-
-Central Bank of Nigeria compliance:
-- KYC/AML requirements
-- Transaction limits
-- Settlement standards
-- Reporting requirements
-
-## Handling High-Risk Transactions
-
-```javascript
-async function screenTransaction(transaction) {
-  // Screen against sanctions lists
-  const sanctionsCheck = await fossapay.compliance.screenSanctions({
-    name: transaction.sender_name,
-    account_number: transaction.sender_account
-  });
-
-  if (sanctionsCheck.hit) {
-    await blockTransaction(transaction.id);
-    await reportToAuthorities(transaction);
-  }
-
-  // Check for PEP (Politically Exposed Persons)
-  const pepCheck = await fossapay.compliance.checkPEP({
-    name: transaction.sender_name
-  });
-
-  if (pepCheck.is_pep) {
-    await flagForEnhancedDueDiligence(transaction);
-  }
-
-  // AML screening
-  const amlScore = await calculateAMLScore(transaction);
-
-  if (amlScore > 70) {
-    await flagForReview({
-      transaction_id: transaction.id,
-      reason: 'High AML risk score',
-      score: amlScore
-    });
-  }
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "Address verification completed successfully"
 }
 ```
 
-## Document Requirements
+**Valid State Codes:**
+ABUJA, EKO, IKEJA, IBADAN, ENUGU, PH, JOS, KADUNA, KANO, BH, PROTOGY, PHISBOND, ACCESSPOWER, YOLA, ABIA, ADAMAWA, AKWA IBOM, ANAMBRA, BAUCHI, BAYELSA, BENUE, BORNO, CROSS RIVER, DELTA, EBONYI, EDO, EKITI, GOMBE, IMO, JIGAWA, KATSINA, KEBBI, KOGI, KWARA, LAGOS, NASSARAWA, NIGER, OGUN, ONDO, OSUN, OYO, PLATEAU, RIVERS, SOKOTO, TARABA, YOBE, ZAMFARA, FCT
 
-### Accepted ID Documents
+## Implementation Flow
 
-| Document Type | Code | Valid For |
-|---------------|------|-----------|
-| National Identity Number (NIN) | `national_id` | Primary ID |
-| International Passport | `passport` | Primary ID |
-| Driver's License | `drivers_license` | Primary ID |
-| Voter's Card | `voters_card` | Secondary ID |
+### 1. Create Customer First
 
-### Proof of Address
+Before performing KYC verification, you need a customer ID:
 
-- Utility bills (< 3 months old)
-- Bank statements (< 3 months old)
-- Government correspondence
-- Tenancy agreement
+```bash
+curl -X POST https://api.fossapay.com/api/v1/customers \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+2348012345678"
+  }'
+```
 
-## Webhook Events
+### 2. Perform KYC Verifications
+
+You can perform any combination of the available KYC checks. Each successful verification upgrades the customer's KYC level.
+
+## Error Handling
+
+Handle verification failures appropriately:
 
 ```javascript
-app.post('/webhooks/fossapay', (req, res) => {
-  const { event, data } = req.body;
+// Example error responses
+// 400 Bad Request - Invalid input
+{
+  "error": 400,
+  "message": "Validation failed - invalid BVN format"
+}
 
-  switch (event) {
-    case 'kyc.verified':
-      await handleKYCVerified(data);
-      break;
-
-    case 'kyc.failed':
-      await handleKYCFailed(data);
-      break;
-
-    case 'customer.flagged':
-      await handleCustomerFlagged(data);
-      break;
-
-    case 'transaction.flagged':
-      await handleTransactionFlagged(data);
-      break;
-  }
-});
-
-async function handleKYCVerified(data) {
-  await db.customers.update(data.customer_id, {
-    kyc_status: 'verified',
-    kyc_tier: data.tier,
-    verified_at: data.verified_at
-  });
-
-  await sendNotification(data.customer_id, {
-    title: 'Identity Verified!',
-    message: `Your account has been upgraded to Tier ${data.tier}`
-  });
+// 404 Not Found - Customer doesn't exist
+{
+  "error": 404,
+  "message": "Customer not found"
 }
 ```
 
 ## Best Practices
 
 <AccordionGroup>
-  <Accordion title="Collect KYC Early">
-    Request KYC information during onboarding:
-    ```javascript
-    // During signup
-    const user = await createUser({
-      email,
-      phone,
-      kyc_required: true
-    });
-
-    // Prompt for KYC immediately
-    await promptKYCCollection(user.id);
-    ```
+  <Accordion title="Verify Customer Identity Early">
+    Perform KYC verification during onboarding to ensure compliance before enabling transactions.
   </Accordion>
 
-  <Accordion title="Implement Progressive KYC">
-    Start with basic info and upgrade as needed:
-    - Tier 1: Email + Phone (instant)
-    - Tier 2: BVN (when limits reached)
-    - Tier 3: Full KYC (for high-value users)
+  <Accordion title="Store Verification Results">
+    Keep track of which customers have completed which verifications in your database.
   </Accordion>
 
-  <Accordion title="Monitor Transaction Patterns">
-    Use automated monitoring to detect anomalies:
-    ```javascript
-    // Flag unusual patterns
-    if (transactionTime.hour < 4 && amount > 500000) {
-      await flagForReview(transaction);
-    }
-    ```
+  <Accordion title="Handle Verification Failures">
+    Provide clear feedback to customers when verification fails and guide them on next steps.
   </Accordion>
 
-  <Accordion title="Keep Audit Logs">
-    Log all KYC and compliance activities:
-    ```javascript
-    await db.auditLogs.create({
-      type: 'kyc_verification',
-      customer_id: customerId,
-      action: 'bvn_verified',
-      timestamp: new Date()
-    });
-    ```
-  </Accordion>
-
-  <Accordion title="Regular Reviews">
-    Periodically review customer KYC status:
-    - Annual KYC refresh for active customers
-    - Enhanced due diligence for high-risk customers
-    - Document expiry checks
+  <Accordion title="Use Webhooks for Real-time Updates">
+    Listen to KYC webhook events to update your system automatically when verifications complete.
   </Accordion>
 </AccordionGroup>
-
-## Regulatory Reporting
-
-### Generate Compliance Reports
-
-```javascript
-// Monthly compliance report
-const report = await fossapay.compliance.generateReport({
-  period: 'monthly',
-  year: 2024,
-  month: 1,
-  include: [
-    'new_customers',
-    'kyc_verifications',
-    'flagged_transactions',
-    'high_value_transactions'
-  ]
-});
-
-// Submit to regulatory authorities
-await submitToRegulator(report);
-```
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Customer API" icon="code" href="/api-reference/customers/create">
-    Create and manage customers
+  <Card title="Create Customer" icon="code" href="/api-reference/customers/create-customer">
+    Create customers before KYC verification
   </Card>
-  <Card title="Compliance Dashboard" icon="chart-line" href="https://dashboard.fossapay.com/compliance">
-    Monitor compliance metrics
+  <Card title="BVN Verification API" icon="code" href="/api-reference/customers/kyc/verify-bvn">
+    Verify customer BVN
   </Card>
-  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
-    Handle KYC events
+  <Card title="NIN Verification API" icon="code" href="/api-reference/customers/kyc/verify-nin">
+    Verify customer NIN
   </Card>
-  <Card title="Security" icon="shield" href="https://fossapay.com/security">
-    Learn about our security practices
+  <Card title="Address Verification API" icon="code" href="/api-reference/customers/kyc/verify-address">
+    Verify customer address
   </Card>
 </CardGroup>

@@ -1,4 +1,4 @@
- n a---
+---
 title: Authentication
 description: 'Learn how to authenticate your API requests with Fossapay'
 ---
@@ -97,7 +97,7 @@ const response = await axios.post(
 To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, Fossapay will return the same response without processing the request again.
 
 ```bash
-curl https://api-staging.fossapay.com/v1/transfers/fiat/inter-bank \
+curl https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: YOUR_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: payout-20240119-001" \
