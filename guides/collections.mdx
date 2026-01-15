@@ -1,12 +1,11 @@
-r
 ---
 title: Collections Guide
-description: 'Complete guide to accepting payments with Fossapay'
+description: 'Complete guide to accepting payments with FossaPay'
 ---
 
 ## Overview
 
-This guide walks you through accepting payments using Fossapay's Fiat Wallet API. You'll learn how to create fiat wallets, receive payments, handle webhooks, and reconcile transactions.
+This guide walks you through accepting payments using FossaPay's Fiat Wallet API. You'll learn how to create fiat wallets, receive payments, handle webhooks, and reconcile transactions.
 
 ## Quick Start
 
@@ -185,7 +184,7 @@ async function handlePaymentReceived(payment) {
   console.log('Payment received:', payment);
 
   // Get customer from metadata
-  const customerId = payment.metadata.customer_id;
+const customerId = payment.metadata.customer_id;
 
   // Create transaction record
   await db.transactions.create({
@@ -414,16 +413,16 @@ curl -X POST https://api-staging.fossapay.com/api/v1/sandbox/simulate-payment \
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Fiat Wallet API" icon="code" href="/api-reference/virtual-account/create-wallet">
+  <Card color="#0080FF" title="Create Fiat Wallet API" icon="code" href="/api-reference/virtual-account/create-wallet">
     API reference for creating fiat wallets
   </Card>
-  <Card title="Webhooks Guide" icon="webhook" href="/concepts/webhooks">
+  <Card color="#0080FF" title="Webhooks Guide" icon="webhook" href="/concepts/webhooks">
     Learn more about handling webhooks
   </Card>
-  <Card title="Reconciliation Guide" icon="book" href="/guides/reconciliation">
+  <Card color="#0080FF" title="Reconciliation Guide" icon="book" href="/guides/reconciliation">
     Best practices for reconciliation
   </Card>
-  <Card title="Wallets Concept" icon="building-columns" href="/concepts/wallets">
+  <Card color="#0080FF" title="Wallets Concept" icon="building-columns" href="/concepts/wallets">
     Understand wallets in depth
   </Card>
 </CardGroup>

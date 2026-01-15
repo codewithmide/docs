@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Fossapay API",
-    "description": "Fossapay API for payment processing, collections, payouts, and customer management",
+    "title": "FossaPay API",
+    "description": "FossaPay API for payment processing, collections, payouts, and customer management",
     "license": {
       "name": "MIT"
     },

@@ -1,29 +1,29 @@
 ---
 title: Webhooks
-description: 'Real-time event notifications from Fossapay'
+description: 'Real-time event notifications from FossaPay'
 ---
 
 ## What are Webhooks?
 
-Webhooks are HTTP callbacks that Fossapay sends to your server when events occur in your account. They enable you to receive real-time notifications about payments, payouts, settlements, and other important events.
+Webhooks are HTTP callbacks that FossaPay sends to your server when events occur in your account. They enable you to receive real-time notifications about payments, payouts, settlements, and other important events.
 
 <Info>
-  Webhooks eliminate the need for polling and ensure your application stays in sync with Fossapay in real-time.
+  Webhooks eliminate the need for polling and ensure your application stays in sync with FossaPay in real-time.
 </Info>
 
 ## Why Use Webhooks?
 
 <CardGroup cols={2}>
-  <Card title="Real-time Updates" icon="bolt">
+  <Card color="#0080FF" title="Real-time Updates" icon="bolt">
     Get notified immediately when events occur
   </Card>
-  <Card title="Reduce Polling" icon="clock">
+  <Card color="#0080FF" title="Reduce Polling" icon="clock">
     No need to constantly check for updates
   </Card>
-  <Card title="Automated Workflows" icon="robot">
+  <Card color="#0080FF" title="Automated Workflows" icon="robot">
     Trigger actions automatically based on events
   </Card>
-  <Card title="Better UX" icon="smile">
+  <Card color="#0080FF" title="Better UX" icon="smile">
     Update your users instantly about transaction status
   </Card>
 </CardGroup>
@@ -235,7 +235,7 @@ app = Flask(__name__)
 @app.route('/webhooks/fossapay', methods=['POST'])
 def handle_webhook():
     # Verify signature
-    signature = request.headers.get('X-Fossapay-Signature')
+    signature = request.headers.get('X-FossaPay-Signature')
     secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
     if not verify_signature(request.data, signature, secret):
         return 'Invalid signature', 401
@@ -277,7 +277,7 @@ def process_webhook(payload):
 
 ### Signature Verification
 
-Fossapay signs all webhooks with HMAC SHA256:
+FossaPay signs all webhooks with HMAC SHA256:
 
 ```javascript
 const crypto = require('crypto');
@@ -297,7 +297,7 @@ function verifyWebhookSignature(payload, signature, secret) {
 
 ### IP Whitelisting
 
-Optionally restrict webhooks to Fossapay IPs:
+Optionally restrict webhooks to FossaPay IPs:
 
 ```
 52.49.173.169
@@ -311,7 +311,7 @@ Optionally restrict webhooks to Fossapay IPs:
 
 ## Retry Logic
 
-If your endpoint doesn't respond with a 2xx status, Fossapay retries:
+If your endpoint doesn't respond with a 2xx status, FossaPay retries:
 
 | Attempt | Delay |
 |---------|-------|
@@ -358,7 +358,7 @@ async function handleDepositCompleted(data) {
 # Start ngrok
 ngrok http 3000
 
-# Use the HTTPS URL in Fossapay dashboard
+# Use the HTTPS URL in FossaPay dashboard
 # Example: https://abc123.ngrok.io/webhooks/fossapay
 ```
 
@@ -622,16 +622,16 @@ View webhook delivery logs in your dashboard:
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings/webhooks">
+  <Card color="#0080FF" title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings/webhooks">
     Set up your webhook endpoint
   </Card>
-  <Card title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/webhooks/logs">
+  <Card color="#0080FF" title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/webhooks/logs">
     Monitor webhook deliveries
   </Card>
-  <Card title="Collections Guide" icon="book" href="/guides/collections">
+  <Card color="#0080FF" title="Collections Guide" icon="book" href="/guides/collections">
     Handle payment webhooks
   </Card>
-  <Card title="Payouts Guide" icon="book" href="/guides/payouts">
+  <Card color="#0080FF" title="Payouts Guide" icon="book" href="/guides/payouts">
     Handle payout webhooks
   </Card>
 </CardGroup>

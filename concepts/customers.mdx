@@ -1,11 +1,11 @@
 ---
 title: Customers
-description: 'Understanding customer management in Fossapay'
+description: 'Understanding customer management in FossaPay'
 ---
 
 ## What are Customers?
 
-Customers represent your end users within the Fossapay ecosystem. Every wallet, transaction, and compliance check is associated with a customer account.
+Customers represent your end users within the FossaPay ecosystem. Every wallet, transaction, and compliance check is associated with a customer account.
 
 <Info>
   Customer accounts are required before you can create wallets or perform transactions on behalf of your users.
@@ -30,8 +30,8 @@ curl -X POST https://api-staging.fossapay.com/api/v1/customers \
 ### 2. KYC Verification
 Perform identity verification for compliance:
 
-- **BVN Verification**: Bank Verification Number
 - **NIN Verification**: National Identity Number
+- **BVN Verification**: Bank Verification Number
 - **Address Verification**: Proof of address
 
 ### 3. Wallet Creation
@@ -50,7 +50,7 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
 
 ## Customer Tiers
 
-Currently, Fossapay supports individual customer accounts. All customers are created with the `individual` tier.
+Currently, FossaPay supports individual customer accounts. All customers are created with the `individual` tier.
 
 <Note>
   Additional tiers (business, enterprise) will be available in future updates.
@@ -60,7 +60,7 @@ Currently, Fossapay supports individual customer accounts. All customers are cre
 
 <AccordionGroup>
   <Accordion title="Store Customer IDs">
-    Always store Fossapay customer IDs in your database for future API calls.
+    Always store FossaPay customer IDs in your database for future API calls.
   </Accordion>
 
   <Accordion title="Implement KYC Early">
@@ -75,13 +75,13 @@ Currently, Fossapay supports individual customer accounts. All customers are cre
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Create Customer API" icon="code" href="/api-reference/customers/create-customer">
+  <Card color="#0080FF" title="Create Customer API" icon="code" href="/api-reference/customers/create-customer">
     API reference for customer creation
   </Card>
-  <Card title="KYC Compliance Guide" icon="book" href="/guides/kyc-compliance">
+  <Card color="#0080FF" title="KYC Compliance Guide" icon="book" href="/guides/kyc-compliance">
     Complete customer verification
   </Card>
-  <Card title="Wallets" icon="wallet" href="/concepts/wallets">
+  <Card color="#0080FF" title="Wallets" icon="wallet" href="/concepts/wallets">
     Create wallets for customers
   </Card>
 </CardGroup>

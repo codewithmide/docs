@@ -1,13 +1,13 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Fossapay",
+  "name": "FossaPay",
   "colors": {
     "primary": "#0080FF",
     "light": "#07C983",
-    "dark": "#15803D"
+    "dark": "#0080FF"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.ico",
   "navigation": {
     "tabs": [
       {
@@ -49,8 +49,7 @@
               "api-reference/customers/create-customer",
               "api-reference/customers/get-all-customers",
               "api-reference/customers/get-customer-by-id",
-              "api-reference/customers/get-tier-status",
-              "api-reference/customers/oauth"
+              "api-reference/customers/get-tier-status"
             ]
           },
           {
@@ -112,9 +111,7 @@
           {
             "group": "Neobank Solution",
             "pages": [
-              "white-label/overview",
-              "white-label/setup",
-              "white-label/customization"
+              "white-label/overview"
             ]
           }
         ]
@@ -149,7 +146,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Access",
-      "href": "https://dashboard.fossapay.com/signup"
+      "href": "https://dashboard.fossapay.com/login"
     }
   },
   "contextual": {

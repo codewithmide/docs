@@ -1,11 +1,11 @@
 ---
 title: Authentication
-description: 'Learn how to authenticate your API requests with Fossapay'
+description: 'Learn how to authenticate your API requests with FossaPay'
 ---
 
 ## API Authentication
 
-Fossapay uses API keys to authenticate requests. You can view and manage your API keys in the [Fossapay Dashboard](https://dashboard.fossapay.com/settings/api-keys).
+FossaPay uses API keys to authenticate requests. You can view and manage your API keys in the [FossaPay Dashboard](https://dashboard.fossapay.com/settings?tab=api-keys).
 
 <Warning>
   **Keep your API keys secure!** Your secret keys can perform any API request without restriction. Keep them secure and never share them publicly or commit them to version control.
@@ -13,22 +13,22 @@ Fossapay uses API keys to authenticate requests. You can view and manage your AP
 
 ## API Key Types
 
-Fossapay provides two types of API keys:
+FossaPay provides two types of API keys:
 
 <CardGroup cols={2}>
-  <Card title="Test Keys" icon="flask">
+  <Card color="#0080FF" title="Test Keys" icon="flask">
     Use test keys in sandbox mode to test your integration without affecting real data or transactions.
   </Card>
-  <Card title="Live Keys" icon="circle-check">
+  <Card color="#0080FF" title="Live Keys" icon="circle-check">
     Use live keys in production to process real transactions and manage actual customer data.
   </Card>
 </CardGroup>
 
 ## Getting Your API Keys
 
-1. Sign up or log in to your [Fossapay Dashboard](https://dashboard.fossapay.com)
+1. Sign up or log in to your [FossaPay Dashboard](https://dashboard.fossapay.com)
 2. Navigate to **Settings** → **API Keys**
-3. Copy your **Secret Key** and **Public Key**
+3. Copy your **Test Key** or **Live Key**
 4. Use the test keys for development and live keys for production
 
 ## Making Authenticated Requests
@@ -49,16 +49,10 @@ x-api-key: fp_live_1234567890abcdef
 
 ## API Key Format
 
-Fossapay API keys follow this format:
+FossaPay API keys follow this format:
 
-- **Test Secret Key**: `fp_test_sk_xxxxxxxxxxxxxxxx`
-- **Live Secret Key**: `fp_live_sk_xxxxxxxxxxxxxxxx`
-- **Test Public Key**: `fp_test_pk_xxxxxxxxxxxxxxxx`
-- **Live Public Key**: `fp_live_pk_xxxxxxxxxxxxxxxx`
-
-<Info>
-  Public keys are safe to use in client-side code, while secret keys must only be used server-side.
-</Info>
+- **Test Key**: `fp_test_sk_xxxxxxxxxxxxxxxx`
+- **Live Key**: `fp_live_sk_xxxxxxxxxxxxxxxx`
 
 ## Request Headers
 
@@ -94,7 +88,7 @@ const response = await axios.post(
 
 ## Idempotency
 
-To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, Fossapay will return the same response without processing the request again.
+To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, FossaPay will return the same response without processing the request again.
 
 ```bash
 curl https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
@@ -162,7 +156,7 @@ Common authentication errors:
   </Accordion>
 
   <Accordion title="Implement Rate Limiting">
-    - Fossapay implements rate limiting to protect against abuse
+    - FossaPay implements rate limiting to protect against abuse
     - Current limit: 100 requests per minute
     - Contact support for higher limits
   </Accordion>
@@ -190,10 +184,7 @@ curl https://api-staging.fossapay.com/api/v1/customers \
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Sandbox Environment" icon="flask" href="/sandbox">
-    Learn how to test your integration safely
-  </Card>
-  <Card title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
+  <Card color="#0080FF" title="Create a Customer" icon="code" href="/concepts/customers">
     Make your first API call
   </Card>
 </CardGroup>

@@ -4,9 +4,6 @@ api: 'GET https://api-staging.fossapay.com/api/v1/customers/{customerId}'
 description: 'Retrieve a specific customer by their ID'
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 ## Overview
 
 Retrieve detailed information about a specific customer using their unique customer ID.
@@ -85,15 +82,15 @@ Retrieve detailed information about a specific customer using their unique custo
 ## Example
 
 <Tabs>
-<TabItem value="curl" label="cURL">
+<Tab title="cURL">
 
 ```bash
 curl -X GET https://api-staging.fossapay.com/api/v1/customers/fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
-</TabItem>
-<TabItem value="nodejs" label="Node.js">
+</Tab>
+<Tab title="Node.js">
 
 ```javascript
 const customerId = 'fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df';
@@ -108,7 +105,7 @@ const customer = await response.json();
 console.log(customer);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Rate Limits

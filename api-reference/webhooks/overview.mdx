@@ -1,11 +1,11 @@
 ---
 title: 'Webhooks Overview'
-description: 'Understanding Fossapay webhooks'
+description: 'Understanding FossaPay webhooks'
 ---
 
 ## What are Webhooks?
 
-Webhooks are HTTP callbacks that Fossapay sends to your server when events occur. They enable real-time notifications about payments, payouts, and other important events.
+Webhooks are HTTP callbacks that FossaPay sends to your server when events occur. They enable real-time notifications about payments, payouts, and other important events.
 
 ## Webhook Structure
 
@@ -88,7 +88,7 @@ app.post('/webhooks/fossapay', (req, res) => {
   </Accordion>
 
   <Accordion title="Implement Retries">
-    Fossapay retries failed webhooks up to 5 times
+    FossaPay retries failed webhooks up to 5 times
   </Accordion>
 </AccordionGroup>
 
@@ -105,10 +105,10 @@ Then set the ngrok URL as your webhook endpoint in the dashboard.
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Webhook Events" href="/api-reference/webhooks/events">
+  <Card color="#0080FF" title="Webhook Events" href="/api-reference/webhooks/events">
     View all available webhook events
   </Card>
-  <Card title="Webhooks Concept" href="/concepts/webhooks">
+  <Card color="#0080FF" title="Webhooks Concept" href="/concepts/webhooks">
     Learn more about webhooks
   </Card>
 </CardGroup>
