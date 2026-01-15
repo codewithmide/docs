@@ -1,3 +1,4 @@
+r
 ---
 title: Collections Guide
 description: 'Complete guide to accepting payments with Fossapay'
@@ -280,72 +281,15 @@ console.log(transaction);
 ### List Virtual Account Transactions
 
 ```javascript
-const transactions = await client.virtualAccounts.getTransactions('va_abc123', {
-  start_date: '2024-01-01',
-  end_date: '2024-01-31',
-  status: 'successful',
-  limit: 50
+const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/va_abc123/transactions?startDate=2024-01-01&endDate=2024-01-31&limit=50', {
+  headers: {
+    'x-api-key': 'YOUR_API_KEY'
+  }
 });
+
+const data = await response.json();
+const transactions = data.transactions;
 ```
-
-## Reconciliation
-
-### Daily Reconciliation
-
-```javascript
-async function dailyReconciliation() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  // Get all transactions from Fossapay
-  const fossapayTransactions = await client.transactions.list({
-    start_date: today.toISOString(),
-    end_date: tomorrow.toISOString(),
-    limit: 1000
-  });
-
-  // Get all transactions from your database
-  const dbTransactions = await db.transactions.findAll({
-    created_at: {
-      gte: today,
-      lt: tomorrow
-    }
-  });
-
-  // Match transactions
-  const matched = [];
-  const unmatched = [];
-
-  for (const fpTxn of fossapayTransactions.data) {
-    const dbTxn = dbTransactions.find(t => t.id === fpTxn.transaction_id);
-
-    if (dbTxn && dbTxn.amount === fpTxn.amount) {
-      matched.push(fpTxn);
-    } else {
-      unmatched.push(fpTxn);
-    }
-  }
-
-  // Alert on unmatched transactions
-  if (unmatched.length > 0) {
-    await sendAlert({
-      type: 'reconciliation_mismatch',
-      count: unmatched.length,
-      transactions: unmatched
-    });
-  }
-
-  return { matched, unmatched };
-}
-
-// Run daily at midnight
-cron.schedule('0 0 * * *', dailyReconciliation);
-```
-
-## Handling Edge Cases
 
 ### Overpayment
 

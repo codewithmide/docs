@@ -46,23 +46,42 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wall
 ```
 
 ```javascript
-const transfer = await client.wallets.walletToWalletTransfer({
-  fromAccount: '1234567890',
-  toAccount: '0987654321',
-  amount: 5000,
-  reference: 'transfer_ref_001',
-  narration: 'Payment for services'
+const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'fp_live_sk_xxxxxxxx',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    fromAccount: '1234567890',
+    toAccount: '0987654321',
+    amount: 5000,
+    reference: 'transfer_ref_001',
+    narration: 'Payment for services'
+  })
 });
+
+const data = await response.json();
 ```
 
 ```python
-transfer = client.wallets.wallet_to_wallet_transfer(
-    fromAccount='1234567890',
-    toAccount='0987654321',
-    amount=5000,
-    reference='transfer_ref_001',
-    narration='Payment for services'
-)
+import requests
+
+url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet"
+headers = {
+    "x-api-key": "fp_live_sk_xxxxxxxx",
+    "Content-Type": "application/json"
+}
+data = {
+    "fromAccount": "1234567890",
+    "toAccount": "0987654321",
+    "amount": 5000,
+    "reference": "transfer_ref_001",
+    "narration": "Payment for services"
+}
+
+response = requests.post(url, headers=headers, json=data)
+data = response.json()
 ```
 
 ## Response

@@ -24,11 +24,23 @@ curl https://api-staging.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc12
 ```
 
 ```javascript
-const transaction = await client.wallets.getTransaction('txn_abc123');
+const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc123', {
+  headers: {
+    'x-api-key': 'fp_live_sk_xxxxxxxx'
+  }
+});
+
+const transaction = await response.json();
 ```
 
 ```python
-transaction = client.wallets.get_transaction('txn_abc123')
+import requests
+
+url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc123"
+headers = {"x-api-key": "fp_live_sk_xxxxxxxx"}
+
+response = requests.get(url, headers=headers)
+transaction = response.json()
 ```
 
 ## Response

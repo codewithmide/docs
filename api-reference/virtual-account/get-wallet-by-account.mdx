@@ -24,11 +24,25 @@ curl https://api-staging.fossapay.com/api/v1/wallets/fiat/account/1234567890 \
 ```
 
 ```javascript
-const wallet = await client.wallets.getByAccountNumber('1234567890');
+const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/account/1234567890', {
+  headers: {
+    'x-api-key': 'fp_live_sk_xxxxxxxx'
+  }
+});
+
+const data = await response.json();
+const wallet = data.data;
 ```
 
 ```python
-wallet = client.wallets.get_by_account_number('1234567890')
+import requests
+
+url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/account/1234567890"
+headers = {"x-api-key": "fp_live_sk_xxxxxxxx"}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+wallet = data["data"]
 ```
 
 ## Response

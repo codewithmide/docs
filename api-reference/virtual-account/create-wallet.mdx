@@ -36,26 +36,40 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
 ```
 
 ```javascript
-const fossapay = require('fossapay-node');
-const client = new fossapay('fp_live_sk_xxxxxxxx');
-
-const wallet = await client.wallets.createFiatWallet({
-  customerId: 'cus_123456789',
-  walletName: 'Main Wallet',
-  walletReference: 'wallet_ref_001'
+const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/create', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'fp_live_sk_xxxxxxxx',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    customerId: 'cus_123456789',
+    walletName: 'Main Wallet',
+    walletReference: 'wallet_ref_001'
+  })
 });
+
+const data = await response.json();
+const wallet = data.data;
 ```
 
 ```python
-from fossapay import Fossapay
+import requests
 
-client = Fossapay('fp_live_sk_xxxxxxxx')
+url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/create"
+headers = {
+    "x-api-key": "fp_live_sk_xxxxxxxx",
+    "Content-Type": "application/json"
+}
+data = {
+    "customerId": "cus_123456789",
+    "walletName": "Main Wallet",
+    "walletReference": "wallet_ref_001"
+}
 
-wallet = client.wallets.create_fiat_wallet(
-    customerId='cus_123456789',
-    walletName='Main Wallet',
-    walletReference='wallet_ref_001'
-)
+response = requests.post(url, headers=headers, json=data)
+data = response.json()
+wallet = data["data"]
 ```
 
 ## Response
