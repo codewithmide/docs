@@ -19,12 +19,12 @@ description: 'Retrieve details of a specific fiat wallet'
 ## Request Example
 
 ```bash
-curl https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz \
+curl https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz \
   -H "x-api-key: fp_live_sk_xxxxxxxx"
 ```
 
 ```javascript
-const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz', {
+const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz', {
   headers: {
     'x-api-key': 'fp_live_sk_xxxxxxxx'
   }
@@ -37,7 +37,7 @@ const wallet = data.data;
 ```python
 import requests
 
-url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz"
+url = "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz"
 headers = {"x-api-key": "fp_live_sk_xxxxxxxx"}
 
 response = requests.get(url, headers=headers)

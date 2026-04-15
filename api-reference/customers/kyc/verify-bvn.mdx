@@ -1,6 +1,6 @@
 ---
 title: 'Verify BVN'
-api: 'POST https://api.fossapay.com/v1/customers/kyc/bvn'
+api: 'POST https://api-production.fossapay.com/v1/customers/kyc/bvn'
 description: 'Verify BVN (Bank Verification Number) for customer'
 ---
 
@@ -23,7 +23,7 @@ description: 'Verify BVN (Bank Verification Number) for customer'
 ## Request Example
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/customers/kyc/bvn \
+curl -X POST https://api-production.fossapay.com/v1/customers/kyc/bvn \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -33,7 +33,7 @@ curl -X POST https://api.fossapay.com/v1/customers/kyc/bvn \
 ```
 
 ```javascript
-const response = await fetch('https://api.fossapay.com/v1/customers/kyc/bvn', {
+const response = await fetch('https://api-production.fossapay.com/v1/customers/kyc/bvn', {
   method: 'POST',
   headers: {
     'x-api-key': 'YOUR_API_KEY',

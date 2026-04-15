@@ -1,6 +1,6 @@
 ---
 title: 'Get All Wallet Transactions'
-api: 'GET https://api.fossapay.com/v1/wallets/crypto/{walletId}/transactions'
+api: 'GET https://api-production.fossapay.com/v1/wallets/crypto/{walletId}/transactions'
 description: 'Retrieve all transactions for a crypto wallet'
 ---
 
@@ -41,18 +41,36 @@ description: 'Retrieve all transactions for a crypto wallet'
 ## Request Example
 
 ```bash
-curl -X GET "https://api.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
+curl -X GET "https://api-production.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
   -H "x-api-key: your_api_key_here"
 ```
 
 ```javascript
-const transactions = await client.cryptoWallets.getTransactions('user:u3d', {
-  page: 1,
-  limit: 10,
-  transactionType: 'DEPOSIT',
-  startDate: '2024-01-01T00:00:00Z',
-  endDate: '2024-12-31T23:59:59Z'
+const url = new URL(
+  'https://api-production.fossapay.com/v1/wallets/crypto/user:u3d/transactions'
+);
+
+url.searchParams.set('page', '1');
+url.searchParams.set('limit', '10');
+url.searchParams.set('transactionType', 'DEPOSIT');
+url.searchParams.set('startDate', '2024-01-01T00:00:00Z');
+url.searchParams.set('endDate', '2024-12-31T23:59:59Z');
+
+const response = await fetch(url.toString(), {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'your_api_key_here',
+    'Content-Type': 'application/json',
+  },
 });
+
+if (!response.ok) {
+  throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+}
+
+const data = await response.json();
+const transactions = data.data.transactions;
+console.log(transactions);
 ```
 
 ## Response
@@ -73,15 +91,15 @@ const transactions = await client.cryptoWallets.getTransactions('user:u3d', {
         "status": "failed",
         "amountInCrypto": "10.00000000",
         "tokenSymbol": "usdxm",
-        "tokenAddress": "z23BZbAiFRb6u5CBH64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenAddress": "z23BZbAiFRb6u5***64XjZPUud6dP6y2ZuKoYSM4LCY",
         "tokenDecimals": 6,
-        "senderAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "senderAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
         "transactionHash": null,
         "explorerLink": null,
         "blockchain": "solana",
-        "sourceWalletAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientWalletAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
         "sourceWalletId": null,
         "recipientWalletId": null,
         "createdAt": "2026-01-08T00:43:44+01:00",
@@ -95,15 +113,15 @@ const transactions = await client.cryptoWallets.getTransactions('user:u3d', {
         "status": "failed",
         "amountInCrypto": "10.00000000",
         "tokenSymbol": "usdxm",
-        "tokenAddress": "z23BZbAiFRb6u5CBH64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenAddress": "z23BZbAiFRb6u5***64XjZPUud6dP6y2ZuKoYSM4LCY",
         "tokenDecimals": 6,
-        "senderAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "senderAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
         "transactionHash": null,
         "explorerLink": null,
         "blockchain": "solana",
-        "sourceWalletAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+        "recipientWalletAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
         "sourceWalletId": null,
         "recipientWalletId": null,
         "createdAt": "2026-01-08T00:38:24+01:00",

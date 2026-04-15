@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "https://api-staging.fossapay.com",
+      "url": "https://api-production.fossapay.com",
       "description": "Staging server"
     },
     {

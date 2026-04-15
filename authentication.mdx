@@ -36,7 +36,7 @@ FossaPay provides two types of API keys:
 Include your secret key in the `x-api-key` header of your API requests:
 
 ```bash
-curl https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+curl https://api-production.fossapay.com/api/v1/wallets/fiat/create \
   -H "x-api-key: YOUR_SECRET_KEY" \
   -H "Content-Type: application/json"
 ```
@@ -70,7 +70,7 @@ Every API request should include these headers:
 const axios = require('axios');
 
 const response = await axios.post(
-  'https://api-staging.fossapay.com/api/v1/wallets/fiat/create',
+  'https://api-production.fossapay.com/api/v1/wallets/fiat/create',
   {
     customerId: 'cus_123456789',
     walletName: 'Main Wallet',
@@ -91,7 +91,7 @@ const response = await axios.post(
 To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, FossaPay will return the same response without processing the request again.
 
 ```bash
-curl https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
+curl https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: YOUR_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: payout-20240119-001" \
@@ -167,7 +167,7 @@ Common authentication errors:
 Test your authentication setup with this simple request:
 
 ```bash
-curl https://api-staging.fossapay.com/api/v1/customers \
+curl https://api-production.fossapay.com/api/v1/customers \
   -H "x-api-key: YOUR_SECRET_KEY"
 ```
 

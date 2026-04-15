@@ -1,6 +1,6 @@
 ---
 title: 'Bank Name Enquiry'
-api: 'POST https://api-staging.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry'
+api: 'POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry'
 description: 'Perform bank account name enquiry'
 ---
 
@@ -21,7 +21,7 @@ description: 'Perform bank account name enquiry'
 ### Request Example
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
+curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
   -H "x-api-key: your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -31,10 +31,23 @@ curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/bank-name-en
 ```
 
 ```javascript
-const enquiry = await client.fiatTransfers.bankNameEnquiry({
-  bankCode: '00014',
-  accountNumber: '1232129310'
+const response = await fetch('https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'your_api_key_here',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    bankCode: '00014',
+    accountNumber: '1232129310'
+  })
 });
+
+if (!response.ok) {
+  throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+}
+
+const enquiry = await response.json();
 ```
 
 ## Response

@@ -21,7 +21,7 @@ Create a new customer account.
 <Tab title="cURL">
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/customers \
+curl -X POST https://api-production.fossapay.com/api/v1/customers \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -38,7 +38,7 @@ curl -X POST https://api-staging.fossapay.com/api/v1/customers \
 <Tab title="Node.js">
 
 ```javascript
-const response = await fetch('https://api-staging.fossapay.com/api/v1/customers', {
+const response = await fetch('https://api-production.fossapay.com/api/v1/customers', {
   method: 'POST',
   headers: {
     'x-api-key': 'YOUR_API_KEY',
@@ -80,7 +80,7 @@ Retrieve a list of all customers.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api-staging.fossapay.com/api/v1/customers \
+curl -X GET https://api-production.fossapay.com/api/v1/customers \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -111,7 +111,7 @@ Retrieve a specific customer by their ID.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api-staging.fossapay.com/api/v1/customers/cust_123456789 \
+curl -X GET https://api-production.fossapay.com/api/v1/customers/cust_123456789 \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -140,7 +140,7 @@ Retrieve the tier status and limits for a specific customer.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api-staging.fossapay.com/api/v1/customers/cust_123456789/tier-status \
+curl -X GET https://api-production.fossapay.com/api/v1/customers/cust_123456789/tier-status \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -214,7 +214,7 @@ Create a new crypto wallet for a customer.
 <Tab title="cURL">
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/wallets/crypto/create \
+curl -X POST https://api-production.fossapay.com/v1/wallets/crypto/create \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -227,7 +227,7 @@ curl -X POST https://api.fossapay.com/v1/wallets/crypto/create \
 <Tab title="Node.js">
 
 ```javascript
-const response = await fetch('https://api.fossapay.com/v1/wallets/crypto/create', {
+const response = await fetch('https://api-production.fossapay.com/v1/wallets/crypto/create', {
   method: 'POST',
   headers: {
     'x-api-key': 'YOUR_API_KEY',
@@ -251,7 +251,7 @@ const response = await fetch('https://api.fossapay.com/v1/wallets/crypto/create'
   "message": "Crypto wallet created successfully",
   "data": {
     "walletId": "user:u3d",
-    "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+    "address": "2nNrjVxaAv***1JBn52FqyHMjZ76SaHmsBv6Zz7Xoo5v",
     "network": "solana"
   }
 }
@@ -265,7 +265,7 @@ Retrieve crypto wallet details by wallet ID.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api.fossapay.com/v1/wallets/crypto/user:u3d \
+curl -X GET https://api-production.fossapay.com/v1/wallets/crypto/user:u3d \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -281,7 +281,7 @@ curl -X GET https://api.fossapay.com/v1/wallets/crypto/user:u3d \
   "message": "Crypto wallet retrieved successfully",
   "data": [
     {
-      "address": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+      "address": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
       "network": "solana",
       "tokens": {
         "usdc": {
@@ -306,7 +306,7 @@ Retrieve crypto wallet details by wallet address.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api.fossapay.com/v1/wallets/crypto/address/CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2 \
+curl -X GET https://api-production.fossapay.com/v1/wallets/crypto/address/YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2 \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -322,7 +322,7 @@ curl -X GET https://api.fossapay.com/v1/wallets/crypto/address/CcnysYh3Y1ZLqPxka
   "message": "Crypto wallet retrieved successfully",
   "data": [
     {
-      "address": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+      "address": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
       "network": "solana",
       "tokens": {
         "usdc": {
@@ -347,7 +347,7 @@ Retrieve all transactions for a crypto wallet.
 <Tab title="cURL">
 
 ```bash
-curl -X GET "https://api.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10" \
+curl -X GET "https://api-production.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10" \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -392,7 +392,7 @@ Retrieve a single crypto wallet transaction by transaction ID.
 <Tab title="cURL">
 
 ```bash
-curl -X GET https://api.fossapay.com/v1/wallets/crypto/transactions/85503565-cb04-4ba7-abfb-b75193553086 \
+curl -X GET https://api-production.fossapay.com/v1/wallets/crypto/transactions/85503565-cb04-4ba7-abfb-b75193553086 \
   -H "x-api-key: YOUR_API_KEY"
 ```
 

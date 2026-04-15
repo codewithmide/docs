@@ -33,7 +33,7 @@ description: 'Transfer funds between wallets'
 ### Request Example
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet \
+curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet \
   -H "x-api-key: fp_live_sk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -46,7 +46,7 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wall
 ```
 
 ```javascript
-const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
+const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
   method: 'POST',
   headers: {
     'x-api-key': 'fp_live_sk_xxxxxxxx',
@@ -67,7 +67,7 @@ const data = await response.json();
 ```python
 import requests
 
-url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet"
+url = "https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet"
 headers = {
     "x-api-key": "fp_live_sk_xxxxxxxx",
     "Content-Type": "application/json"

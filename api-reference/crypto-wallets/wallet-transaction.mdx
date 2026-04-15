@@ -1,6 +1,6 @@
 ---
 title: 'Get Wallet Single Transaction'
-api: 'GET https://api.fossapay.com/v1/wallets/crypto/transactions/{transactionId}'
+api: 'GET https://api-production.fossapay.com/v1/wallets/crypto/transactions/{transactionId}'
 description: 'Retrieve a single crypto wallet transaction by transaction ID'
 ---
 
@@ -19,12 +19,27 @@ description: 'Retrieve a single crypto wallet transaction by transaction ID'
 ## Request Example
 
 ```bash
-curl -X GET https://api.fossapay.com/v1/wallets/crypto/transactions/85503565-cb04-4ba7-abfb-b75193553086 \
+curl -X GET https://api-production.fossapay.com/v1/wallets/crypto/transactions/85503565-cb04-4ba7-abfb-b75193553086 \
   -H "x-api-key: your_api_key_here"
 ```
 
 ```javascript
-const transaction = await client.cryptoWallets.getTransactionById('85503565-cb04-4ba7-abfb-b75193553086');
+const response = await fetch(
+  'https://api-production.fossapay.com/v1/wallets/crypto/transactions/85503565-cb04-4ba7-abfb-b75193553086',
+  {
+    method: 'GET',
+    headers: {
+      'x-api-key': 'your_api_key_here',
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+if (!response.ok) {
+  throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+}
+
+const transaction = await response.json();
 ```
 
 ## Response
@@ -43,15 +58,15 @@ const transaction = await client.cryptoWallets.getTransactionById('85503565-cb04
     "status": "failed",
     "amountInCrypto": "10.00000000",
     "tokenSymbol": "usdxm",
-    "tokenAddress": "z23BZbAiFRb6u5CBH64XjZPUud6dP6y2ZuKoYSM4LCY",
+    "tokenAddress": "z23BZbAiFRb6u5***64XjZPUud6dP6y2ZuKoYSM4LCY",
     "tokenDecimals": 6,
-    "senderAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-    "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+    "senderAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+    "recipientAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
     "transactionHash": null,
     "explorerLink": null,
     "blockchain": "solana",
-    "sourceWalletAddress": "CcnysYh3Y1ZLqPxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-    "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+    "sourceWalletAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
+    "recipientWalletAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
     "sourceWalletId": null,
     "recipientWalletId": null,
     "createdAt": "2026-01-08T00:38:24+01:00",

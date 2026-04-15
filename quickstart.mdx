@@ -40,7 +40,7 @@ Use cURL for direct API calls.
 Let's create a fiat wallet for collecting payments:
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
+curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -68,24 +68,8 @@ curl -X POST https://api-staging.fossapay.com/api/v1/wallets/fiat/create \
   **You created your first fiat wallet!** Customers can now transfer money to this account number.
 </Success>
 
-## Step 4: Simulate a Payment (Sandbox Only)
 
-In sandbox mode, simulate a payment to test your integration:
-
-```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/sandbox/simulate-payment \
-  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "virtual_account_number": "1234567890",
-    "amount": 50000,
-    "sender_name": "Test Customer",
-    "sender_account": "0987654321",
-    "sender_bank": "058"
-  }'
-```
-
-## Step 5: Handle Webhook Notification
+## Step 4: Handle Webhook Notification
 
 When a payment is received, FossaPay sends a webhook to your server. Here's how to handle it:
 
@@ -204,7 +188,7 @@ if __name__ == '__main__':
 Now let's send money from your wallet to a bank account:
 
 ```bash
-curl -X POST https://api-staging.fossapay.com/api/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{

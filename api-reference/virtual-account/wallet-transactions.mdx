@@ -41,12 +41,12 @@ description: 'Retrieve all transactions for a wallet with pagination'
 ## Request Example
 
 ```bash
-curl "https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit" \
+curl "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit" \
   -H "x-api-key: fp_live_sk_xxxxxxxx"
 ```
 
 ```javascript
-const response = await fetch('https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit&startDate=2024-01-01&endDate=2024-01-31', {
+const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit&startDate=2024-01-01&endDate=2024-01-31', {
   headers: {
     'x-api-key': 'fp_live_sk_xxxxxxxx'
   }
@@ -59,7 +59,7 @@ const transactions = data.transactions;
 ```python
 import requests
 
-url = "https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions"
+url = "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions"
 params = {
     "page": 1,
     "limit": 10,
@@ -237,7 +237,7 @@ let page = 1;
 let allTransactions = [];
 
 while (true) {
-  const response = await fetch(`https://api-staging.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=${page}&limit=50`, {
+  const response = await fetch(`https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=${page}&limit=50`, {
     headers: {
       'x-api-key': 'fp_live_sk_xxxxxxxx'
     }

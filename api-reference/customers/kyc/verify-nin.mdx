@@ -1,6 +1,6 @@
 ---
 title: 'Verify NIN'
-api: 'POST https://api.fossapay.com/v1/customers/kyc/nin'
+api: 'POST https://api-production.fossapay.com/v1/customers/kyc/nin'
 description: 'Verify NIN (National Identification Number) for customer'
 ---
 
@@ -35,7 +35,7 @@ description: 'Verify NIN (National Identification Number) for customer'
 ## Request Example
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/customers/kyc/nin \
+curl -X POST https://api-production.fossapay.com/v1/customers/kyc/nin \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -48,7 +48,7 @@ curl -X POST https://api.fossapay.com/v1/customers/kyc/nin \
 ```
 
 ```javascript
-const response = await fetch('https://api.fossapay.com/v1/customers/kyc/nin', {
+const response = await fetch('https://api-production.fossapay.com/v1/customers/kyc/nin', {
   method: 'POST',
   headers: {
     'x-api-key': 'YOUR_API_KEY',

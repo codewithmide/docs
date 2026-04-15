@@ -33,7 +33,7 @@ FossaPay currently supports three types of KYC verification:
 Verify customer identity using their Bank Verification Number (BVN).
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/customers/kyc/bvn \
+curl -X POST https://api-production.fossapay.com/v1/customers/kyc/bvn \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -55,7 +55,7 @@ curl -X POST https://api.fossapay.com/v1/customers/kyc/bvn \
 Verify customer identity using their National Identification Number (NIN).
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/customers/kyc/nin \
+curl -X POST https://api-production.fossapay.com/v1/customers/kyc/nin \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,7 +80,7 @@ curl -X POST https://api.fossapay.com/v1/customers/kyc/nin \
 Verify customer address using electricity meter number.
 
 ```bash
-curl -X POST https://api.fossapay.com/v1/customers/kyc/address \
+curl -X POST https://api-production.fossapay.com/v1/customers/kyc/address \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -109,7 +109,7 @@ ABUJA, EKO, IKEJA, IBADAN, ENUGU, PH, JOS, KADUNA, KANO, BH, PROTOGY, PHISBOND, 
 Before performing KYC verification, you need a customer ID:
 
 ```bash
-curl -X POST https://api.fossapay.com/api/v1/customers \
+curl -X POST https://api-production.fossapay.com/api/v1/customers \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
