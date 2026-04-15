@@ -33,8 +33,7 @@
             "group": "Guides",
             "pages": [
               "guides/collections",
-              "guides/payouts",
-              "guides/kyc-compliance"
+              "guides/payouts"
             ]
           }
         ]
@@ -50,14 +49,6 @@
               "api-reference/customers/get-all-customers",
               "api-reference/customers/get-customer-by-id",
               "api-reference/customers/get-tier-status"
-            ]
-          },
-          {
-            "group": "Customers KYC",
-            "pages": [
-              "api-reference/customers/kyc/verify-nin",
-              "api-reference/customers/kyc/verify-bvn",
-              "api-reference/customers/kyc/verify-address"
             ]
           },
           {
