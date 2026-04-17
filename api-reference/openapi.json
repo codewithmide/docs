@@ -125,46 +125,6 @@
           "Third Party Customers"
         ]
       }
-    },
-    "/api/v1/customers/{id}/tier-status": {
-      "get": {
-        "operationId": "CustomersController_getTierStatus",
-        "parameters": [
-          {
-            "name": "x-api-key",
-            "in": "header",
-            "description": "API Key for authentication",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Customer ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Tier status retrieved"
-          },
-          "401": {
-            "description": "Unauthorized - invalid API key"
-          },
-          "404": {
-            "description": "Customer not found"
-          }
-        },
-        "summary": "Get customer tier status",
-        "tags": [
-          "Third Party Customers"
-        ]
-      }
     }
   },
   "components": {
@@ -238,7 +198,7 @@
         "properties": {
           "tier": {
             "type": "string",
-            "enum": ["basic", "premium", "enterprise"],
+            "enum": ["individual"],
             "description": "Current tier level"
           },
           "limits": {
