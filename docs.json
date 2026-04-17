@@ -47,8 +47,7 @@
               "api-reference/customers/index",
               "api-reference/customers/create-customer",
               "api-reference/customers/get-all-customers",
-              "api-reference/customers/get-customer-by-id",
-              "api-reference/customers/get-tier-status"
+              "api-reference/customers/get-customer-by-id"
             ]
           },
           {
@@ -142,15 +141,15 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
@@ -160,4 +159,3 @@
     }
   }
 }
-
