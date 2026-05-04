@@ -100,6 +100,33 @@ Fired when a withdrawal is completed successfully.
 }
 ```
 
+### withdrawal.failed
+
+Fired when a withdrawal fails.
+
+```json
+{
+  "event": "withdrawal.failed",
+  "event_id": "evt_xyz789",
+  "timestamp": "2024-01-15T11:45:23Z",
+  "data": {
+    "transaction_id": "txn_003",
+    "customer_id": "cus_789",
+    "recipient": {
+      "account_name": "Jane Smith",
+      "account_number": "0123456789",
+      "bank_name": "GTBank"
+    },
+    "amount": 25000,
+    "currency": "NGN",
+    "reference": "wth-20240115-001",
+    "status": "failed",
+    "transaction_type": "withdrawal",
+    "timestamp": "2024-01-15T11:45:20Z"
+  }
+}
+```
+
 ## Transfer Events
 
 ### transfer.completed
