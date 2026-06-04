@@ -66,7 +66,8 @@
             "pages": [
               "api-reference/fiat-transfers/get-supported-banks",
               "api-reference/fiat-transfers/bank-name-enquiry",
-              "api-reference/fiat-transfers/inter-bank-transfer"
+              "api-reference/fiat-transfers/inter-bank-transfer",
+              "api-reference/fiat-transfers/calculate-fee"
             ]
           },
           {
@@ -83,7 +84,8 @@
           {
             "group": "Crypto Transfers",
             "pages": [
-              "api-reference/crypto-transfers/crypto-transfer"
+              "api-reference/crypto-transfers/crypto-transfer",
+              "api-reference/crypto-transfers/calculate-fee"
             ]
           },
           {

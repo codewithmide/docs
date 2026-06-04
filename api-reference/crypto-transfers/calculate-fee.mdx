@@ -1,0 +1,63 @@
+---
+title: 'Calculate Crypto Transfer Fee'
+api: 'POST https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee'
+description: 'Calculate the fee for a crypto transfer'
+---
+
+## Request
+
+<ParamField body="amount" type="number" required>
+  The amount for which to calculate the fee
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  The cryptocurrency to calculate fees for. Must be one of: `usdc`, `usdt`
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 100.50,
+    "currency": "usdc"
+  }'
+```
+
+```javascript
+const response = await fetch('https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 100.50,
+    currency: 'usdc'
+  })
+});
+
+if (!response.ok) {
+  throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+}
+
+const feeData = await response.json();
+```
+
+## Response
+
+<ResponseExample>
+```json Success Response
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Fee calculated successfully",
+  "data": {
+    "amount": 100.50,
+    "currency": "usdc",
+    "feeAmount": 0.50,
+    "total": 101.00
+  }
+}
+```
+</ResponseExample>
