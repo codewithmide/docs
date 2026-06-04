@@ -1,41 +1,46 @@
 ---
 title: 'Calculate Crypto Transfer Fee'
-api: 'POST https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee'
-description: 'Calculate the fee for a crypto transfer'
+api: 'GET https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee'
+description: 'Calculate the payout fee for a crypto transfer in USDC or USDT'
 ---
 
 ## Request
 
-<ParamField body="amount" type="number" required>
-  The amount for which to calculate the fee
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
 </ParamField>
 
-<ParamField body="currency" type="string" required>
-  The cryptocurrency to calculate fees for. Must be one of: `usdc`, `usdt`
+## Query Parameters
+
+<ParamField query="amount" type="number" required>
+  The transfer amount for which to calculate the fee. Must be a positive number (minimum `0.01`).
+</ParamField>
+
+<ParamField query="currency" type="string" required>
+  The stablecoin to calculate fees for. Must be one of: `usdc`, `usdt` (case-insensitive; values are normalized to lowercase).
 </ParamField>
 
 ### Request Example
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 100.50,
-    "currency": "usdc"
-  }'
+curl -g 'https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee?amount=200&currency=usdc' \
+  -H "x-api-key: your_api_key_here"
 ```
 
 ```javascript
-const response = await fetch('https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    amount: 100.50,
-    currency: 'usdc'
-  })
+const params = new URLSearchParams({
+  amount: '200',
+  currency: 'usdc',
 });
+const response = await fetch(
+  `https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee?${params}`,
+  {
+    method: 'GET',
+    headers: {
+      'x-api-key': 'your_api_key_here',
+    },
+  }
+);
 
 if (!response.ok) {
   throw new Error(`Request failed: ${response.status} ${response.statusText}`);
@@ -44,6 +49,10 @@ if (!response.ok) {
 const feeData = await response.json();
 ```
 
+<Note>
+  This endpoint uses **GET** with **query parameters**, not a JSON body. When using `curl` in a shell, wrap the full URL in quotes (or use `curl -g`) so `&` between query parameters is not treated as a background operator.
+</Note>
+
 ## Response
 
 <ResponseExample>
@@ -51,13 +60,27 @@ const feeData = await response.json();
 {
   "status": true,
   "statusCode": 200,
-  "message": "Fee calculated successfully",
+  "message": "Transfer fee calculated successfully",
   "data": {
-    "amount": 100.50,
+    "amount": 200,
     "currency": "usdc",
-    "feeAmount": 0.50,
-    "total": 101.00
+    "feeAmount": 1,
+    "total": 201
   }
 }
 ```
 </ResponseExample>
+
+| Field | Description |
+| ----- | ----------- |
+| `data.amount` | The amount you passed in the query |
+| `data.currency` | The stablecoin (`usdc` or `usdt`) |
+| `data.feeAmount` | The fee charged for the crypto payout |
+| `data.total` | `amount` + `feeAmount` (total including fee) |
+
+## Validation errors
+
+| HTTP status | Typical cause |
+| ----------- | ------------- |
+| `422` | Missing or invalid query params (e.g. `amount` not a positive number, `currency` empty or not `usdc`/`usdt`) |
+| `400` | `amount` or `currency` missing after validation, or unsupported currency at the service layer |
