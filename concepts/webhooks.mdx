@@ -101,11 +101,11 @@ All webhooks follow this structure:
 ```json
 {
   "event": "deposit.completed",
-  "event_id": "evt_abc123xyz",
+  "eventId": "evt_abc123xyz",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
-    "transaction_id": "txn_001",
-    "customer_id": "cus_123",
+    "transactionId": "txn_001",
+    "customerId": "cus_123",
     "sender": {
       "address": "0x123...",
       "chain": "Ethereum"
@@ -118,13 +118,12 @@ All webhooks follow this structure:
     "currency": "USDT",
     "reference": "dep-20240115-001",
     "status": "completed",
-    "transaction_type": "deposit",
+    "transactionType": "deposit",
     "blockchain": "Ethereum",
-    "transaction_hash": "0x789...",
-    "explorer_link": "https://etherscan.io/tx/0x789...",
+    "transactionHash": "0x789...",
+    "explorerLink": "https://etherscan.io/tx/0x789...",
     "timestamp": "2024-01-15T10:30:40Z"
-  },
-  "business_id": "bus_your_business"
+  }
 }
 ```
 
@@ -188,20 +187,20 @@ async function processWebhook(payload) {
 async function handleDepositCompleted(data) {
   // Credit customer wallet
   await db.transactions.create({
-    id: data.transaction_id,
-    customer_id: data.customer_id,
+    id: data.transactionId,
+    customer_id: data.customerId,
     amount: data.amount,
     type: 'credit',
     status: 'completed'
   });
 
   await db.wallets.increment({
-    customer_id: data.customer_id,
+    customer_id: data.customerId,
     amount: data.amount
   });
 
   // Notify customer
-  await sendNotification(data.customer_id, {
+  await sendNotification(data.customerId, {
     title: 'Deposit Received',
     message: `Your wallet has been credited with ${data.amount} ${data.currency}`
   });
@@ -235,7 +234,7 @@ app = Flask(__name__)
 @app.route('/webhooks/fossapay', methods=['POST'])
 def handle_webhook():
     # Verify signature
-    signature = request.headers.get('X-FossaPay-Signature')
+    signature = request.headers.get('x-fossapay-signature')
     secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
     if not verify_signature(request.data, signature, secret):
         return 'Invalid signature', 401
@@ -334,7 +333,7 @@ Webhooks may be delivered more than once. Implement idempotent handling:
 ```javascript
 async function handleDepositCompleted(data) {
   const existingTransaction = await db.transactions.findOne({
-    id: data.transaction_id
+    id: data.transactionId
   });
 
   if (existingTransaction) {
@@ -344,7 +343,7 @@ async function handleDepositCompleted(data) {
 
   // Process deposit
   await db.transactions.create({
-    id: data.transaction_id,
+    id: data.transactionId,
     // ... other fields
   });
 }
@@ -422,7 +421,7 @@ View webhook delivery logs in your dashboard:
     Log all webhook receipts for debugging and auditing:
     ```javascript
     logger.info('Webhook received', {
-      event_id: payload.event_id,
+      event_id: payload.eventId,
       event: payload.event,
       timestamp: payload.timestamp
     });
@@ -446,11 +445,11 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "deposit.completed",
-  "event_id": "evt_abc123",
+  "eventId": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
-    "transaction_id": "txn_001",
-    "customer_id": "cus_123",
+    "transactionId": "txn_001",
+    "customerId": "cus_123",
     "sender": {
       "address": "0x123...",
       "chain": "Ethereum"
@@ -463,10 +462,10 @@ View webhook delivery logs in your dashboard:
     "currency": "USDT",
     "reference": "dep-20240115-001",
     "status": "completed",
-    "transaction_type": "deposit",
+    "transactionType": "deposit",
     "blockchain": "Ethereum",
-    "transaction_hash": "0x789...",
-    "explorer_link": "https://etherscan.io/tx/0x789...",
+    "transactionHash": "0x789...",
+    "explorerLink": "https://etherscan.io/tx/0x789...",
     "timestamp": "2024-01-15T10:30:40Z"
   }
 }
@@ -477,26 +476,26 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "deposit.completed",
-  "event_id": "evt_def456",
+  "eventId": "evt_def456",
   "timestamp": "2024-01-15T11:00:00Z",
   "data": {
-    "transaction_id": "txn_002",
-    "customer_id": "cus_456",
+    "transactionId": "txn_002",
+    "customerId": "cus_456",
     "sender": {
-      "account_name": "John Doe",
-      "account_number": "0987654321",
-      "bank_name": "GTBank"
+      "accountName": "John Doe",
+      "accountNumber": "0987654321",
+      "bankName": "GTBank"
     },
     "recipient": {
-      "account_name": "Jane Smith",
-      "account_number": "0123456789",
-      "bank_name": "GTBank"
+      "accountName": "Jane Smith",
+      "accountNumber": "0123456789",
+      "bankName": "GTBank"
     },
     "amount": 50000,
     "currency": "NGN",
     "reference": "dep-20240115-002",
     "status": "completed",
-    "transaction_type": "deposit",
+    "transactionType": "deposit",
     "notes": "Bank transfer deposit",
     "timestamp": "2024-01-15T11:00:00Z"
   }
@@ -508,21 +507,21 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "withdrawal.completed",
-  "event_id": "evt_xyz789",
+  "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
-    "transaction_id": "txn_003",
-    "customer_id": "cus_789",
+    "transactionId": "txn_003",
+    "customerId": "cus_789",
     "recipient": {
-      "account_name": "Jane Smith",
-      "account_number": "0123456789",
-      "bank_name": "GTBank"
+      "accountName": "Jane Smith",
+      "accountNumber": "0123456789",
+      "bankName": "GTBank"
     },
     "amount": 25000,
     "currency": "NGN",
     "reference": "wth-20240115-001",
     "status": "completed",
-    "transaction_type": "withdrawal",
+    "transactionType": "withdrawal",
     "timestamp": "2024-01-15T11:45:20Z"
   }
 }
@@ -533,11 +532,11 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "transfer.completed",
-  "event_id": "evt_transfer1",
+  "eventId": "evt_transfer1",
   "timestamp": "2024-01-15T12:30:00Z",
   "data": {
-    "transaction_id": "txn_004",
-    "customer_id": "cus_123",
+    "transactionId": "txn_004",
+    "customerId": "cus_123",
     "sender": {
       "address": "0x123...",
       "chain": "Ethereum"
@@ -550,9 +549,9 @@ View webhook delivery logs in your dashboard:
     "currency": "USDT",
     "reference": "trf-20240115-001",
     "status": "completed",
-    "transaction_type": "transfer",
+    "transactionType": "transfer",
     "blockchain": "Ethereum",
-    "transaction_hash": "0xabc...",
+    "transactionHash": "0xabc...",
     "timestamp": "2024-01-15T12:30:00Z"
   }
 }
@@ -563,11 +562,11 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "transfer.failed",
-  "event_id": "evt_transfer2",
+  "eventId": "evt_transfer2",
   "timestamp": "2024-01-15T13:15:00Z",
   "data": {
-    "transaction_id": "txn_005",
-    "customer_id": "cus_456",
+    "transactionId": "txn_005",
+    "customerId": "cus_456",
     "sender": {
       "address": "0x789...",
       "chain": "Ethereum"
@@ -580,9 +579,9 @@ View webhook delivery logs in your dashboard:
     "currency": "USDT",
     "reference": "trf-20240115-002",
     "status": "failed",
-    "transaction_type": "transfer",
+    "transactionType": "transfer",
     "blockchain": "Ethereum",
-    "transaction_hash": "0xdef...",
+    "transactionHash": "0xdef...",
     "timestamp": "2024-01-15T13:15:00Z"
   }
 }
@@ -593,26 +592,24 @@ View webhook delivery logs in your dashboard:
 ```json
 {
   "event": "wallet.balance.updated",
-  "event_id": "evt_balance1",
+  "eventId": "evt_balance1",
   "timestamp": "2024-01-15T14:00:00Z",
   "data": {
-    "from_account": {
-      "id": "acc_001",
-      "account_number": "0123456789",
-      "account_name": "Main Wallet",
-      "bank_name": "GTBank",
-      "customer_id": "cus_123"
+    "fromAccount": {
+      "accountNumber": "0123456789",
+      "accountName": "Main Wallet",
+      "bankName": "GTBank"
     },
-    "to_account": {
-      "id": "acc_002",
-      "account_number": "0987654321",
-      "account_name": "Savings Wallet",
-      "bank_name": "GTBank",
-      "customer_id": "cus_123"
+    "toAccount": {
+      "accountNumber": "0987654321",
+      "accountName": "Savings Wallet",
+      "bankName": "GTBank"
     },
     "amount": 25000,
     "currency": "NGN",
     "reference": "bal-20240115-001",
+    "type": "withdrawal/deposit",
+    "customerId": "cus_123",
     "narration": "Transfer between accounts",
     "timestamp": "2024-01-15T14:00:00Z"
   }

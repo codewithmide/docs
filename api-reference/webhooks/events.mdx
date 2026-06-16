@@ -14,11 +14,11 @@ Fired when a deposit is completed successfully.
 ```json
 {
   "event": "deposit.completed",
-  "event_id": "evt_abc123",
+  "eventId": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
-    "transaction_id": "txn_001",
-    "customer_id": "cus_123",
+    "transactionId": "txn_001",
+    "customerId": "cus_123",
     "sender": {
       "address": "0x123...",
       "chain": "Ethereum"
@@ -31,9 +31,9 @@ Fired when a deposit is completed successfully.
     "currency": "USDT",
     "reference": "dep-20240115-001",
     "status": "completed",
-    "transaction_type": "deposit",
+    "transactionType": "deposit",
     "blockchain": "Ethereum",
-    "transaction_hash": "0x789...",
+    "transactionHash": "0x789...",
     "explorer_link": "https://etherscan.io/tx/0x789...",
     "timestamp": "2024-01-15T10:30:40Z"
   }
@@ -45,26 +45,26 @@ Fired when a deposit is completed successfully.
 ```json
 {
   "event": "deposit.completed",
-  "event_id": "evt_def456",
+  "eventId": "evt_def456",
   "timestamp": "2024-01-15T11:00:00Z",
   "data": {
-    "transaction_id": "txn_002",
-    "customer_id": "cus_456",
+    "transactionId": "txn_002",
+    "customerId": "cus_456",
     "sender": {
-      "account_name": "John Doe",
-      "account_number": "0987654321",
-      "bank_name": "GTBank"
+      "accountName": "John Doe",
+      "accountNumber": "0987654321",
+      "bankName": "GTBank"
     },
     "recipient": {
-      "account_name": "Jane Smith",
-      "account_number": "0123456789",
-      "bank_name": "GTBank"
+      "accountName": "Jane Smith",
+      "accountNumber": "0123456789",
+      "bankName": "GTBank"
     },
     "amount": 50000,
     "currency": "NGN",
     "reference": "dep-20240115-002",
     "status": "completed",
-    "transaction_type": "deposit",
+    "transactionType": "deposit",
     "notes": "Bank transfer deposit",
     "timestamp": "2024-01-15T11:00:00Z"
   }
@@ -80,21 +80,21 @@ Fired when a withdrawal is completed successfully.
 ```json
 {
   "event": "withdrawal.completed",
-  "event_id": "evt_xyz789",
+  "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
-    "transaction_id": "txn_003",
-    "customer_id": "cus_789",
+    "transactionId": "txn_003",
+    "customerId": "cus_789",
     "recipient": {
-      "account_name": "Jane Smith",
-      "account_number": "0123456789",
-      "bank_name": "GTBank"
+      "accountName": "Jane Smith",
+      "accountNumber": "0123456789",
+      "bankName": "GTBank"
     },
     "amount": 25000,
     "currency": "NGN",
     "reference": "wth-20240115-001",
     "status": "completed",
-    "transaction_type": "withdrawal",
+    "transactionType": "withdrawal",
     "timestamp": "2024-01-15T11:45:20Z"
   }
 }
@@ -107,21 +107,21 @@ Fired when a withdrawal fails.
 ```json
 {
   "event": "withdrawal.failed",
-  "event_id": "evt_xyz789",
+  "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
-    "transaction_id": "txn_003",
-    "customer_id": "cus_789",
+    "transactionId": "txn_003",
+    "customerId": "cus_789",
     "recipient": {
-      "account_name": "Jane Smith",
-      "account_number": "0123456789",
-      "bank_name": "GTBank"
+      "accountName": "Jane Smith",
+      "accountNumber": "0123456789",
+      "bankName": "GTBank"
     },
     "amount": 25000,
     "currency": "NGN",
     "reference": "wth-20240115-001",
     "status": "failed",
-    "transaction_type": "withdrawal",
+    "transactionType": "withdrawal",
     "timestamp": "2024-01-15T11:45:20Z"
   }
 }
@@ -136,11 +136,11 @@ Fired when a transfer is completed successfully.
 ```json
 {
   "event": "transfer.completed",
-  "event_id": "evt_transfer1",
+  "eventId": "evt_transfer1",
   "timestamp": "2024-01-15T12:30:00Z",
   "data": {
-    "transaction_id": "txn_004",
-    "customer_id": "cus_123",
+    "transactionId": "txn_004",
+    "customerId": "cus_123",
     "sender": {
       "address": "0x123...",
       "chain": "Ethereum"
@@ -153,9 +153,9 @@ Fired when a transfer is completed successfully.
     "currency": "USDT",
     "reference": "trf-20240115-001",
     "status": "completed",
-    "transaction_type": "transfer",
+    "transactionType": "transfer",
     "blockchain": "Ethereum",
-    "transaction_hash": "0xabc...",
+    "transactionHash": "0xabc...",
     "timestamp": "2024-01-15T12:30:00Z"
   }
 }
@@ -168,11 +168,11 @@ Fired when a transfer fails.
 ```json
 {
   "event": "transfer.failed",
-  "event_id": "evt_transfer2",
+  "eventId": "evt_transfer2",
   "timestamp": "2024-01-15T13:15:00Z",
   "data": {
-    "transaction_id": "txn_005",
-    "customer_id": "cus_456",
+    "transactionId": "txn_005",
+    "customerId": "cus_456",
     "sender": {
       "address": "0x789...",
       "chain": "Ethereum"
@@ -185,9 +185,9 @@ Fired when a transfer fails.
     "currency": "USDT",
     "reference": "trf-20240115-002",
     "status": "failed",
-    "transaction_type": "transfer",
+    "transactionType": "transfer",
     "blockchain": "Ethereum",
-    "transaction_hash": "0xdef...",
+    "transactionHash": "0xdef...",
     "timestamp": "2024-01-15T13:15:00Z"
   }
 }
@@ -202,26 +202,24 @@ Fired when a wallet balance is updated.
 ```json
 {
   "event": "wallet.balance.updated",
-  "event_id": "evt_balance1",
+  "eventId": "evt_balance1",
   "timestamp": "2024-01-15T14:00:00Z",
   "data": {
-    "from_account": {
-      "id": "acc_001",
-      "account_number": "0123456789",
-      "account_name": "Main Wallet",
-      "bank_name": "GTBank",
-      "customer_id": "cus_123"
+    "fromAccount": {
+      "accountNumber": "0123456789",
+      "accountName": "Main Wallet",
+      "bankName": "GTBank"
     },
-    "to_account": {
-      "id": "acc_002",
-      "account_number": "0987654321",
-      "account_name": "Savings Wallet",
-      "bank_name": "GTBank",
-      "customer_id": "cus_123"
+    "toAccount": {
+      "accountNumber": "0987654321",
+      "accountName": "Savings Wallet",
+      "bankName": "GTBank",
     },
     "amount": 25000,
     "currency": "NGN",
     "reference": "bal-20240115-001",
+    "type": "withdrawal / deposit",
+    "customerId": "cus_123",
     "narration": "Transfer between accounts",
     "timestamp": "2024-01-15T14:00:00Z"
   }
