@@ -62,10 +62,9 @@ Webhooks are HTTP callbacks that FossaPay sends to your server when events occur
 Set your webhook endpoint in the dashboard or via API:
 
 **Via Dashboard:**
-1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings/webhooks)
+1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
 2. Enter your webhook URL
-3. Select events to subscribe to
-4. Save configuration
+3. Copy the webhook secret
 
 **Via API:**
 ```javascript
@@ -294,15 +293,6 @@ function verifyWebhookSignature(payload, signature, secret) {
 }
 ```
 
-### IP Whitelisting
-
-Optionally restrict webhooks to FossaPay IPs:
-
-```
-52.49.173.169
-54.171.127.99
-52.214.14.220
-```
 
 <Tip>
   Use IP whitelisting as an additional layer of security, not as a replacement for signature verification.
@@ -380,9 +370,9 @@ curl -X POST https://api-production.fossapay.com/api/v1/webhooks/simulate \
 ### Webhook Logs
 
 View webhook delivery logs in your dashboard:
-1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings/webhooks)
-2. Click on "Webhook Logs"
-3. Filter by status, event type, or date
+1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
+2. Scroll down to "Webhook Events"
+3. Filter by event type
 4. Replay failed webhooks
 
 ## Best Practices
@@ -619,10 +609,10 @@ View webhook delivery logs in your dashboard:
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings/webhooks">
+  <Card color="#0080FF" title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings?tab=webhooks">
     Set up your webhook endpoint
   </Card>
-  <Card color="#0080FF" title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/webhooks/logs">
+  <Card color="#0080FF" title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/settings?tab=webhooks">
     Monitor webhook deliveries
   </Card>
   <Card color="#0080FF" title="Collections Guide" icon="book" href="/guides/collections">
