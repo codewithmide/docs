@@ -35,6 +35,12 @@
               "guides/collections",
               "guides/payouts"
             ]
+          },
+          {
+            "group": "AI Tools",
+            "pages": [
+              "ai-tools/skill-md"
+            ]
           }
         ]
       },

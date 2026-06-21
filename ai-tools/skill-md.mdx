@@ -1,0 +1,195 @@
+---
+title: "skill.md"
+description: "Use Claude Code to integrate the FossaPay API into your application"
+icon: "wand-magic-sparkles"
+---
+
+# FossaPay Docs Skill
+
+Use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to integrate the FossaPay API into your application. The skill helps you generate integration code, understand API responses, and handle webhooks.
+
+## What Can It Do?
+
+<CardGroup cols={2}>
+  <Card title="Generate API Code" icon="code">
+    Get working code snippets in JavaScript, Python, or cURL for any FossaPay endpoint
+  </Card>
+  <Card title="Handle Webhooks" icon="webhook">
+    Set up webhook listeners and verify signatures correctly
+  </Card>
+  <Card title="Build Integrations" icon="puzzle-piece">
+    Get guided help building payment flows, payouts, and crypto features
+  </Card>
+  <Card title="Debug Issues" icon="bug">
+    Troubleshoot API errors and understand response formats
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Steps>
+  <Step title="Install Claude Code">
+    ```bash
+    npm install -g @anthropic-ai/claude-code
+    ```
+  </Step>
+  <Step title="Start Claude Code">
+    ```bash
+    claude
+    ```
+  </Step>
+  <Step title="Ask for help">
+    ```
+    Help me integrate FossaPay to accept payments in my Node.js app
+    ```
+  </Step>
+</Steps>
+
+## Example Prompts
+
+### Generate Integration Code
+
+```
+Generate code to create a customer and fiat wallet using the FossaPay API
+```
+
+```
+Show me how to send a payout to a Nigerian bank account
+```
+
+```
+Create a webhook handler for FossaPay payment notifications in Express.js
+```
+
+### Understand the API
+
+```
+What parameters do I need to create a crypto wallet?
+```
+
+```
+How do I verify a bank account before sending money?
+```
+
+```
+What webhook events should I listen for?
+```
+
+### Build Features
+
+```
+Help me build a complete payment acceptance flow with webhooks
+```
+
+```
+How do I implement crypto deposits in my app?
+```
+
+```
+Generate a payout function with error handling and retries
+```
+
+## What You'll Get
+
+When you ask for integration help, Claude will:
+
+1. **Read the API documentation** to understand the exact requirements
+2. **Generate working code** with proper authentication and error handling
+3. **Include multiple languages** (JavaScript, Python, cURL) when helpful
+4. **Explain the flow** so you understand what's happening
+5. **Handle edge cases** like webhook signature verification
+
+## Example Output
+
+Ask: *"Generate code to accept payments with FossaPay"*
+
+Claude will provide:
+
+```javascript
+// 1. Create a customer
+const customer = await fetch('https://api-production.fossapay.com/api/v1/customers', {
+  method: 'POST',
+  headers: {
+    'x-api-key': process.env.FOSSAPAY_API_KEY,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    firstName: 'John',
+    lastName: 'Doe',
+    emailAddress: 'john@example.com',
+    mobileNumber: '+2348012345678',
+    dob: '1990-01-15',
+    address: '123 Main St',
+    city: 'Lagos',
+    country: 'Nigeria',
+    type: 'individual'
+  })
+});
+
+// 2. Create a fiat wallet for collections
+const wallet = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/create', {
+  method: 'POST',
+  headers: {
+    'x-api-key': process.env.FOSSAPAY_API_KEY,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    customerId: customer.data.id,
+    walletName: 'Main Wallet',
+    walletReference: 'wallet_001'
+  })
+});
+
+// 3. Share wallet.data.accountNumber with your user
+// 4. Listen for deposit.completed webhook
+```
+
+Plus webhook handling code, error handling, and explanations.
+
+## API Coverage
+
+The skill has knowledge of all FossaPay endpoints:
+
+| Category | What You Can Do |
+|----------|-----------------|
+| Customers | Create accounts, list customers, get details |
+| Fiat Wallets | Create wallets, check balances, view transactions |
+| Fiat Transfers | Send to banks, verify accounts, calculate fees |
+| Crypto Wallets | Create wallets, check balances, get addresses |
+| Crypto Transfers | Send crypto, estimate fees |
+| Webhooks | Handle all payment and transfer events |
+
+<Card title="Full API Reference" icon="book" href="/api-reference/customers/index">
+  View complete API documentation with all parameters and responses
+</Card>
+
+## Tips for Best Results
+
+<Tip>
+  **Be specific** - Instead of "help with payments", try "generate code to create a fiat wallet and handle the deposit webhook in Python"
+</Tip>
+
+<Tip>
+  **Ask follow-ups** - Claude remembers context, so you can ask "now add error handling" or "convert that to Python"
+</Tip>
+
+<Tip>
+  **Request explanations** - Ask "explain what each step does" if you want to understand the flow better
+</Tip>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get started with FossaPay in minutes
+  </Card>
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Learn about API keys and security
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/concepts/webhooks">
+    Set up real-time notifications
+  </Card>
+  <Card title="Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
+    Get help from the community
+  </Card>
+</CardGroup>
