@@ -1,0 +1,120 @@
+---
+title: 'Get Master Crypto Wallet'
+api: 'GET /api/v1/wallets/crypto/master'
+description: "Retrieve all of the merchant's crypto addresses and their token balances"
+---
+
+The master crypto wallet returns every crypto address belonging to the merchant (resolved from the authenticated API key), each with its live token balances. No wallet ID is required.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  API Key for authentication
+</ParamField>
+
+## Request Example
+
+```bash
+curl -X GET https://api-production.fossapay.com/api/v1/wallets/crypto/master \
+  -H "x-api-key: your_api_key_here"
+```
+
+```javascript
+const response = await fetch(
+  'https://api-production.fossapay.com/api/v1/wallets/crypto/master',
+  {
+    method: 'GET',
+    headers: {
+      'x-api-key': 'your_api_key_here',
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+if (!response.ok) {
+  throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+}
+
+const data = await response.json();
+const addresses = data.data;
+```
+
+```python
+import requests
+
+url = "https://api-production.fossapay.com/api/v1/wallets/crypto/master"
+headers = {"x-api-key": "your_api_key_here"}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+addresses = data["data"]
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Response status
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  List of crypto addresses owned by the merchant
+  <Expandable title="properties">
+    <ResponseField name="address" type="string">
+      Crypto wallet address
+    </ResponseField>
+
+    <ResponseField name="network" type="string">
+      Blockchain network the address belongs to
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token symbol (or chain name) to balance info, each with `amount` and `rawAmount`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response Example
+
+<ResponseExample>
+```json Success Response
+{
+  "success": true,
+  "message": "Master crypto wallet retrieved successfully",
+  "data": [
+    {
+      "address": "GbnnysYh3Y1ZLqPxkaz....76Upv12iP4sNGeHA2H4z2",
+      "network": "solana",
+      "tokens": {
+        "usdc": {
+          "amount": "0",
+          "rawAmount": "0"
+        },
+        "usdt": {
+          "amount": "0",
+          "rawAmount": "0"
+        }
+      }
+    }
+  ]
+}
+```
+
+```json Error Response
+{
+  "success": false,
+  "message": "Master wallet not found for merchant",
+  "statusCode": 400
+}
+```
+</ResponseExample>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `400` | No crypto addresses found for merchant |
+| `401` | Invalid or missing API key |
