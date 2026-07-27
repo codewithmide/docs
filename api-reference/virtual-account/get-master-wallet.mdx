@@ -57,10 +57,6 @@ master_wallet = data["data"]
       Unique identifier for the master wallet's virtual account
     </ResponseField>
 
-    <ResponseField name="merchantId" type="string">
-      ID of the merchant that owns the wallet
-    </ResponseField>
-
     <ResponseField name="availableBalance" type="string">
       Available balance in the wallet
     </ResponseField>
@@ -100,7 +96,6 @@ master_wallet = data["data"]
   "message": "Master fiat wallet retrieved successfully",
   "data": {
     "id": "va_abc123xyz",
-    "merchantId": "mer_123456789",
     "availableBalance": "500000.00",
     "ledgerBalance": "500000.00",
     "walletName": "Merchant Master Wallet",
