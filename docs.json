@@ -1,5 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "openapi": "/api-reference/openapi.json",
   "theme": "mint",
   "name": "FossaPay",
   "colors": {
@@ -64,15 +65,15 @@
               "api-reference/virtual-account/get-master-wallet",
               "api-reference/virtual-account/get-wallet-by-account",
               "api-reference/virtual-account/wallet-transactions",
-              "api-reference/virtual-account/wallet-transaction",
-              "api-reference/virtual-account/wallet-transfer"
+              "api-reference/virtual-account/wallet-transaction"
             ]
           },
           {
-            "group": "Fiat Transfers",
+            "group": "NGN Transfers",
             "pages": [
               "api-reference/fiat-transfers/get-supported-banks",
               "api-reference/fiat-transfers/bank-name-enquiry",
+              "api-reference/virtual-account/wallet-transfer",
               "api-reference/fiat-transfers/inter-bank-transfer",
               "api-reference/fiat-transfers/calculate-fee"
             ]
@@ -101,17 +102,6 @@
             "pages": [
               "api-reference/webhooks/overview",
               "api-reference/webhooks/events"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "White-Label",
-        "groups": [
-          {
-            "group": "Neobank Solution",
-            "pages": [
-              "white-label/overview"
             ]
           }
         ]

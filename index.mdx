@@ -1,109 +1,113 @@
 ---
-title: Introduction
+title: "FossaPay API Documentation"
+description: "Build payment products with FossaPay APIs for customers, NGN wallets, collections, payouts, and stablecoin wallets."
+mode: "wide"
+hideFooterPagination: true
 ---
 
-Welcome to the FossaPay API documentation.
+# Money movement, built into your product
 
-FossaPay is a payment infrastructure built for neobanks, fintechs, and businesses that need to move money quickly and safely. Through a single API, you can issue virtual accounts, manage wallets, automate payouts, and settle funds in fiat or stablecoins.
-
-This documentation explains how FossaPay works, what you can build with it, and how to get started from your first API call to live transactions.
-
-### What is FossaPay?
-
-FossaPay is a unified payment and wallet infrastructure that helps products launch and scale faster.
-
-With FossaPay, you can:
-- Create and assign fiat virtual accounts on demand
-- Accept bank transfers and wallet payments
-- Hold and manage balances in NGN and stablecoins
-- Automate payouts and settlements
-- Track transactions in real time
-- Receive instant webhook events
-
-### Why Choose FossaPay?
+Create customers, issue NGN virtual accounts, collect payments, send payouts, and manage stablecoin wallets through one production API.
 
 <CardGroup cols={2}>
-  <Card color="#0080FF"
-    title="Launch in a week"
+  <Card
+    title="Start building"
     icon="rocket"
-  >
-    Go live very fast. No heavy setup or compliance headaches.
-  </Card>
-  <Card color="#0080FF"
-    title="Single API"
-    icon="code"
-  >
-    Everything you need through one unified API - from collections to payouts.
-  </Card>
-  <Card color="#0080FF"
-    title="Real-time Operations"
-    icon="bolt"
-  >
-    Instant webhooks, real-time reconciliation, and immediate settlements.
-  </Card>
-  <Card color="#0080FF"
-    title="Bank-grade Security"
-    icon="shield-check"
-  >
-    99.9% uptime with enterprise-level security and encryption.
-  </Card>
-</CardGroup>
-
-### Built for Neobanks and Fintechs
-
-Whether you're building a digital bank, a payment platform, or a fintech product, FossaPay provides the foundation you need:
-
-- **Neobanks** - Launch your own branded banking platform
-- **Lending Platforms** - Manage disbursements and collections
-- **Payment Processors** - Handle high-volume transactions
-- **Crypto Platforms** - Bridge fiat and stablecoins seamlessly
-- **Marketplaces** - Split payments and manage seller payouts
-
-### Getting Started
-
-<CardGroup cols={2}>
-  <Card color="#0080FF"
-    title="Quickstart"
-    icon="play"
+    color="#07C983"
     href="/quickstart"
+    cta="Open the quickstart"
+    arrow="true"
   >
-    Get up and running in minutes with our quickstart guide
+    Follow a complete flow from your production API key to a verified live payment.
   </Card>
-  <Card color="#0080FF"
-    title="API Reference"
-    icon="code"
-    href="/api-reference"
+  <Card
+    title="Explore the API"
+    icon="brackets-curly"
+    color="#0080FF"
+    href="/api-reference/customers/index"
+    cta="View endpoint reference"
+    arrow="true"
   >
-    Explore our comprehensive API documentation
-  </Card>
-  <Card color="#0080FF"
-    title="White-Label Solution"
-    icon="building"
-    href="/white-label/overview"
-  >
-    Learn about our white-label neobank solution
+    Find request fields, response schemas, and executable examples for every endpoint.
   </Card>
 </CardGroup>
 
-## Core Features
+<Warning>
+  FossaPay currently operates in production only. Use your `fk_production_` key and start with small live amounts while validating an integration.
+</Warning>
 
-### Collections API
-Accept payments through fiat wallets with instant webhook notifications on every transaction.
+## One API for every money flow
 
-### Payouts API
-Send funds to any Nigerian bank account in seconds. Support for single and bulk disbursements with automated processing.
+<CardGroup cols={3}>
+  <Card title="Collect payments" icon="building-columns" color="#07C983" href="/guides/collections">
+    Create dedicated NGN virtual accounts and receive real-time deposit webhooks.
+  </Card>
+  <Card title="Send payouts" icon="money-bill-transfer" color="#0080FF" href="/guides/payouts">
+    Resolve bank accounts, calculate fees, and send traceable NGN payouts.
+  </Card>
+  <Card title="Power wallets" icon="wallet" color="#07C983" href="/concepts/wallets">
+    Give each customer an individual NGN or stablecoin wallet and track its balance.
+  </Card>
+</CardGroup>
 
-### Wallet Infrastructure
-Create customer wallets, hold balances in NGN and stablecoins, and manage ledgers with ease.
+## Make your first request
 
-## Support
+Create the customer before provisioning their wallet. The returned customer ID connects the rest of the payment flow.
 
-Need help? We're here for you:
+```bash Create a customer
+curl -X POST https://api-production.fossapay.com/api/v1/customers \
+  -H "x-api-key: fk_production_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Amara",
+    "lastName": "Okafor",
+    "emailAddress": "amara@example.com",
+    "mobileNumber": "+2348012345678"
+  }'
+```
 
-- **Email**: product@fossapay.com
-- **Documentation**: You're already here!
-- **Dashboard**: [dashboard.fossapay.com](https://dashboard.fossapay.com)
+<Card color="#07C983" title="Create a customer" icon="user-plus" href="/api-reference/customers/create-customer">
+  Review the complete request body, response fields, and playground for this endpoint.
+</Card>
 
-<Note>
-  Ready to get started? [Get API Access](https://dashboard.fossapay.com/register) and go live in 2 weeks.
-</Note>
+## A clear path to your first payment
+
+<Steps>
+  <Step title="Authenticate securely">
+    Create a production key in the dashboard and send it in the `x-api-key` header.
+  </Step>
+  <Step title="Create the customer and wallet">
+    Create the customer first, then use the returned customer ID to provision their individual wallet.
+  </Step>
+  <Step title="Configure webhooks">
+    Add your webhook URL and secret before initiating a payment so your application can verify every event.
+  </Step>
+  <Step title="Validate with a small live amount">
+    Make a controlled production payment, verify the webhook, and retrieve the transaction record.
+  </Step>
+</Steps>
+
+## Go deeper
+
+<CardGroup cols={3}>
+  <Card title="Understand FossaPay" icon="circle-info" href="/introduction">
+    Learn how the platform's customers, wallets, transfers, and webhooks fit together.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Protect production keys, authenticate requests, and prevent duplicate operations.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/concepts/webhooks">
+    Verify signatures and build reliable, idempotent event handlers.
+  </Card>
+</CardGroup>
+
+<Card
+  title="Get production API access"
+  icon="arrow-up-right-from-square"
+  color="#07C983"
+  href="https://dashboard.fossapay.com/register"
+  cta="Create your account"
+  arrow="true"
+>
+  Create a FossaPay account, complete verification, and generate your production key.
+</Card>

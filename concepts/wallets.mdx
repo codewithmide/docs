@@ -35,7 +35,7 @@ Individual wallets for your end users. Each wallet can hold multiple currencies.
 
 ```json
 {
-  "type": "customer",
+  "type": "individual",
   "customer_id": "cus_abc123",
   "customer_name": "John Doe",
   "customer_email": "john@example.com",
@@ -47,11 +47,9 @@ Individual wallets for your end users. Each wallet can hold multiple currencies.
 
 | Currency | Code | Type | Status |
 |----------|------|------|--------|
-| Nigerian Naira | NGN | Fiat | Active |
+| Nigerian Naira | NGN | NGN | Active |
 | Tether USD | USDT | Stablecoin | Active |
 | USD Coin | USDC | Stablecoin | Active |
-| Binance USD | BUSD | Stablecoin | Coming Soon |
-| Celo Dollar | cUSD | Stablecoin | Coming Soon |
 
 ## Wallet Operations
 
@@ -59,7 +57,7 @@ Individual wallets for your end users. Each wallet can hold multiple currencies.
 
 Add funds to a wallet from various sources:
 
-**From Fiat Wallet Payment:**
+**From NGN Wallet Payment:**
 ```javascript
 // Automatic via webhook when payment is received
 // Webhook handler
@@ -104,7 +102,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-ban
 
 ### Wallet-to-Wallet Transfers
 
-Transfer funds between wallets instantly:
+Transfer funds instantly and free of charge between two FossaPay customers under the same business. Both the sending and receiving account numbers must belong to FossaPay NGN wallets created under your business:
 
 ```javascript
 const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
@@ -126,7 +124,7 @@ const data = await response.json();
 ```
 
 <Note>
-  Wallet transfers are atomic - either both debit and credit succeed, or neither happens.
+  Wallet-to-wallet transfers are free and atomic - either both the debit and credit succeed, or neither happens. Use an inter-bank transfer when the recipient uses an external bank.
 </Note>
 
 ### Balance Inquiry
@@ -272,7 +270,7 @@ const transactions = data.transactions;
 
 ### Neobank Wallet
 ```javascript
-// Create fiat wallet when user signs up
+// Create NGN wallet when user signs up
 curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
@@ -295,6 +293,8 @@ const payment = event.data; // from webhook
 // Wallets are credited automatically based on webhook configuration
 ```
 ### Peer-to-Peer Transfers
+
+This free flow applies only when both users are customers under your business and both accounts are FossaPay NGN wallets.
 
 ```javascript
 // User sends money to another user
@@ -319,7 +319,7 @@ const data = await response.json();
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Create Fiat Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
+  <Card color="#0080FF" title="Create NGN Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
     Create your first wallet via API
   </Card>
   <Card color="#0080FF" title="Collections" icon="building-columns" href="/guides/collections">

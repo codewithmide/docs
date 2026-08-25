@@ -5,17 +5,28 @@ description: 'Complete guide to sending money with FossaPay'
 
 ## Overview
 
-Send money to any Nigerian bank account in seconds using FossaPay's Payouts API. This guide covers single payouts, bulk disbursements, and handling payout failures.
+Send money to another FossaPay customer or to an external Nigerian bank account using FossaPay's Payouts API. This guide covers single payouts, bulk disbursements, and handling payout failures.
+
+## Choose the Correct Transfer Type
+
+| Transfer type | Use when | Fee |
+|---|---|---|
+| [Wallet-to-Wallet Transfer](/api-reference/virtual-account/wallet-transfer) | The sender and recipient are both FossaPay customers under the same business | Free |
+| [Inter-Bank Transfer](/api-reference/fiat-transfers/inter-bank-transfer) | The recipient uses an account at another supported Nigerian bank | Calculate the applicable fee before sending |
+
+<Note>
+  Wallet-to-wallet transfer is an internal movement between two customer wallets under your business. Inter-bank transfer sends money outside that wallet network to another bank.
+</Note>
 
 ## Prerequisites
 
 - Sufficient balance in your FossaPay wallet or bank account
 - Verified business account
-- Live API keys (test keys for sandbox)
+- Live API keys for production
 
 ## Single Payout
 
-### Basic Transfer
+### Basic Inter-Bank Transfer
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
@@ -176,7 +187,7 @@ Common Nigerian bank codes:
 | 057 | Zenith Bank |
 
 <Tip>
-  Get the full list of supported banks via the API: `/v1/transfers/fiat/get-supported-banks`
+Get the full list of supported banks via the API: `/v1/transfers/fiat/get-supported-banks`
 </Tip>
 
 ## Error Handling
@@ -254,16 +265,16 @@ try {
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Inter-Bank Transfer API" icon="code" href="/api-reference/fiat-transfers/inter-bank-transfer">
-    API reference for transfers
+  <Card color="#07C983" title="Wallet-to-Wallet Transfer" icon="wallet" href="/api-reference/virtual-account/wallet-transfer">
+    Free transfers between two customers under your business
+  </Card>
+  <Card color="#0080FF" title="Inter-Bank Transfer" icon="building-columns" href="/api-reference/fiat-transfers/inter-bank-transfer">
+    Transfers to accounts at external banks
   </Card>
   <Card color="#0080FF" title="Bank Name Enquiry API" icon="code" href="/api-reference/fiat-transfers/bank-name-enquiry">
     Validate account details
   </Card>
   <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
     Handle transfer webhooks
-  </Card>
-  <Card color="#0080FF" title="Wallets" icon="wallet" href="/concepts/wallets">
-    Fund transfers from wallets
   </Card>
 </CardGroup>

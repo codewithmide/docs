@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FossaPay API",
-    "description": "FossaPay API for payment processing, collections, payouts, and customer management",
+    "description": "FossaPay API for customer management, NGN wallets, crypto wallets, transfers, fees, banks, and webhooks.",
     "license": {
       "name": "MIT"
     },
@@ -11,99 +11,152 @@
   "servers": [
     {
       "url": "https://api-production.fossapay.com",
-      "description": "Staging server"
-    },
-    {
-      "url": "https://prod.fossapay.com",
       "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
     }
   ],
   "paths": {
     "/api/v1/customers": {
       "post": {
         "operationId": "CustomersController_create",
-        "parameters": [
-          {
-            "name": "x-api-key",
-            "in": "header",
-            "description": "API Key for authentication",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "tags": ["Third Party Customers"],
+        "summary": "Create a new customer account",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateXCustomerDto"
+                "$ref": "#/components/schemas/CustomerCreateRequest"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Customer created successfully"
+            "description": "Customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
           },
           "400": {
-            "description": "Bad request - validation error"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           },
           "401": {
-            "description": "Unauthorized - invalid API key"
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
-        },
-        "summary": "Create a new customer account",
-        "tags": [
-          "Third Party Customers"
-        ]
+        }
       },
       "get": {
         "operationId": "CustomersController_findAll",
+        "tags": ["Third Party Customers"],
+        "summary": "Get all customers",
         "parameters": [
           {
-            "name": "x-api-key",
-            "in": "header",
-            "description": "API Key for authentication",
-            "required": true,
+            "name": "sortOrder",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["createdAt", "firstName", "lastName", "emailAddress"],
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of customers"
+            "description": "List of customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListResponse"
+                }
+              }
+            }
           },
           "401": {
-            "description": "Unauthorized - invalid API key"
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
-        },
-        "summary": "Get all customers",
-        "tags": [
-          "Third Party Customers"
-        ]
+        }
       }
     },
-    "/api/v1/customers/{id}": {
+    "/api/v1/customers/{customerId}": {
       "get": {
         "operationId": "CustomersController_findOne",
+        "tags": ["Third Party Customers"],
+        "summary": "Get customer by ID",
         "parameters": [
           {
-            "name": "x-api-key",
-            "in": "header",
-            "description": "API Key for authentication",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
+            "name": "customerId",
             "in": "path",
-            "description": "Customer ID",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -111,122 +164,2440 @@
         ],
         "responses": {
           "200": {
-            "description": "Customer found"
+            "description": "Customer found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
           },
           "401": {
-            "description": "Unauthorized - invalid API key"
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           },
           "404": {
-            "description": "Customer not found"
+            "description": "Customer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/create": {
+      "post": {
+        "operationId": "FiatWalletsController_create",
+        "tags": ["NGN Wallets"],
+        "summary": "Create an NGN wallet for a customer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FiatWalletCreateRequest"
+              }
+            }
           }
         },
-        "summary": "Get customer by ID",
-        "tags": [
-          "Third Party Customers"
-        ]
+        "responses": {
+          "201": {
+            "description": "NGN wallet created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/master": {
+      "get": {
+        "operationId": "FiatWalletsController_findMaster",
+        "tags": ["NGN Wallets"],
+        "summary": "Get master NGN wallet",
+        "responses": {
+          "200": {
+            "description": "Master NGN wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatMasterWalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Master NGN wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/{walletId}": {
+      "get": {
+        "operationId": "FiatWalletsController_findOne",
+        "tags": ["NGN Wallets"],
+        "summary": "Get NGN wallet by ID",
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/account/{accountNumber}": {
+      "get": {
+        "operationId": "FiatWalletsController_findByAccount",
+        "tags": ["NGN Wallets"],
+        "summary": "Get NGN wallet by account number",
+        "parameters": [
+          {
+            "name": "accountNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/{walletId}/transactions": {
+      "get": {
+        "operationId": "FiatWalletTransactionsController_findAll",
+        "tags": ["NGN Wallets"],
+        "summary": "Get wallet transactions",
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "transactionType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["deposit", "withdrawal"]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletTransactionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/transactions/{transactionId}": {
+      "get": {
+        "operationId": "FiatWalletTransactionsController_findOne",
+        "tags": ["NGN Wallets"],
+        "summary": "Get wallet transaction by ID",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/fiat/transfers/wallet-to-wallet": {
+      "post": {
+        "operationId": "FiatWalletTransfersController_create",
+        "tags": ["NGN Transfers"],
+        "summary": "Transfer NGN for free between customer wallets",
+        "description": "Free internal transfer between two FossaPay customers under the same business. Both accounts must be FossaPay NGN wallets.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FiatWalletTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wallet transfer completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatWalletTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/fiat/banks": {
+      "get": {
+        "operationId": "FiatTransfersController_getSupportedBanks",
+        "tags": ["NGN Transfers"],
+        "summary": "Get supported banks",
+        "responses": {
+          "200": {
+            "description": "Supported banks retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportedBanksResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/fiat/bank-name-enquiry": {
+      "post": {
+        "operationId": "FiatTransfersController_bankNameEnquiry",
+        "tags": ["NGN Transfers"],
+        "summary": "Perform bank account name enquiry",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankNameEnquiryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bank name enquiry completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankNameEnquiryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/fiat/inter-bank": {
+      "post": {
+        "operationId": "FiatTransfersController_interBankTransfer",
+        "tags": ["NGN Transfers"],
+        "summary": "Transfer NGN to an external bank",
+        "description": "Send NGN to an account at another supported Nigerian bank. Use wallet-to-wallet transfer instead when both customers belong to the same FossaPay business.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterBankTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer request is being processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterBankTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer or account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/fiat/calculate-fee": {
+      "get": {
+        "operationId": "FiatTransfersController_calculateFee",
+        "tags": ["NGN Transfers"],
+        "summary": "Calculate NGN transfer fee",
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": 0.01
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer fee calculated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiatFeeQuoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/create": {
+      "post": {
+        "operationId": "CryptoWalletsController_create",
+        "tags": ["Crypto Wallets"],
+        "summary": "Create a crypto wallet",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CryptoWalletCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Crypto wallet created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/{wallet_id}/balance": {
+      "get": {
+        "operationId": "CryptoWalletsController_getBalance",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get wallet balance",
+        "parameters": [
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet balance retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletBalanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/master": {
+      "get": {
+        "operationId": "CryptoWalletsController_findMaster",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get master crypto wallet",
+        "responses": {
+          "200": {
+            "description": "Master crypto wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoMasterWalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Master wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/{walletId}": {
+      "get": {
+        "operationId": "CryptoWalletsController_findOne",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get crypto wallet by ID",
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crypto wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/address/{address}": {
+      "get": {
+        "operationId": "CryptoWalletsController_findByAddress",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get crypto wallet by address",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crypto wallet retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/{walletId}/transactions": {
+      "get": {
+        "operationId": "CryptoWalletsController_findTransactions",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get crypto wallet transactions",
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "transactionType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER"]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletTransactionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/transactions/{transactionId}": {
+      "get": {
+        "operationId": "CryptoWalletsController_findTransaction",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get crypto wallet transaction by ID",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoWalletTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/crypto": {
+      "post": {
+        "operationId": "CryptoTransfersController_create",
+        "tags": ["Crypto Transfers"],
+        "summary": "Create a crypto transfer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CryptoTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Crypto transfer submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/crypto/calculate-fee": {
+      "get": {
+        "operationId": "CryptoTransfersController_calculateFee",
+        "tags": ["Crypto Transfers"],
+        "summary": "Calculate crypto transfer fee",
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer fee calculated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoFeeQuoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/webhooks": {
+      "put": {
+        "operationId": "WebhooksController_updateSettings",
+        "tags": ["Webhooks"],
+        "summary": "Configure webhook settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook settings updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/simulate": {
+      "post": {
+        "operationId": "WebhooksController_simulate",
+        "tags": ["Webhooks"],
+        "summary": "Simulate a webhook event",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSimulationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook simulation accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSimulationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
   "components": {
-    "schemas": {
-      "CreateXCustomerDto": {
-        "type": "object",
-        "required": [
-          "name",
-          "email",
-          "phone"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Customer's full name"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "Customer's email address"
-          },
-          "phone": {
-            "type": "string",
-            "description": "Customer's phone number"
-          },
-          "metadata": {
-            "type": "object",
-            "description": "Additional customer metadata"
-          }
-        }
-      },
-      "Customer": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique customer identifier"
-          },
-          "name": {
-            "type": "string",
-            "description": "Customer's full name"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "Customer's email address"
-          },
-          "phone": {
-            "type": "string",
-            "description": "Customer's phone number"
-          },
-          "tier": {
-            "type": "string",
-            "enum": ["basic", "premium", "enterprise"],
-            "description": "Customer's tier level"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Customer creation timestamp"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Last update timestamp"
-          }
-        }
-      },
-      "TierStatus": {
-        "type": "object",
-        "properties": {
-          "tier": {
-            "type": "string",
-            "enum": ["individual"],
-            "description": "Current tier level"
-          },
-          "limits": {
-            "type": "object",
-            "properties": {
-              "maxTransactions": {
-                "type": "integer",
-                "description": "Maximum number of transactions allowed"
-              },
-              "maxAmount": {
-                "type": "number",
-                "description": "Maximum transaction amount allowed"
-              }
-            }
-          },
-          "status": {
-            "type": "string",
-            "enum": ["active", "suspended", "pending"],
-            "description": "Current tier status"
-          }
-        }
-      }
-    },
     "securitySchemes": {
       "ApiKeyAuth": {
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CustomerCreateRequest": {
+        "type": "object",
+        "required": [
+          "firstName",
+          "lastName",
+          "emailAddress",
+          "mobileNumber",
+          "dateOfBirth",
+          "address",
+          "city",
+          "country",
+          "type"
+        ],
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "middleName": {
+            "type": "string"
+          },
+          "emailAddress": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobileNumber": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["individual"]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "businessId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "middleName": {
+            "type": "string"
+          },
+          "emailAddress": {
+            "type": "string",
+            "format": "email"
+          },
+          "mobileNumber": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "customerType": {
+            "type": "string",
+            "enum": ["individual"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CustomerResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Customer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CustomerListResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data", "pagination"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "required": ["page", "limit", "total", "totalPages", "hasNextPage", "hasPrevPage"],
+            "properties": {
+              "page": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              },
+              "hasNextPage": {
+                "type": "boolean"
+              },
+              "hasPrevPage": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletCreateRequest": {
+        "type": "object",
+        "required": ["customerId", "walletName", "walletReference"],
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "walletName": {
+            "type": "string"
+          },
+          "walletReference": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FiatWalletCreated": {
+        "type": "object",
+        "required": ["walletId", "bankName", "bankCode", "accountNumber"],
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "bankCode": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletCreateResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FiatWalletCreated"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWallet": {
+        "type": "object",
+        "required": ["id", "customerId", "availableBalance", "ledgerBalance", "walletName", "virtualAccount"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "availableBalance": {
+            "type": "string"
+          },
+          "ledgerBalance": {
+            "type": "string"
+          },
+          "walletName": {
+            "type": "string"
+          },
+          "customerType": {
+            "type": "string",
+            "enum": ["individual"]
+          },
+          "virtualAccount": {
+            "type": "object",
+            "required": ["accountNumber", "bankCode", "bankName"],
+            "properties": {
+              "accountNumber": {
+                "type": "string"
+              },
+              "bankCode": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatMasterWallet": {
+        "type": "object",
+        "required": ["id", "availableBalance", "ledgerBalance", "walletName", "virtualAccount"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "availableBalance": {
+            "type": "string"
+          },
+          "ledgerBalance": {
+            "type": "string"
+          },
+          "walletName": {
+            "type": "string"
+          },
+          "virtualAccount": {
+            "type": "object",
+            "required": ["accountNumber", "bankCode", "bankName"],
+            "properties": {
+              "accountNumber": {
+                "type": "string"
+              },
+              "bankCode": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FiatWallet"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatMasterWalletResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FiatMasterWallet"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletTransaction": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "transactionType": {
+            "type": "string",
+            "enum": ["deposit", "withdrawal"]
+          },
+          "walletId": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "fee": {
+            "type": "number"
+          },
+          "beneficiary": {
+            "type": "object",
+            "properties": {
+              "accountNumber": {
+                "type": "string"
+              },
+              "accountName": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          },
+          "originator": {
+            "type": "object",
+            "properties": {
+              "accountNumber": {
+                "type": "string"
+              },
+              "accountName": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          },
+          "toWalletAccountNumber": {
+            "type": "string"
+          },
+          "narration": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletTransactionsResponse": {
+        "type": "object",
+        "required": ["transactions", "total", "page", "limit", "totalPages"],
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiatWalletTransaction"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatWalletTransactionResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FiatWalletTransaction"
+          }
+        ]
+      },
+      "FiatWalletTransferRequest": {
+        "type": "object",
+        "required": ["fromAccount", "toAccount", "amount", "reference"],
+        "properties": {
+          "fromAccount": {
+            "type": "string"
+          },
+          "toAccount": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "narration": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FiatWalletTransferResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SupportedBank": {
+        "type": "object",
+        "required": ["bankname", "bankcode"],
+        "properties": {
+          "bankname": {
+            "type": "string"
+          },
+          "bankcode": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SupportedBanksResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupportedBank"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "BankNameEnquiryRequest": {
+        "type": "object",
+        "required": ["bankCode", "accountNumber"],
+        "properties": {
+          "bankCode": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BankNameEnquiryResult": {
+        "type": "object",
+        "required": [
+          "sessionID",
+          "destinationInstitutionCode",
+          "channelCode",
+          "accountNumber",
+          "accountName",
+          "kycLevel",
+          "responseCode"
+        ],
+        "properties": {
+          "sessionID": {
+            "type": "string"
+          },
+          "destinationInstitutionCode": {
+            "type": "string"
+          },
+          "channelCode": {
+            "type": "integer"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "kycLevel": {
+            "type": "string"
+          },
+          "responseCode": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "BankNameEnquiryResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BankNameEnquiryResult"
+          }
+        },
+        "additionalProperties": true
+      },
+      "InterBankTransferRequest": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "destinationBankCode",
+          "destinationAccountName",
+          "destinationAccountNumber",
+          "destinationBankName",
+          "reference",
+          "remarks",
+          "amount"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "destinationBankCode": {
+            "type": "string"
+          },
+          "destinationAccountName": {
+            "type": "string"
+          },
+          "destinationAccountNumber": {
+            "type": "string"
+          },
+          "destinationBankName": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "remarks": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InterBankTransferResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["reference"],
+            "properties": {
+              "reference": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "FiatFeeQuoteResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["amount", "currency", "feeAmount", "total"],
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string",
+                "enum": ["NGN"]
+              },
+              "feeAmount": {
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletCreateRequest": {
+        "type": "object",
+        "required": ["network", "customerId"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": ["solana", "evm"]
+          },
+          "customerId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CryptoWalletCreated": {
+        "type": "object",
+        "required": ["walletId", "address", "network"],
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": ["solana", "evm"]
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletCreateResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CryptoWalletCreated"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletTokenBalance": {
+        "type": "object",
+        "required": ["amount", "rawAmount"],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "rawAmount": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletAddress": {
+        "type": "object",
+        "required": ["address", "network", "tokens"],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": ["solana", "evm"]
+          },
+          "tokens": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CryptoWalletTokenBalance"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletBalanceItem": {
+        "type": "object",
+        "required": ["currency", "available_balance", "ledger_balance", "pending_balance"],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "available_balance": {
+            "type": "number"
+          },
+          "ledger_balance": {
+            "type": "number"
+          },
+          "pending_balance": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletBalanceResponse": {
+        "type": "object",
+        "required": ["status", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "data": {
+            "type": "object",
+            "required": ["wallet_id", "balances"],
+            "properties": {
+              "wallet_id": {
+                "type": "string"
+              },
+              "balances": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CryptoWalletBalanceItem"
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoMasterWalletResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CryptoWalletAddress"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CryptoWalletAddress"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "externalReference": {
+            "type": "string"
+          },
+          "transactionType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amountInCrypto": {
+            "type": "string"
+          },
+          "tokenSymbol": {
+            "type": "string"
+          },
+          "tokenAddress": {
+            "type": "string"
+          },
+          "tokenDecimals": {
+            "type": "integer"
+          },
+          "senderAddress": {
+            "type": "string"
+          },
+          "recipientAddress": {
+            "type": "string"
+          },
+          "transactionHash": {
+            "type": ["string", "null"]
+          },
+          "explorerLink": {
+            "type": ["string", "null"]
+          },
+          "blockchain": {
+            "type": "string"
+          },
+          "sourceWalletAddress": {
+            "type": "string"
+          },
+          "recipientWalletAddress": {
+            "type": "string"
+          },
+          "sourceWalletId": {
+            "type": ["string", "null"]
+          },
+          "recipientWalletId": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletTransactionsResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["transactions", "pagination"],
+            "properties": {
+              "transactions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CryptoWalletTransaction"
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "required": ["currentPage", "totalPages", "totalItems", "itemsPerPage", "hasNextPage", "hasPrevPage"],
+                "properties": {
+                  "currentPage": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  },
+                  "totalItems": {
+                    "type": "integer"
+                  },
+                  "itemsPerPage": {
+                    "type": "integer"
+                  },
+                  "hasNextPage": {
+                    "type": "boolean"
+                  },
+                  "hasPrevPage": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoWalletTransactionResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"]
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CryptoWalletTransaction"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoTransferRequest": {
+        "type": "object",
+        "required": ["customerId", "recipient", "network", "currency", "amount"],
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "enum": ["solana", "evm"]
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["usdc", "usdt"]
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CryptoTransferResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["token", "network", "recipientAddress", "senderAddress", "status"],
+            "properties": {
+              "token": {
+                "type": "object",
+                "required": ["symbol", "amount"],
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": true
+              },
+              "network": {
+                "type": "string"
+              },
+              "recipientAddress": {
+                "type": "string"
+              },
+              "senderAddress": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoFeeQuoteResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "WebhookSettingsRequest": {
+        "type": "object",
+        "required": ["url", "events", "secret"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "deposit.completed",
+                "withdrawal.completed",
+                "transfer.completed",
+                "transfer.failed",
+                "wallet.balance.updated"
+              ]
+            }
+          },
+          "secret": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookSettingsResponse": {
+        "type": "object",
+        "required": ["status", "message"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "WebhookSimulationRequest": {
+        "type": "object",
+        "required": ["event", "customer_id", "amount", "currency"],
+        "properties": {
+          "event": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "WebhookSimulationResponse": {
+        "type": "object",
+        "required": ["status", "message"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
       }
     }
   }

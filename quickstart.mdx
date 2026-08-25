@@ -5,7 +5,7 @@ description: 'Start building with FossaPay in 10 minutes'
 
 ## Get Started with FossaPay
 
-This quickstart guide will have you making your first API call in minutes. We'll create a fiat wallet, simulate a payment, and handle the webhook notification.
+This quickstart guide will have you making your first API call in minutes. We'll create a customer, open an NGN wallet, use production-only credentials, and verify a real deposit webhook.
 
 ## Prerequisites
 
@@ -20,24 +20,67 @@ Before you begin, make sure you have:
   <Step title="Sign up">
     Create an account at [dashboard.fossapay.com](https://dashboard.fossapay.com/register)
   </Step>
-  <Step title="Get Test Keys">
-    Navigate to **Settings** → **API Keys** and copy your test secret key (starts with `fp_test_sk_`)
+  <Step title="Get Live Keys">
+    Navigate to **Settings** → **API Keys** and copy your production secret key (starts with `fk_production_`)
   </Step>
   <Step title="Store Securely">
     Save your API key as an environment variable:
     ```bash
-    export FOSSAPAY_SECRET_KEY="fp_test_sk_xxxxxxxx"
+    export FOSSAPAY_SECRET_KEY="fk_production_DTKUG..."
     ```
   </Step>
 </Steps>
 
-## Step 2: Make Your First API Call
+<Warning>
+  FossaPay currently operates in production only. Any API call you make will hit production systems, so use small live amounts when you are validating your integration.
+</Warning>
 
-Use cURL for direct API calls.
+## Step 2: Create a Customer
 
-## Step 3: Create Your First Fiat Wallet
+Create the customer before creating any wallet or payment flow.
 
-Let's create a fiat wallet for collecting payments:
+```bash
+curl -X POST https://api-production.fossapay.com/api/v1/customers \
+  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "middleName": "Michael",
+    "emailAddress": "john.doe@example.com",
+    "mobileNumber": "+2348012345678",
+    "dateOfBirth": "1990-08-15",
+    "address": "123 Main Street",
+    "city": "Lagos",
+    "country": "Nigeria",
+    "type": "individual"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Customer created successfully",
+  "data": {
+    "id": "cus_123456789",
+    "firstName": "John",
+    "lastName": "Doe",
+    "emailAddress": "john.doe@example.com",
+    "mobileNumber": "+2348012345678",
+    "customerType": "individual"
+  }
+}
+```
+
+<Success>
+  **You created your first customer!** We'll use the returned customer ID in the next step.
+</Success>
+
+## Step 3: Create Your First NGN Wallet
+
+Create an NGN wallet for the customer you just created:
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
@@ -54,7 +97,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
 ```json
 {
   "success": true,
-  "message": "Fiat wallet created successfully",
+  "message": "NGN wallet created successfully",
   "data": {
     "walletId": "wal_abc123xyz",
     "bankName": "Wema Bank",
@@ -65,13 +108,19 @@ curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
 ```
 
 <Success>
-  **You created your first fiat wallet!** Customers can now transfer money to this account number.
+  **You created your first NGN wallet!** Share the returned account number with the customer so they can make a small live deposit.
 </Success>
 
+## Step 4: Configure Your Webhook
 
-## Step 4: Handle Webhook Notification
+Configure your webhook URL and secret in the dashboard before making a live deposit.
 
-When a payment is received, FossaPay sends a webhook to your server. Here's how to handle it:
+1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
+2. Set your webhook URL
+3. Copy the webhook secret and store it as `FOSSAPAY_WEBHOOK_SECRET`
+4. Make sure your handler expects `deposit.completed` for incoming deposits
+
+When a deposit is received in production, FossaPay sends a webhook to your server. Here's how to handle it:
 
 <CodeGroup>
 
@@ -97,14 +146,13 @@ app.post('/webhooks/fossapay', (req, res) => {
   // 3. Process the webhook
   const { event, data } = req.body;
 
-  if (event === 'payment.received') {
-    console.log('Payment received!');
+  if (event === 'deposit.completed') {
+    console.log('Deposit completed!');
     console.log('Amount:', data.amount);
-    console.log('From:', data.sender_name);
-    console.log('Transaction ID:', data.transaction_id);
+    console.log('Transaction ID:', data.transactionId);
 
     // Credit user wallet, update database, send notification, etc.
-    creditUserWallet(data.metadata.customer_id, data.amount);
+    creditUserWallet(data.customerId, data.amount);
   }
 });
 
@@ -148,14 +196,13 @@ def handle_webhook():
     event = payload['event']
     data = payload['data']
 
-    if event == 'payment.received':
-        print('Payment received!')
+    if event == 'deposit.completed':
+        print('Deposit completed!')
         print(f'Amount: {data["amount"]}')
-        print(f'From: {data["sender_name"]}')
-        print(f'Transaction ID: {data["transaction_id"]}')
+        print(f'Transaction ID: {data["transactionId"]}')
 
         # Credit user wallet, update database, etc.
-        credit_user_wallet(data['metadata']['user_id'], data['amount'])
+        credit_user_wallet(data['customerId'], data['amount'])
 
     return 'Webhook received', 200
 
@@ -176,23 +223,38 @@ if __name__ == '__main__':
 </CodeGroup>
 
 <Tip>
-  **Local Testing:** Use [ngrok](https://ngrok.com) to expose your local server for webhook testing:
+  **Local Development:** Use [ngrok](https://ngrok.com) to expose your local server while you build:
   ```bash
   ngrok http 3000
   ```
   Then set the ngrok URL in your [webhook settings](https://dashboard.fossapay.com/settings/webhooks).
 </Tip>
 
-## Step 6: Send a Payout
+## Step 5: Make a Small Live Deposit
 
-Now let's send money from your wallet to a bank account:
+From a bank account you control, send a small live deposit to the wallet account number from Step 3.
+
+You should receive a `deposit.completed` webhook with the transaction details and customer ID.
+
+## Step 6: Verify the Deposit
+
+Use the transaction ID from the webhook to fetch the transaction record:
+
+```bash
+curl https://api-production.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc123 \
+  -H "x-api-key: $FOSSAPAY_SECRET_KEY"
+```
+
+## Step 7: Send a Small Production Payout
+
+Now let's send money from your wallet to a bank account using a small live amount:
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "customerId": "cus_123456789",
     "destinationBankCode": "044",
     "destinationAccountName": "Test Recipient",
     "destinationAccountNumber": "0000000001",
@@ -213,7 +275,7 @@ const app = express();
 
 app.use(express.json());
 
-// Handle incoming payments
+// Handle incoming deposits
 app.post('/webhooks/fossapay', async (req, res) => {
   res.status(200).send('OK');
 
@@ -226,7 +288,7 @@ app.post('/webhooks/fossapay', async (req, res) => {
     // Send notification
     await sendNotification(data.customerId, {
       title: 'Payment Received',
-      message: `Your account was credited with ₦${data.amount / 100}`
+      message: `Your account was credited with ₦${data.amount}`
     });
   }
 });
@@ -253,10 +315,10 @@ app.listen(3000);
 
 ## Testing Checklist
 
-Before going to production, make sure you've tested:
+Before using production for real volume, make sure you've tested:
 
 - [ ] Creating a customer
-- [ ] Creating virtual accounts
+- [ ] Creating NGN wallets
 - [ ] Receiving and processing webhooks
 - [ ] Handling webhook failures
 - [ ] Sending payouts
@@ -265,10 +327,10 @@ Before going to production, make sure you've tested:
 
 ## Going Live
 
-When you're ready for production:
+When you're ready for regular production use:
 
 1. **Complete business verification** in the [dashboard](https://dashboard.fossapay.com)
-2. **Switch to live API keys** (starts with `fp_live_sk_`)
+2. **Use production API keys** (starts with `fk_production_`)
 3. **Update webhook URL** to your production server
 4. **Test with small amounts** before full launch
 5. **Monitor the dashboard** for any issues

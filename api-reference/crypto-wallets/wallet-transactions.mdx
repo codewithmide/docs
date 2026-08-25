@@ -1,6 +1,6 @@
 ---
 title: 'Get All Wallet Transactions'
-api: 'GET https://api-production.fossapay.com/v1/wallets/crypto/{walletId}/transactions'
+api: 'GET https://api-production.fossapay.com/api/v1/wallets/crypto/{walletId}/transactions'
 description: 'Retrieve all transactions for a crypto wallet'
 ---
 
@@ -41,13 +41,13 @@ description: 'Retrieve all transactions for a crypto wallet'
 ## Request Example
 
 ```bash
-curl -X GET "https://api-production.fossapay.com/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
+curl -X GET "https://api-production.fossapay.com/api/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
   -H "x-api-key: your_api_key_here"
 ```
 
 ```javascript
 const url = new URL(
-  'https://api-production.fossapay.com/v1/wallets/crypto/user:u3d/transactions'
+  'https://api-production.fossapay.com/api/v1/wallets/crypto/user:u3d/transactions'
 );
 
 url.searchParams.set('page', '1');

@@ -1,7 +1,7 @@
 ---
 title: 'Create Wallet'
-api: 'POST /api/v1/wallets/fiat/create'
-description: 'Create a fiat wallet for a customer'
+api: 'POST https://api-production.fossapay.com/api/v1/wallets/fiat/create'
+description: 'Create an NGN wallet for a customer'
 ---
 
 ## Request
@@ -26,7 +26,7 @@ description: 'Create a fiat wallet for a customer'
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
-  -H "x-api-key: fp_live_sk_xxxxxxxx" \
+  -H "x-api-key: fk_production_DTKUG..." \
   -H "Content-Type: application/json" \
   -d '{
     "customerId": "cus_123456789",
@@ -39,7 +39,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
 const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/create', {
   method: 'POST',
   headers: {
-    'x-api-key': 'fp_live_sk_xxxxxxxx',
+    'x-api-key': 'fk_production_DTKUG...',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -58,7 +58,7 @@ import requests
 
 url = "https://api-production.fossapay.com/api/v1/wallets/fiat/create"
 headers = {
-    "x-api-key": "fp_live_sk_xxxxxxxx",
+    "x-api-key": "fk_production_DTKUG...",
     "Content-Type": "application/json"
 }
 data = {
@@ -108,7 +108,7 @@ wallet = data["data"]
 ```json Success Response
 {
   "success": true,
-  "message": "Fiat wallet created successfully",
+  "message": "NGN wallet created successfully",
   "data": {
     "walletId": "wal_abc123xyz",
     "bankName": "Wema Bank",

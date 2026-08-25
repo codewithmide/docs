@@ -20,7 +20,7 @@ description: 'Retrieve wallet balance'
 
 ```bash
 curl "https://api-production.fossapay.com/api/v1/wallets/wal_abc123/balance?currency=NGN" \
-  -H "Authorization: Bearer fp_live_sk_xxxxxxxx"
+  -H "Authorization: Bearer fk_production_DTKUG..."
 ```
 
 ```javascript
@@ -29,7 +29,7 @@ const response = await fetch(
   {
     method: 'GET',
     headers: {
-      Authorization: 'Bearer fp_live_sk_xxxxxxxx',
+      Authorization: 'Bearer fk_production_DTKUG...',
       'Content-Type': 'application/json'
     }
   }

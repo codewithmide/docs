@@ -357,7 +357,7 @@ Test your webhook handler with simulated events:
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/webhooks/simulate \
-  -H "Authorization: Bearer fp_test_sk_xxxxxxxx" \
+  -H "Authorization: Bearer fk_production_DTKUG..." \
   -H "Content-Type: application/json" \
   -d '{
     "event": "deposit.completed",
@@ -461,7 +461,7 @@ View webhook delivery logs in your dashboard:
 }
 ```
 
-### Deposit Completed (Fiat)
+### Deposit Completed (NGN)
 
 ```json
 {

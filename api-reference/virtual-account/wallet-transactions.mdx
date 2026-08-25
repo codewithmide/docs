@@ -1,7 +1,7 @@
 ---
 title: 'Fetch Wallet Transactions'
-api: 'GET /api/v1/wallets/fiat/{walletId}/transactions'
-description: 'Retrieve all transactions for a wallet with pagination'
+api: 'GET https://api-production.fossapay.com/api/v1/wallets/fiat/{walletId}/transactions'
+description: 'Retrieve all NGN wallet transactions with pagination'
 ---
 
 ## Path Parameters
@@ -42,13 +42,13 @@ description: 'Retrieve all transactions for a wallet with pagination'
 
 ```bash
 curl "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit" \
-  -H "x-api-key: fp_live_sk_xxxxxxxx"
+  -H "x-api-key: fk_production_DTKUG..."
 ```
 
 ```javascript
 const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit&startDate=2024-01-01&endDate=2024-01-31', {
   headers: {
-    'x-api-key': 'fp_live_sk_xxxxxxxx'
+    'x-api-key': 'fk_production_DTKUG...'
   }
 });
 
@@ -67,7 +67,7 @@ params = {
     "startDate": "2024-01-01",
     "endDate": "2024-01-31"
 }
-headers = {"x-api-key": "fp_live_sk_xxxxxxxx"}
+headers = {"x-api-key": "fk_production_DTKUG..."}
 
 response = requests.get(url, headers=headers, params=params)
 data = response.json()
@@ -239,7 +239,7 @@ let allTransactions = [];
 while (true) {
   const response = await fetch(`https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=${page}&limit=50`, {
     headers: {
-      'x-api-key': 'fp_live_sk_xxxxxxxx'
+      'x-api-key': 'fk_production_DTKUG...'
     }
   });
 

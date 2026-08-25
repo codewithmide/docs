@@ -1,10 +1,10 @@
 ---
-title: 'Get Master Fiat Wallet'
-api: 'GET /api/v1/wallets/fiat/master'
-description: "Retrieve the merchant's master fiat wallet, including live balance and virtual account details"
+title: 'Get Master NGN Wallet'
+api: 'GET https://api-production.fossapay.com/api/v1/wallets/fiat/master'
+description: "Retrieve the merchant's master NGN wallet, including live balance and virtual account details"
 ---
 
-The master fiat wallet is the merchant-level settlement wallet (as opposed to a customer's individual fiat wallet). It is resolved from the authenticated API key, so no wallet ID is required.
+The master NGN wallet is the merchant-level settlement wallet (as opposed to a customer's individual NGN wallet). It is resolved from the authenticated API key, so no wallet ID is required.
 
 ## Request
 
@@ -16,13 +16,13 @@ The master fiat wallet is the merchant-level settlement wallet (as opposed to a 
 
 ```bash
 curl https://api-production.fossapay.com/api/v1/wallets/fiat/master \
-  -H "x-api-key: fp_live_sk_xxxxxxxx"
+  -H "x-api-key: fk_production_DTKUG..."
 ```
 
 ```javascript
 const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/master', {
   headers: {
-    'x-api-key': 'fp_live_sk_xxxxxxxx'
+    'x-api-key': 'fk_production_DTKUG...'
   }
 });
 
@@ -34,7 +34,7 @@ const masterWallet = data.data;
 import requests
 
 url = "https://api-production.fossapay.com/api/v1/wallets/fiat/master"
-headers = {"x-api-key": "fp_live_sk_xxxxxxxx"}
+headers = {"x-api-key": "fk_production_DTKUG..."}
 
 response = requests.get(url, headers=headers)
 data = response.json()
@@ -93,7 +93,7 @@ master_wallet = data["data"]
 ```json Success Response
 {
   "success": true,
-  "message": "Master fiat wallet retrieved successfully",
+  "message": "Master NGN wallet retrieved successfully",
   "data": {
     "id": "va_abc123xyz",
     "availableBalance": "500000.00",
@@ -111,7 +111,7 @@ master_wallet = data["data"]
 ```json Error Response
 {
   "success": false,
-  "message": "Master fiat wallet not found for merchant",
+  "message": "Master NGN wallet not found for merchant",
   "statusCode": 400
 }
 ```
@@ -121,5 +121,5 @@ master_wallet = data["data"]
 
 | Code | Description |
 |------|-------------|
-| `400` | Master fiat wallet not found for merchant, or wallet data could not be retrieved |
+| `400` | Master NGN wallet not found for merchant, or wallet data could not be retrieved |
 | `401` | Invalid or missing API key |

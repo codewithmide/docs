@@ -30,7 +30,7 @@ description: 'Create a new customer account'
   Mobile number of the customer
 </ParamField>
 
-<ParamField body="dob" type="string" required>
+<ParamField body="dateOfBirth" type="string" required>
   Date of birth in YYYY-MM-DD format (e.g., 1990-08-15)
 </ParamField>
 
@@ -62,7 +62,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/customers \
     "middleName": "Michael",
     "emailAddress": "john.doe@example.com",
     "mobileNumber": "+2348012345678",
-    "dob": "1990-08-15",
+    "dateOfBirth": "1990-08-15",
     "address": "123 Main Street",
     "city": "Lagos",
     "country": "Nigeria",
@@ -83,7 +83,7 @@ const response = await fetch('https://api-production.fossapay.com/api/v1/custome
     middleName: 'Michael',
     emailAddress: 'john.doe@example.com',
     mobileNumber: '+2348012345678',
-    dob: '1990-08-15',
+    dateOfBirth: '1990-08-15',
     address: '123 Main Street',
     city: 'Lagos',
     country: 'Nigeria',
@@ -109,7 +109,7 @@ data = {
     'middleName': 'Michael',
     'emailAddress': 'john.doe@example.com',
     'mobileNumber': '+2348012345678',
-    'dob': '1990-08-15',
+    'dateOfBirth': '1990-08-15',
     'address': '123 Main Street',
     'city': 'Lagos',
     'country': 'Nigeria',
@@ -161,7 +161,7 @@ print(customer)
       Customer's mobile number
     </ResponseField>
 
-    <ResponseField name="dob" type="string">
+    <ResponseField name="dateOfBirth" type="string">
       Customer's date of birth
     </ResponseField>
 
@@ -198,7 +198,7 @@ print(customer)
     "middleName": "Doe",
     "emailAddress": "john.doe@gmail.com",
     "mobileNumber": "09184728251",
-    "dob": "1991-08-15",
+    "dateOfBirth": "1991-08-15",
     "address": "12 customer rd.",
     "customerType": "individual",
     "businessId": "x93f9867-e4b3-24da-9d1e-aax032bf7a3a",

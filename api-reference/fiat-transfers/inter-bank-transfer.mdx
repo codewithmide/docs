@@ -1,8 +1,18 @@
 ---
-title: 'Inter-Bank Transfer'
+title: 'Inter-Bank Transfer (External Bank)'
 api: 'POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank'
-description: 'Execute inter-bank transfer'
+description: 'Send NGN from FossaPay to an account at another supported Nigerian bank'
 ---
+
+Send NGN to a recipient whose account is at a bank outside the bank used for FossaPay NGN wallets.
+
+<Info>
+  Use inter-bank transfer for external bank accounts. First confirm the destination bank is supported, perform a bank name enquiry, and calculate the applicable transfer fee.
+</Info>
+
+<Tip>
+  If both people are FossaPay customers under the same business, use the [free Wallet-to-Wallet Transfer endpoint](/api-reference/virtual-account/wallet-transfer) instead.
+</Tip>
 
 ## Request
 
@@ -15,7 +25,7 @@ description: 'Execute inter-bank transfer'
 </ParamField>
 
 <ParamField body="destinationBankCode" type="string" required>
-  The bank code of the destination bank
+  The bank code of the external destination bank
 </ParamField>
 
 <ParamField body="destinationAccountName" type="string" required>
@@ -23,11 +33,11 @@ description: 'Execute inter-bank transfer'
 </ParamField>
 
 <ParamField body="destinationAccountNumber" type="string" required>
-  The destination account number
+  The recipient's account number at the external destination bank
 </ParamField>
 
 <ParamField body="destinationBankName" type="string" required>
-  The name of the destination bank
+  The name of the external destination bank
 </ParamField>
 
 <ParamField body="reference" type="string" required>

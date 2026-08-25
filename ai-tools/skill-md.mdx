@@ -50,7 +50,7 @@ Use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to integrate t
 ### Generate Integration Code
 
 ```
-Generate code to create a customer and fiat wallet using the FossaPay API
+Generate code to create a customer and NGN wallet using the FossaPay API
 ```
 
 ```
@@ -118,7 +118,7 @@ const customer = await fetch('https://api-production.fossapay.com/api/v1/custome
     lastName: 'Doe',
     emailAddress: 'john@example.com',
     mobileNumber: '+2348012345678',
-    dob: '1990-01-15',
+    dateOfBirth: '1990-01-15',
     address: '123 Main St',
     city: 'Lagos',
     country: 'Nigeria',
@@ -126,7 +126,7 @@ const customer = await fetch('https://api-production.fossapay.com/api/v1/custome
   })
 });
 
-// 2. Create a fiat wallet for collections
+// 2. Create a NGN wallet for collections
 const wallet = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/create', {
   method: 'POST',
   headers: {
@@ -153,8 +153,8 @@ The skill has knowledge of all FossaPay endpoints:
 | Category | What You Can Do |
 |----------|-----------------|
 | Customers | Create accounts, list customers, get details |
-| Fiat Wallets | Create wallets, check balances, view transactions |
-| Fiat Transfers | Send to banks, verify accounts, calculate fees |
+| NGN Wallets | Create wallets, check balances, view transactions |
+| NGN Transfers | Send to banks, verify accounts, calculate fees |
 | Crypto Wallets | Create wallets, check balances, get addresses |
 | Crypto Transfers | Send crypto, estimate fees |
 | Webhooks | Handle all payment and transfer events |
@@ -166,7 +166,7 @@ The skill has knowledge of all FossaPay endpoints:
 ## Tips for Best Results
 
 <Tip>
-  **Be specific** - Instead of "help with payments", try "generate code to create a fiat wallet and handle the deposit webhook in Python"
+  **Be specific** - Instead of "help with payments", try "generate code to create an NGN wallet and handle the deposit webhook in Python"
 </Tip>
 
 <Tip>
