@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FossaPay API",
-    "description": "FossaPay API for customer management, NGN wallets, crypto wallets, transfers, fees, banks, and webhooks.",
+    "description": "FossaPay API for checkout wallets, customer management, NGN wallets, crypto wallets, transfers, fees, banks, and webhooks.",
     "license": {
       "name": "MIT"
     },
@@ -1301,6 +1301,227 @@
         }
       }
     },
+    "/api/v1/checkouts": {
+      "post": {
+        "operationId": "ExternalCheckoutController_create",
+        "tags": ["Checkout Wallet"],
+        "summary": "Create a 30-minute NGN checkout wallet",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique key for this logical checkout request. Idempotency-Key is also accepted for backward compatibility.",
+            "schema": { "type": "string", "maxLength": 255 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckoutCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Checkout session created or idempotently replayed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckoutResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or missing/conflicting idempotency header",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or inactive API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Merchant is not eligible",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Reference or idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts/reference/{reference}": {
+      "get": {
+        "operationId": "ExternalCheckoutController_findByReference",
+        "tags": ["Checkout Wallet"],
+        "summary": "Get a checkout wallet by merchant reference",
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckoutResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or inactive API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Merchant is not eligible",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout not found for this merchant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts/{id}": {
+      "get": {
+        "operationId": "ExternalCheckoutController_findOne",
+        "tags": ["Checkout Wallet"],
+        "summary": "Get a checkout wallet by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckoutResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or inactive API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Merchant is not eligible",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout not found for this merchant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts/{id}/expire": {
+      "post": {
+        "operationId": "ExternalCheckoutController_expire",
+        "tags": ["Checkout Wallet"],
+        "summary": "Expire a pending checkout wallet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session expired successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckoutResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or inactive API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Merchant is not eligible",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout not found for this merchant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Only a pending checkout can be expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/settings/webhooks": {
       "put": {
         "operationId": "WebhooksController_updateSettings",
@@ -2519,6 +2740,141 @@
         },
         "additionalProperties": true
       },
+      "CheckoutCustomer": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+          "email": { "type": "string", "format": "email" },
+          "phoneNumber": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutCreateRequest": {
+        "type": "object",
+        "required": ["amount", "currency", "reference", "feeBearer"],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Underlying merchant order amount in NGN."
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["NGN"]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9._:-]+$"
+          },
+          "feeBearer": {
+            "type": "string",
+            "enum": ["customer", "merchant"]
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CheckoutCustomer"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Optional merchant data limited to 4,096 UTF-8 bytes and returned unchanged.",
+            "additionalProperties": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutAccount": {
+        "type": "object",
+        "required": ["type", "bankName", "accountName", "accountNumber", "expiresAt"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["temporary", "permanent"]
+          },
+          "bankName": { "type": "string" },
+          "accountName": { "type": "string" },
+          "accountNumber": { "type": "string" },
+          "expiresAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference",
+          "status",
+          "amount",
+          "fee",
+          "amountPayable",
+          "settlementAmount",
+          "feeBearer",
+          "currency",
+          "account",
+          "customer",
+          "metadata",
+          "transactionId",
+          "providerCheckoutReference",
+          "expiresAt",
+          "completedAt",
+          "failedAt",
+          "reversedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "reference": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "completed", "failed", "expired", "reversed"]
+          },
+          "amount": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
+          "fee": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
+          "amountPayable": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
+          "settlementAmount": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
+          "feeBearer": { "type": "string", "enum": ["customer", "merchant"] },
+          "currency": { "type": "string", "enum": ["NGN"] },
+          "account": { "$ref": "#/components/schemas/CheckoutAccount" },
+          "customer": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/CheckoutCustomer" },
+              { "type": "null" }
+            ]
+          },
+          "metadata": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "transactionId": { "type": ["string", "null"] },
+          "providerCheckoutReference": { "type": ["string", "null"] },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": ["string", "null"], "format": "date-time" },
+          "failedAt": { "type": ["string", "null"], "format": "date-time" },
+          "reversedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "enum": [200, 201] },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/CheckoutSession" }
+        },
+        "additionalProperties": false
+      },
       "WebhookSettingsRequest": {
         "type": "object",
         "required": ["url", "events", "secret"],
@@ -2536,7 +2892,11 @@
                 "withdrawal.completed",
                 "transfer.completed",
                 "transfer.failed",
-                "wallet.balance.updated"
+                "wallet.balance.updated",
+                "checkout.completed",
+                "checkout.failed",
+                "checkout.expired",
+                "checkout.reversed"
               ]
             }
           },

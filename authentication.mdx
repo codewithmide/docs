@@ -58,7 +58,7 @@ Every API request should include these headers:
 |--------|-------|----------|
 | `x-api-key` | `fk_production_DTKUG...` | Yes |
 | `Content-Type` | `application/json` | Yes |
-| `X-Idempotency-Key` | Unique request identifier | Recommended |
+| `X-Idempotency-Key` | Unique request identifier | Required when creating a checkout |
 
 ### Example Request
 
@@ -84,27 +84,25 @@ const response = await axios.post(
 
 ## Idempotency
 
-To prevent duplicate requests, use the `X-Idempotency-Key` header. If you make the same request twice with the same idempotency key, FossaPay will return the same response without processing the request again.
+Creating a checkout requires an idempotency key. Send either `X-Idempotency-Key` (recommended) or the backward-compatible `Idempotency-Key` header. If both headers are sent, their values must match exactly or the API returns `400 Bad Request`.
+
+Reusing the same key with the same checkout payload returns the original checkout without creating another one. Reusing it with a different payload returns `409 Conflict`. Idempotency keys can contain up to 255 characters and are scoped to your merchant account.
 
 ```bash
-curl https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
   -H "x-api-key: fk_production_DTKUG..." \
   -H "Content-Type: application/json" \
-  -H "X-Idempotency-Key: payout-20240119-001" \
+  -H "X-Idempotency-Key: checkout-order-10025-v1" \
   -d '{
-    "customerId": "550e8400-e29b-41d4-a716-446655440000",
-    "destinationBankCode": "044",
-    "destinationAccountName": "JOHN DOE",
-    "destinationAccountNumber": "1234567890",
-    "destinationBankName": "ACCESS BANK",
-    "reference": "TRF-2024-001",
-    "remarks": "Salary payment",
-    "amount": 10000
+    "amount": 5000,
+    "currency": "NGN",
+    "reference": "ORDER-10025",
+    "feeBearer": "customer"
   }'
 ```
 
 <Tip>
-  Use idempotency keys for all POST requests, especially for payouts, to prevent accidental duplicate transactions.
+  Generate a new, stable key for each logical operation and retain it when retrying after a timeout. A UUID or your own operation identifier works well.
 </Tip>
 
 ## Error Handling
@@ -178,6 +176,9 @@ curl https://api-production.fossapay.com/api/v1/customers \
 ## Next Steps
 
 <CardGroup cols={2}>
+  <Card color="#0080FF" title="Accept a Checkout Payment" icon="credit-card" href="/guides/checkouts">
+    Create a one-time NGN checkout
+  </Card>
   <Card color="#0080FF" title="Create a Customer" icon="code" href="/concepts/customers">
     Make your first API call
   </Card>

@@ -1,0 +1,127 @@
+---
+title: 'Create Checkout'
+api: 'POST https://api-production.fossapay.com/api/v1/checkouts'
+description: 'Create a one-time 30-minute NGN checkout wallet'
+---
+
+Creates a merchant-scoped checkout and returns the exact amount and bank account the customer should pay. If a temporary account cannot be generated after retries, the response falls back to the merchant's permanent NGN account.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your existing active FossaPay API key with full permission.
+</ParamField>
+
+<ParamField header="X-Idempotency-Key" type="string" required>
+  A unique key of up to 255 characters. `Idempotency-Key` is also accepted for backward compatibility. If both headers are present, they must match.
+</ParamField>
+
+## Body
+
+<ParamField body="amount" type="integer" required>
+  Underlying merchant order amount in NGN. Minimum `1`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Currency code. Currently only `NGN` is supported.
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  Your unique checkout reference, 1–100 characters. Allowed: letters, numbers, `.`, `_`, `:`, and `-`.
+</ParamField>
+
+<ParamField body="feeBearer" type="string" required>
+  `customer` adds the fee to `amountPayable`; `merchant` deducts it from `settlementAmount`.
+</ParamField>
+
+<ParamField body="customer" type="object">
+  Optional customer details containing `name`, `email`, and/or `phoneNumber`. A payment-confirmation email is queued after success when `email` is present.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Optional merchant-defined JSON, up to 4,096 UTF-8 bytes. Returned unchanged in responses and webhooks.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional description, up to 255 characters.
+</ParamField>
+
+## Request
+
+```bash
+curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "X-Idempotency-Key: checkout-order-10025-v1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 5000,
+    "currency": "NGN",
+    "reference": "ORDER-10025",
+    "feeBearer": "customer",
+    "customer": {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com"
+    },
+    "metadata": {
+      "orderId": "10025"
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Checkout session created successfully",
+  "data": {
+    "id": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "reference": "ORDER-10025",
+    "status": "pending",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "account": {
+      "type": "temporary",
+      "bankName": "Sterling Bank",
+      "accountName": "FOSSAPAY CHECKOUT",
+      "accountNumber": "9541382701",
+      "expiresAt": "2026-09-11T10:30:00.000Z"
+    },
+    "customer": {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com"
+    },
+    "metadata": {
+      "orderId": "10025"
+    },
+    "transactionId": "3469cd26-a213-431e-96c9-72dc2dea51ae",
+    "providerCheckoutReference": null,
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": null,
+    "reversedAt": null,
+    "createdAt": "2026-09-11T10:00:00.000Z",
+    "updatedAt": "2026-09-11T10:00:00.000Z"
+  }
+}
+```
+
+<Warning>
+  Instruct the customer to transfer exactly `data.amountPayable` once before `data.expiresAt`. Fulfill only after a verified `checkout.completed` webhook.
+</Warning>
+
+## Errors
+
+| HTTP status | When it occurs |
+|---|---|
+| `400` | Validation failure; missing/oversized or conflicting idempotency headers; no active permanent NGN account; or an amount not greater than a merchant-borne fee. |
+| `401` | Missing, invalid, or inactive API key. |
+| `403` | Merchant is not eligible or has not completed business verification. |
+| `409` | Reference conflict, or an idempotency key is reused with a different body. |
+
+For integration behavior and webhook verification, see the [Checkout Wallet Guide](/guides/checkouts).

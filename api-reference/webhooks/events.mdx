@@ -1,7 +1,153 @@
 ---
 title: 'Webhook Events'
-description: 'Complete list of webhook events'
+description: 'Event names and example payloads delivered by FossaPay'
 ---
+
+Every webhook uses the `eventId`, `eventType`, `data`, and `timestamp` envelope described in the [Webhooks Overview](/api-reference/webhooks/overview).
+
+## Checkout Events
+
+Checkout events are emitted when a Checkout Wallet reaches a terminal state. Use `data.reference` to reconcile the event to your order and `eventId` to deduplicate deliveries.
+
+### checkout.completed
+
+Fired after the exact `amountPayable` is confirmed and merchant settlement is recorded. This is the only checkout event on which you should fulfill an order.
+
+```json
+{
+  "eventId": "evt_mtwc9i1y_0409d781714d8fa2",
+  "eventType": "checkout.completed",
+  "data": {
+    "checkoutId": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "transactionId": "3469cd26-a213-431e-96c9-72dc2dea51ae",
+    "reference": "ORDER-10025",
+    "status": "completed",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "accountType": "temporary",
+    "sender": {
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789",
+      "bankCode": "100004",
+      "bankName": "OPAY"
+    },
+    "providerReference": "100004260911021740170939156478",
+    "metadata": { "orderId": "10025" },
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": "2026-09-11T10:08:14.148Z",
+    "failedAt": null,
+    "reversedAt": null
+  },
+  "timestamp": "2026-09-11T10:08:14.186Z"
+}
+```
+
+`sender.bankCode` is exposed when the provider supplies a sender bank code. `sender.bankName` can be `null` when the upstream provider does not supply the bank name.
+
+### checkout.failed
+
+Fired when checkout processing fails, including an incoming transfer that does not equal `amountPayable`. Do not fulfill the order.
+
+```json
+{
+  "eventId": "evt_checkout_failed_001",
+  "eventType": "checkout.failed",
+  "data": {
+    "checkoutId": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "transactionId": "d7a8bf6c-4a15-489f-9671-0b1c0574661e",
+    "reference": "ORDER-10025",
+    "status": "failed",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "accountType": "temporary",
+    "sender": {
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789",
+      "bankCode": "100004",
+      "bankName": null
+    },
+    "providerReference": "100004260911024224170939264304",
+    "metadata": { "orderId": "10025" },
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": "2026-09-11T10:12:29.048Z",
+    "reversedAt": null
+  },
+  "timestamp": "2026-09-11T10:12:29.100Z"
+}
+```
+
+### checkout.expired
+
+Fired when a pending checkout reaches its expiry or is manually expired.
+
+```json
+{
+  "eventId": "evt_checkout_expired_001",
+  "eventType": "checkout.expired",
+  "data": {
+    "checkoutId": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "transactionId": null,
+    "reference": "ORDER-10025",
+    "status": "expired",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "accountType": "temporary",
+    "metadata": { "orderId": "10025" },
+    "expiresAt": "2026-09-11T10:30:00.000Z"
+  },
+  "timestamp": "2026-09-11T10:30:00.100Z"
+}
+```
+
+### checkout.reversed
+
+Fired after an incoming checkout payment is returned to the sender. This can follow a failed temporary-account payment, such as an amount mismatch.
+
+```json
+{
+  "eventId": "evt_checkout_reversed_001",
+  "eventType": "checkout.reversed",
+  "data": {
+    "checkoutId": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "transactionId": "1e72866f-a78b-4d65-a87c-7a37a521322d",
+    "reference": "ORDER-10025",
+    "status": "reversed",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "accountType": "temporary",
+    "sender": {
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789",
+      "bankCode": "100004",
+      "bankName": "OPAY"
+    },
+    "providerReference": "CHK_1789094550_R_d610910474324f4fb690d1e98f73f453",
+    "metadata": { "orderId": "10025" },
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": "2026-09-11T10:12:29.048Z",
+    "reversedAt": "2026-09-11T10:12:30.605Z"
+  },
+  "timestamp": "2026-09-11T10:12:30.700Z"
+}
+```
 
 ## Deposit Events
 
@@ -13,7 +159,7 @@ Fired when a deposit is completed successfully.
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
@@ -44,7 +190,7 @@ Fired when a deposit is completed successfully.
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_def456",
   "timestamp": "2024-01-15T11:00:00Z",
   "data": {
@@ -80,7 +226,7 @@ Fired when a withdrawal is completed successfully.
 
 ```json
 {
-  "event": "withdrawal.completed",
+  "eventType": "withdrawal.completed",
   "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
@@ -107,7 +253,7 @@ Fired when a withdrawal fails.
 
 ```json
 {
-  "event": "withdrawal.failed",
+  "eventType": "withdrawal.failed",
   "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
@@ -136,7 +282,7 @@ Fired when a transfer is completed successfully.
 
 ```json
 {
-  "event": "transfer.completed",
+  "eventType": "transfer.completed",
   "eventId": "evt_transfer1",
   "timestamp": "2024-01-15T12:30:00Z",
   "data": {
@@ -168,7 +314,7 @@ Fired when a transfer fails.
 
 ```json
 {
-  "event": "transfer.failed",
+  "eventType": "transfer.failed",
   "eventId": "evt_transfer2",
   "timestamp": "2024-01-15T13:15:00Z",
   "data": {
@@ -202,7 +348,7 @@ Fired when a wallet balance is updated.
 
 ```json
 {
-  "event": "wallet.balance.updated",
+  "eventType": "wallet.balance.updated",
   "eventId": "evt_balance1",
   "timestamp": "2024-01-15T14:00:00Z",
   "data": {
@@ -231,11 +377,22 @@ Fired when a wallet balance is updated.
 
 ```javascript
 app.post('/webhooks/fossapay', async (req, res) => {
-  const { event, data } = req.body;
+  const { eventId, eventType, data } = req.body;
 
   res.status(200).send('OK');
 
-  switch (event) {
+  // Deduplicate eventId before running any business action.
+  switch (eventType) {
+    case 'checkout.completed':
+      await handleCheckoutCompleted(data);
+      break;
+
+    case 'checkout.failed':
+    case 'checkout.expired':
+    case 'checkout.reversed':
+      await handleCheckoutTerminalState(eventType, data);
+      break;
+
     case 'deposit.completed':
       await handleDepositCompleted(data);
       break;
@@ -257,6 +414,6 @@ app.post('/webhooks/fossapay', async (req, res) => {
       break;
 
     default:
-      console.log('Unhandled event:', event);
+      console.log('Unhandled event:', eventType, eventId);
   }
 });

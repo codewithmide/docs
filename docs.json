@@ -33,6 +33,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/checkouts",
               "guides/collections",
               "guides/payouts"
             ]
@@ -66,6 +67,15 @@
               "api-reference/virtual-account/get-wallet-by-account",
               "api-reference/virtual-account/wallet-transactions",
               "api-reference/virtual-account/wallet-transaction"
+            ]
+          },
+          {
+            "group": "Checkout Wallet",
+            "pages": [
+              "api-reference/checkouts/create-checkout",
+              "api-reference/checkouts/get-checkout",
+              "api-reference/checkouts/get-checkout-by-reference",
+              "api-reference/checkouts/expire-checkout"
             ]
           },
           {

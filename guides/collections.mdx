@@ -165,7 +165,7 @@ app.use(express.json());
 
 app.post('/webhooks/fossapay', async (req, res) => {
   // 1. Verify signature
-  if (!verifySignature(req.body, req.headers['x-fossapay-signature'])) {
+  if (!verifySignature(req.body.data, req.headers['x-fossapay-signature'])) {
     return res.status(401).json({ error: 'Invalid signature' });
   }
 
@@ -173,9 +173,9 @@ app.post('/webhooks/fossapay', async (req, res) => {
   res.status(200).json({ received: true });
 
   // 3. Process asynchronously
-  const { event, data } = req.body;
+  const { eventType, data } = req.body;
 
-  if (event === 'deposit.completed') {
+  if (eventType === 'deposit.completed') {
     await handlePaymentReceived(data);
   }
 });
@@ -236,7 +236,7 @@ function verifySignature(payload, signature) {
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
@@ -385,7 +385,7 @@ async function handlePaymentReceived(payment) {
   </Accordion>
 
   <Accordion title="Handle Webhooks Idempotently">
-    Always check for duplicates using transaction_id or event_id.
+    Always check for duplicates using `transactionId` or `eventId`.
   </Accordion>
 
   <Accordion title="Send Confirmations">

@@ -1,114 +1,151 @@
 ---
 title: 'Webhooks Overview'
-description: 'Understanding FossaPay webhooks'
+description: 'Receive and verify event notifications from FossaPay'
 ---
 
-## What are Webhooks?
+## What are webhooks?
 
-Webhooks are HTTP callbacks that FossaPay sends to your server when events occur. They enable real-time notifications about payments, payouts, and other important events.
+FossaPay sends an HTTP `POST` request to your configured webhook URL when an event occurs. Webhooks let your server react to checkout payments, deposits, payouts, and other asynchronous activity without continuously polling the API.
 
-## Webhook Structure
-
-All webhooks follow this format:
+## Webhook envelope
 
 ```json
 {
-  "event": "deposit.completed",
-  "event_id": "evt_abc123",
-  "timestamp": "2024-01-15T10:30:45Z",
+  "eventId": "evt_mtwc9i1y_0409d781714d8fa2",
+  "eventType": "checkout.completed",
   "data": {
-    // Event-specific data
+    "checkoutId": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "reference": "ORDER-10025",
+    "status": "completed"
   },
-  "business_id": "bus_your_business"
+  "timestamp": "2026-09-11T02:30:14.186Z"
 }
 ```
 
-## Configuration
+| Field | Description |
+|---|---|
+| `eventId` | Unique event identifier. Use it to detect duplicate deliveries. |
+| `eventType` | Event name, such as `checkout.completed`. |
+| `data` | Event-specific payload. This object is the signed portion of the webhook. |
+| `timestamp` | Time the event envelope was created, in ISO 8601 format. |
 
-### Set Webhook URL
+## Delivery headers
 
-```bash
-curl -X PUT https://api-production.fossapay.com/api/v1/settings/webhooks \
-  -H "Authorization: Bearer fk_production_DTKUG..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://your-app.com/webhooks/fossapay",
-    "events": [
-      "deposit.completed",
-      "withdrawal.completed",
-      "transfer.completed",
-      "transfer.failed",
-      "wallet.balance.updated"
-    ],
-    "secret": "your-webhook-secret"
-  }'
+| Header | Description |
+|---|---|
+| `x-fossapay-Signature` | Lowercase hexadecimal HMAC-SHA256 signature. HTTP header names are case-insensitive. |
+| `X-Event-Id` | Same identifier as `body.eventId`. |
+| `X-Event-Type` | Same event name as `body.eventType`. |
+| `X-Retry-Count` | Present on retry deliveries and indicates the retry count. |
+
+## Verify signatures
+
+FossaPay currently signs the serialized `data` object—not the full webhook envelope—with your webhook secret:
+
+```text
+signature = HMAC-SHA256(webhook_secret, JSON.stringify(body.data))
 ```
 
-## Verifying Signatures
+The result is encoded as lowercase hexadecimal. Verify it before acknowledging or processing the event.
 
-Always verify webhook signatures:
+### Node.js example
 
 ```javascript
-const crypto = require('crypto');
+import crypto from 'node:crypto';
+import express from 'express';
 
-function verifyWebhook(payload, signature, secret) {
-  const hash = crypto
+const app = express();
+app.use(express.json());
+
+function verifyWebhook(body, signature, secret) {
+  if (!body || !body.data || !signature || !secret) return false;
+
+  const expected = crypto
     .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
+    .update(JSON.stringify(body.data))
     .digest('hex');
 
-  return hash === signature;
+  const received = String(signature);
+  if (expected.length !== received.length) return false;
+
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, 'utf8'),
+    Buffer.from(received, 'utf8')
+  );
 }
 
 app.post('/webhooks/fossapay', (req, res) => {
-  const signature = req.headers['x-fossapay-signature'];
+  const signature = req.get('x-fossapay-signature');
 
-  if (!verifyWebhook(req.body, signature, process.env.WEBHOOK_SECRET)) {
+  if (!verifyWebhook(req.body, signature, process.env.FOSSAPAY_WEBHOOK_SECRET)) {
     return res.status(401).send('Invalid signature');
   }
 
-  res.status(200).send('OK');
-  processWebhook(req.body);
+  res.sendStatus(200);
+  enqueueWebhook(req.body);
 });
 ```
 
-## Best Practices
+### Python example
+
+```python
+import hashlib
+import hmac
+import json
+
+def verify_webhook(body, received_signature, secret):
+    serialized_data = json.dumps(
+        body["data"],
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    expected = hmac.new(
+        secret.encode("utf-8"),
+        serialized_data.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, received_signature)
+```
+
+<Warning>
+  The signature input is exactly `JSON.stringify(body.data)`. Do not include `eventId`, `eventType`, or `timestamp` in the signed value. In languages other than JavaScript, serialize compact JSON with the same property order received in `data`.
+</Warning>
+
+## Safe processing
 
 <AccordionGroup>
-  <Accordion title="Respond Quickly">
-    Return 200 status immediately, process asynchronously
+  <Accordion title="Acknowledge quickly">
+    Return an HTTP `2xx` response as soon as the signature and basic envelope are valid. Move database updates, emails, and third-party calls to an asynchronous job.
   </Accordion>
-
-  <Accordion title="Verify Signatures">
-    Always verify the signature before processing
+  <Accordion title="Handle duplicate deliveries">
+    Store `eventId` with a unique database constraint. If the event has already been processed, return `2xx` without repeating fulfillment or crediting.
   </Accordion>
-
-  <Accordion title="Handle Duplicates">
-    Use event_id to detect duplicate deliveries
+  <Accordion title="Do not depend on delivery order">
+    Use the event's checkout or transaction identifiers and current status. Your handler should tolerate retries and events arriving later than expected.
   </Accordion>
-
-  <Accordion title="Implement Retries">
-    FossaPay retries failed webhooks up to 5 times
+  <Accordion title="Reconcile through the API">
+    If a checkout webhook is delayed or processing fails, retrieve the checkout by ID or merchant reference before taking action.
+  </Accordion>
+  <Accordion title="Expect retries">
+    Failed webhook deliveries are retried up to five times. `X-Retry-Count` is included on retries.
   </Accordion>
 </AccordionGroup>
 
-## Testing
+## Local testing
 
-Use ngrok for local testing:
+FossaPay cannot deliver webhooks directly to `localhost`. Expose your local server through a secure HTTPS tunnel and configure the public URL in the dashboard.
 
 ```bash
 ngrok http 3000
 ```
 
-Then set the ngrok URL as your webhook endpoint in the dashboard.
-
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
   <Card color="#0080FF" title="Webhook Events" href="/api-reference/webhooks/events">
-    View all available webhook events
+    View event names and payloads
   </Card>
-  <Card color="#0080FF" title="Webhooks Concept" href="/concepts/webhooks">
-    Learn more about webhooks
+  <Card color="#0080FF" title="Checkout Guide" href="/guides/checkouts">
+    Integrate one-time NGN checkouts
   </Card>
 </CardGroup>

@@ -1,0 +1,64 @@
+---
+title: 'Get Checkout by Reference'
+api: 'GET https://api-production.fossapay.com/api/v1/checkouts/reference/{reference}'
+description: 'Retrieve a checkout wallet using your merchant reference'
+---
+
+<ParamField header="x-api-key" type="string" required>
+  Your existing active FossaPay API key with full permission.
+</ParamField>
+
+<ParamField path="reference" type="string" required>
+  The unique merchant `reference` supplied when creating the checkout.
+</ParamField>
+
+```bash
+curl https://api-production.fossapay.com/api/v1/checkouts/reference/ORDER-10025 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Checkout session retrieved successfully",
+  "data": {
+    "id": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "reference": "ORDER-10025",
+    "status": "pending",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "account": {
+      "type": "permanent",
+      "bankName": "Sterling Bank",
+      "accountName": "ACME LIMITED",
+      "accountNumber": "9710271392",
+      "expiresAt": null
+    },
+    "customer": null,
+    "metadata": { "orderId": "10025" },
+    "transactionId": "3469cd26-a213-431e-96c9-72dc2dea51ae",
+    "providerCheckoutReference": null,
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": null,
+    "reversedAt": null,
+    "createdAt": "2026-09-11T10:00:00.000Z",
+    "updatedAt": "2026-09-11T10:00:00.000Z"
+  }
+}
+```
+
+<Note>
+  A permanent account does not expire, but the checkout does. Always enforce the top-level `data.expiresAt` in your payment UI.
+</Note>
+
+| HTTP status | When it occurs |
+|---|---|
+| `401` | Missing, invalid, or inactive API key. |
+| `403` | Merchant is not eligible. |
+| `404` | No checkout with this reference exists for the authenticated merchant. |

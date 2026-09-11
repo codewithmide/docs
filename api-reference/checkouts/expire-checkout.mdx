@@ -1,0 +1,63 @@
+---
+title: 'Expire Checkout'
+api: 'POST https://api-production.fossapay.com/api/v1/checkouts/{id}/expire'
+description: 'Expire a pending checkout wallet before its scheduled expiry'
+---
+
+<ParamField header="x-api-key" type="string" required>
+  Your existing active FossaPay API key with full permission.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  The checkout `id` returned when the checkout was created.
+</ParamField>
+
+```bash
+curl -X POST https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6/expire \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Checkout session expired successfully",
+  "data": {
+    "id": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "reference": "ORDER-10025",
+    "status": "expired",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "account": {
+      "type": "temporary",
+      "bankName": "Sterling Bank",
+      "accountName": "FOSSAPAY CHECKOUT",
+      "accountNumber": "9541382701",
+      "expiresAt": "2026-09-11T10:30:00.000Z"
+    },
+    "customer": null,
+    "metadata": null,
+    "transactionId": null,
+    "providerCheckoutReference": "CHK202609111000001234567",
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": null,
+    "reversedAt": null,
+    "createdAt": "2026-09-11T10:00:00.000Z",
+    "updatedAt": "2026-09-11T10:12:00.000Z"
+  }
+}
+```
+
+Expiring a checkout emits a `checkout.expired` webhook. Only a checkout currently in `pending` status can be expired.
+
+| HTTP status | When it occurs |
+|---|---|
+| `401` | Missing, invalid, or inactive API key. |
+| `403` | Merchant is not eligible. |
+| `404` | Checkout does not exist for the authenticated merchant. |
+| `409` | Checkout is already `processing`, `completed`, `failed`, `expired`, or `reversed`. |

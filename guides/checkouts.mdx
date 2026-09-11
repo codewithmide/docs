@@ -1,0 +1,326 @@
+---
+title: Checkout Wallet Guide
+description: 'Accept one-time NGN bank-transfer payments with a 30-minute checkout account'
+---
+
+## Overview
+
+Checkout Wallet lets your business accept a single NGN bank-transfer payment for an order, invoice, or purchase. You create the checkout from your server, show the returned bank account and exact payable amount to the customer, and fulfill the order after receiving a signed `checkout.completed` webhook.
+
+**Production base URL:** `https://api-production.fossapay.com`
+
+<Warning>
+  FossaPay currently processes these requests on production systems. Use only amounts and actions you are comfortable processing as real transactions.
+</Warning>
+
+## How it works
+
+<Steps>
+  <Step title="Create the checkout">
+    Call `POST /api/v1/checkouts` from your backend with your existing active FossaPay API key and a unique idempotency key.
+  </Step>
+  <Step title="Display the payment instructions">
+    Show the customer `data.account.bankName`, `data.account.accountName`, `data.account.accountNumber`, and the exact `data.amountPayable`.
+  </Step>
+  <Step title="Customer makes one exact transfer">
+    The customer must transfer `amountPayable` in one transaction before `expiresAt`. Do not split a payment or reuse the account for a second transaction.
+  </Step>
+  <Step title="Wait for confirmation">
+    Verify the webhook signature, acknowledge the webhook quickly, and fulfill only after `checkout.completed`.
+  </Step>
+  <Step title="Reconcile if necessary">
+    Retrieve the checkout by its FossaPay ID or your unique reference whenever your webhook delivery is delayed or your application needs to recover state.
+  </Step>
+</Steps>
+
+## Prerequisites
+
+- An active FossaPay merchant account that has completed business verification.
+- An existing active FossaPay API key.
+- An active permanent NGN account on the merchant account. It is used as a fallback if a temporary checkout account cannot be generated.
+- A public HTTPS webhook URL configured for your merchant.
+
+<Info>
+  Keep API keys and webhook secrets on your server. Do not create checkouts directly from browser or mobile code where a key can be exposed.
+</Info>
+
+## Create a checkout
+
+```bash
+curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "X-Idempotency-Key: checkout-order-10025-v1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 5000,
+    "currency": "NGN",
+    "reference": "ORDER-10025",
+    "feeBearer": "customer",
+    "customer": {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com",
+      "phoneNumber": "+2348012345678"
+    },
+    "metadata": {
+      "orderId": "10025",
+      "cartId": "cart_91"
+    },
+    "description": "Payment for order 10025"
+  }'
+```
+
+### Required fields
+
+| Field | Description |
+|---|---|
+| `amount` | The merchant's underlying order amount in NGN. It must be a whole number of at least `1`. |
+| `currency` | Currently only `NGN` is supported. The value is case-insensitive. |
+| `reference` | Your unique reference for this checkout. Use 1–100 letters, numbers, dots, underscores, colons, or hyphens. |
+| `feeBearer` | `customer` or `merchant`. This determines who pays the checkout fee. |
+
+### Optional fields
+
+| Field | Description |
+|---|---|
+| `customer.name` | Customer name, 2–150 characters. |
+| `customer.email` | Valid customer email. After a successful payment, FossaPay queues a payment-confirmation email to this address. |
+| `customer.phoneNumber` | Valid international phone number. |
+| `metadata` | Your JSON object, up to 4,096 UTF-8 bytes. It is returned unchanged in checkout responses and webhooks for reconciliation. Do not store secrets here. |
+| `description` | Internal description of up to 255 characters. |
+
+Customer details do not identify the incoming bank transfer. FossaPay correlates a temporary checkout through its dedicated account and provider checkout reference, or a fallback checkout through the permanent account and the pending checkout's expected payment. Treat `customer` as contact and reconciliation information.
+
+## Understand the amounts and fee bearer
+
+FossaPay calculates the checkout fee on the server using the configured fee rule. Never calculate the final payable amount yourself; use the values returned by the API.
+
+| Fee bearer | `amount` | `amountPayable` | `settlementAmount` |
+|---|---|---|---|
+| `customer` | Your order amount | `amount + fee` | Your order amount |
+| `merchant` | Your order amount | Your order amount | `amount - fee` |
+
+For example, if `amount` is `5000.00` and the calculated fee is `80.00`:
+
+- With `customer`, the customer transfers `5080.00` and the merchant settlement is `5000.00`.
+- With `merchant`, the customer transfers `5000.00` and the merchant settlement is `4920.00`.
+
+Fee values may change with your configured pricing. The API response is authoritative for each checkout.
+
+## Example response
+
+```json
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Checkout session created successfully",
+  "data": {
+    "id": "35f5f6fb-0c8d-4e96-ba4a-c04750724ff6",
+    "reference": "ORDER-10025",
+    "status": "pending",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "amountPayable": "5080.00",
+    "settlementAmount": "5000.00",
+    "feeBearer": "customer",
+    "currency": "NGN",
+    "account": {
+      "type": "temporary",
+      "bankName": "Sterling Bank",
+      "accountName": "FOSSAPAY CHECKOUT",
+      "accountNumber": "9541382701",
+      "expiresAt": "2026-09-11T10:30:00.000Z"
+    },
+    "customer": {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com",
+      "phoneNumber": "+2348012345678"
+    },
+    "metadata": {
+      "orderId": "10025",
+      "cartId": "cart_91"
+    },
+    "transactionId": "3469cd26-a213-431e-96c9-72dc2dea51ae",
+    "providerCheckoutReference": null,
+    "expiresAt": "2026-09-11T10:30:00.000Z",
+    "completedAt": null,
+    "failedAt": null,
+    "reversedAt": null,
+    "createdAt": "2026-09-11T10:00:00.000Z",
+    "updatedAt": "2026-09-11T10:00:00.000Z"
+  }
+}
+```
+
+<Note>
+  Money values in responses are decimal strings. Parse them with a decimal or money library, not binary floating-point arithmetic.
+</Note>
+
+## Temporary and permanent accounts
+
+The API first attempts to create a dedicated 30-minute account:
+
+- `account.type: "temporary"` means the account is dedicated to this checkout and has its own `account.expiresAt`.
+- If account generation remains unavailable after retries, FossaPay returns the merchant's permanent NGN account with `account.type: "permanent"` and `account.expiresAt: null`.
+
+The checkout itself still expires at `data.expiresAt`, including when a permanent account is returned. Your UI should always show the checkout expiry and stop accepting payment when the checkout reaches a terminal state.
+
+## Exact-amount payment rule
+
+The customer must send exactly `amountPayable` in a single transfer.
+
+- For a temporary account, an incorrect amount is rejected by the checkout provider and may be reversed to the sender.
+- For a permanent fallback account, FossaPay records an incorrect payment as failed, underpaid, or overpaid. Do not fulfill the order unless the checkout becomes `completed`.
+
+Never infer payment success from a bank receipt, browser redirect, or a `pending`/`processing` response.
+
+## Idempotency and references
+
+Every create request requires either `X-Idempotency-Key` or `Idempotency-Key`. Prefer `X-Idempotency-Key` for new integrations.
+
+- Same key + same body: returns the original checkout.
+- Same key + different body: returns `409 Conflict`.
+- Both header names with different values: returns `400 Bad Request`.
+- Missing key: returns `400 Bad Request`.
+- A reference already used by the same merchant: returns `409 Conflict`.
+
+Generate the key once when your order is created and reuse it only when retrying that same checkout request. Use a new reference and key for a new attempt after a checkout has reached a terminal state.
+
+```javascript
+import crypto from 'node:crypto';
+
+const idempotencyKey = crypto.randomUUID();
+
+const response = await fetch('https://api-production.fossapay.com/api/v1/checkouts', {
+  method: 'POST',
+  headers: {
+    'x-api-key': process.env.FOSSAPAY_API_KEY,
+    'X-Idempotency-Key': idempotencyKey,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 5000,
+    currency: 'NGN',
+    reference: 'ORDER-10025',
+    feeBearer: 'customer',
+    metadata: { orderId: '10025' }
+  })
+});
+
+const checkout = await response.json();
+```
+
+## Checkout statuses
+
+| Status | Meaning | Recommended action |
+|---|---|---|
+| `pending` | Waiting for the exact payment. | Display the account and continue waiting. |
+| `processing` | Payment processing has started. | Do not fulfill yet. Wait for a terminal event. |
+| `completed` | Exact payment confirmed and merchant settlement recorded. | Fulfill exactly once. |
+| `failed` | Payment could not complete, including an amount mismatch. | Do not fulfill; reconcile using the checkout and webhook data. |
+| `expired` | The checkout expired or was expired by the merchant. | Stop displaying the payment instructions. |
+| `reversed` | The incoming payment was returned to the sender. | Do not fulfill. |
+
+## Receive and verify checkout webhooks
+
+Checkout terminal events are:
+
+- `checkout.completed`
+- `checkout.failed`
+- `checkout.expired`
+- `checkout.reversed`
+
+FossaPay signs `JSON.stringify(body.data)` with HMAC-SHA256 using your webhook secret. The lowercase hexadecimal digest is sent in `x-fossapay-Signature`.
+
+```javascript
+import crypto from 'node:crypto';
+import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+function verifyCheckoutWebhook(body, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(body.data))
+    .digest('hex');
+
+  const received = String(signature || '');
+  if (expected.length !== received.length) return false;
+
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, 'utf8'),
+    Buffer.from(received, 'utf8')
+  );
+}
+
+app.post('/webhooks/fossapay', (req, res) => {
+  const signature = req.get('x-fossapay-signature');
+
+  if (!verifyCheckoutWebhook(req.body, signature, process.env.FOSSAPAY_WEBHOOK_SECRET)) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  res.sendStatus(200);
+
+  // Store eventId with a unique constraint and process asynchronously.
+  if (req.body.eventType === 'checkout.completed') {
+    fulfillOrderOnce(req.body.data.reference, req.body.data);
+  }
+});
+```
+
+<Warning>
+  Sign only the `data` object using `JSON.stringify(body.data)`. Do not sign the full webhook envelope.
+</Warning>
+
+Webhook deliveries include `X-Event-Id` and `X-Event-Type`. Retries also include `X-Retry-Count`. Store `eventId` and make fulfillment idempotent because failed deliveries can be retried up to five times.
+
+See [Webhook Events](/api-reference/webhooks/events) for complete payload examples.
+
+## Retrieve or expire a checkout
+
+```bash
+# Retrieve by FossaPay checkout ID
+curl https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6 \
+  -H "x-api-key: YOUR_API_KEY"
+
+# Retrieve by your reference
+curl https://api-production.fossapay.com/api/v1/checkouts/reference/ORDER-10025 \
+  -H "x-api-key: YOUR_API_KEY"
+
+# Expire a pending checkout early
+curl -X POST https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6/expire \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+Only a `pending` checkout can be manually expired. Trying to expire any other status returns `409 Conflict`. Retrieval is merchant-scoped, and expired sessions may be updated to `expired` when retrieved.
+
+## Production checklist
+
+- [ ] Create checkouts only from your backend.
+- [ ] Use a unique merchant reference and stable idempotency key per order attempt.
+- [ ] Display the returned `amountPayable`, not the request `amount`.
+- [ ] Display `data.expiresAt` and stop payment after expiry.
+- [ ] Tell customers to make one transfer for the exact amount.
+- [ ] Verify the webhook signature over `JSON.stringify(body.data)`.
+- [ ] Deduplicate webhook deliveries using `eventId`.
+- [ ] Fulfill only on `checkout.completed` and make fulfillment idempotent.
+- [ ] Add reconciliation polling by checkout ID or reference.
+- [ ] Keep API keys and webhook secrets outside client-side code and logs.
+
+## API reference
+
+<CardGroup cols={2}>
+  <Card title="Create checkout" icon="plus" href="/api-reference/checkouts/create-checkout">
+    Generate payment instructions for a one-time NGN payment.
+  </Card>
+  <Card title="Get by ID" icon="magnifying-glass" href="/api-reference/checkouts/get-checkout">
+    Retrieve the latest status using the checkout ID.
+  </Card>
+  <Card title="Get by reference" icon="tag" href="/api-reference/checkouts/get-checkout-by-reference">
+    Reconcile a checkout using your merchant reference.
+  </Card>
+  <Card title="Expire checkout" icon="clock" href="/api-reference/checkouts/expire-checkout">
+    Stop a pending checkout before its scheduled expiry.
+  </Card>
+</CardGroup>
