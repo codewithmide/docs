@@ -1,0 +1,58 @@
+---
+title: 'Get Payout by ID'
+api: 'GET https://api-production.fossapay.com/api/v1/payouts/{id}'
+description: 'Retrieve a master-wallet payout using its FossaPay payout ID'
+---
+
+<ParamField header="x-api-key" type="string" required>
+  The active live API key belonging to the merchant that created the payout.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  The `data.payoutId` returned when the payout was created. This is not the `transactionId` or `providerReference`.
+</ParamField>
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/payouts/a9af907d-965f-4ad8-9472-f437fc11df21 \
+  --header 'x-api-key: YOUR_LIVE_API_KEY'
+```
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Payout retrieved successfully",
+  "data": {
+    "payoutId": "a9af907d-965f-4ad8-9472-f437fc11df21",
+    "transactionId": "5a0bb85c-268b-44fa-a57d-70b2944688bc",
+    "reference": "PAYOUT-10025",
+    "status": "completed",
+    "route": "external_bank",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "totalDebited": "5080.00",
+    "currency": "NGN",
+    "recipient": {
+      "bankCode": "058",
+      "bankName": "Guaranty Trust Bank",
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789"
+    },
+    "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
+    "metadata": { "invoiceId": "INV-10025" },
+    "completedAt": "2026-09-11T12:05:10.000Z",
+    "failedAt": null,
+    "reversedAt": null
+  }
+}
+```
+
+The payout is accessible only to the merchant that created it.
+
+| HTTP status | When it occurs |
+|---|---|
+| `401` | Missing, invalid, or inactive API key. |
+| `403` | Merchant is not eligible. |
+| `404` | Payout does not exist for the authenticated merchant. |
+

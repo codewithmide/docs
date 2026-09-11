@@ -58,7 +58,7 @@ Every API request should include these headers:
 |--------|-------|----------|
 | `x-api-key` | `fk_production_DTKUG...` | Yes |
 | `Content-Type` | `application/json` | Yes |
-| `X-Idempotency-Key` | Unique request identifier | Required when creating a checkout |
+| `X-Idempotency-Key` | Unique request identifier | Required when creating a checkout or master-wallet payout |
 
 ### Example Request
 
@@ -84,9 +84,9 @@ const response = await axios.post(
 
 ## Idempotency
 
-Creating a checkout requires an idempotency key. Send either `X-Idempotency-Key` (recommended) or the backward-compatible `Idempotency-Key` header. If both headers are sent, their values must match exactly or the API returns `400 Bad Request`.
+Creating a checkout or master-wallet payout requires an idempotency key. Send either `X-Idempotency-Key` (recommended) or the backward-compatible `Idempotency-Key` header. If both headers are sent, their values must match exactly or the API returns `400 Bad Request`.
 
-Reusing the same key with the same checkout payload returns the original checkout without creating another one. Reusing it with a different payload returns `409 Conflict`. Idempotency keys can contain up to 255 characters and are scoped to your merchant account.
+Reusing the same key with the same request payload returns the original resource without creating or debiting another one. Reusing it with a different payload returns `409 Conflict`. Idempotency keys can contain up to 255 characters and are scoped to your merchant account.
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/checkouts \

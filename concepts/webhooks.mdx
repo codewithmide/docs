@@ -30,6 +30,23 @@ Webhooks are HTTP callbacks that FossaPay sends to your server when events occur
 
 ## Webhook Events
 
+### Checkout Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `checkout.completed` | Checkout payment completed | After the exact payable amount is confirmed |
+| `checkout.failed` | Checkout payment failed | When processing fails, including amount mismatch |
+| `checkout.expired` | Checkout expired | When a pending checkout passes or reaches its expiry |
+| `checkout.reversed` | Checkout payment reversed | After checkout funds are returned to the sender |
+
+### Master Wallet Payout Events
+
+| Event | Description | When it fires |
+|-------|-------------|---------------|
+| `payout.completed` | Master-wallet payout completed | When the beneficiary payout succeeds |
+| `payout.failed` | Master-wallet payout failed | When the payout fails without a confirmed full reversal |
+| `payout.reversed` | Master-wallet payout reversed | When the payout funds are confirmed returned |
+
 ### Deposit Events
 
 | Event | Description | When it fires |
@@ -75,7 +92,14 @@ await fossapay.webhooks.configure({
     'withdrawal.completed',
     'transfer.completed',
     'transfer.failed',
-    'wallet.balance.updated'
+    'wallet.balance.updated',
+    'checkout.completed',
+    'checkout.failed',
+    'checkout.expired',
+    'checkout.reversed',
+    'payout.completed',
+    'payout.failed',
+    'payout.reversed'
   ],
   secret: 'your-webhook-secret' // Optional: for signature verification
 });
@@ -99,7 +123,7 @@ All webhooks follow this structure:
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_abc123xyz",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
@@ -141,7 +165,7 @@ app.post('/webhooks/fossapay', async (req, res) => {
   // 1. Verify webhook signature
   const signature = req.headers['x-fossapay-signature'];
   const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
-  if (!verifySignature(req.body, signature, secret)) {
+  if (!verifySignature(req.body.data, signature, secret)) {
     return res.status(401).send('Invalid signature');
   }
 
@@ -155,9 +179,9 @@ app.post('/webhooks/fossapay', async (req, res) => {
 });
 
 async function processWebhook(payload) {
-  const { event, data } = payload;
+  const { eventType, data } = payload;
 
-  switch (event) {
+  switch (eventType) {
     case 'deposit.completed':
       await handleDepositCompleted(data);
       break;
@@ -178,8 +202,17 @@ async function processWebhook(payload) {
       await handleWalletBalanceUpdated(data);
       break;
 
+    case 'payout.completed':
+      await handlePayoutCompleted(data);
+      break;
+
+    case 'payout.failed':
+    case 'payout.reversed':
+      await handlePayoutTerminalState(eventType, data);
+      break;
+
     default:
-      console.log('Unhandled event:', event);
+      console.log('Unhandled event:', eventType);
   }
 }
 
@@ -205,10 +238,10 @@ async function handleDepositCompleted(data) {
   });
 }
 
-function verifySignature(payload, signature, secret) {
+function verifySignature(data, signature, secret) {
   const hash = crypto
     .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
+    .update(JSON.stringify(data))
     .digest('hex');
 
   return crypto.timingSafeEqual(
@@ -235,28 +268,28 @@ def handle_webhook():
     # Verify signature
     signature = request.headers.get('x-fossapay-signature')
     secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
-    if not verify_signature(request.data, signature, secret):
+    payload = request.json
+    if not verify_signature(payload['data'], signature, secret):
         return 'Invalid signature', 401
 
     # Respond quickly
-    payload = request.json
-
     # Process asynchronously
     process_webhook.delay(payload)  # Using Celery
 
     return 'Webhook received', 200
 
-def verify_signature(payload, signature, secret):
+def verify_signature(data, signature, secret):
+    serialized_data = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
     hash = hmac.new(
         secret.encode(),
-        payload,
+        serialized_data.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
 
     return hmac.compare_digest(hash, signature)
 
 def process_webhook(payload):
-    event = payload['event']
+    event = payload['eventType']
     data = payload['data']
 
     if event == 'deposit.completed':
@@ -269,6 +302,10 @@ def process_webhook(payload):
         handle_transfer_failed(data)
     elif event == 'wallet.balance.updated':
         handle_wallet_balance_updated(data)
+    elif event == 'payout.completed':
+        handle_payout_completed(data)
+    elif event in ('payout.failed', 'payout.reversed'):
+        handle_payout_terminal_state(event, data)
 ```
 
 ## Security
@@ -280,10 +317,10 @@ FossaPay signs all webhooks with HMAC SHA256:
 ```javascript
 const crypto = require('crypto');
 
-function verifyWebhookSignature(payload, signature, secret) {
+function verifyWebhookSignature(data, signature, secret) {
   const hash = crypto
     .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
+    .update(JSON.stringify(data))
     .digest('hex');
 
   return crypto.timingSafeEqual(
@@ -412,7 +449,7 @@ View webhook delivery logs in your dashboard:
     ```javascript
     logger.info('Webhook received', {
       event_id: payload.eventId,
-      event: payload.event,
+      eventType: payload.eventType,
       timestamp: payload.timestamp
     });
     ```
@@ -434,7 +471,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_abc123",
   "timestamp": "2024-01-15T10:30:45Z",
   "data": {
@@ -465,7 +502,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "deposit.completed",
+  "eventType": "deposit.completed",
   "eventId": "evt_def456",
   "timestamp": "2024-01-15T11:00:00Z",
   "data": {
@@ -497,7 +534,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "withdrawal.completed",
+  "eventType": "withdrawal.completed",
   "eventId": "evt_xyz789",
   "timestamp": "2024-01-15T11:45:23Z",
   "data": {
@@ -522,7 +559,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "transfer.completed",
+  "eventType": "transfer.completed",
   "eventId": "evt_transfer1",
   "timestamp": "2024-01-15T12:30:00Z",
   "data": {
@@ -552,7 +589,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "transfer.failed",
+  "eventType": "transfer.failed",
   "eventId": "evt_transfer2",
   "timestamp": "2024-01-15T13:15:00Z",
   "data": {
@@ -582,7 +619,7 @@ View webhook delivery logs in your dashboard:
 
 ```json
 {
-  "event": "wallet.balance.updated",
+  "eventType": "wallet.balance.updated",
   "eventId": "evt_balance1",
   "timestamp": "2024-01-15T14:00:00Z",
   "data": {

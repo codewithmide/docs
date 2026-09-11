@@ -1,0 +1,158 @@
+---
+title: 'Create Master Wallet Payout'
+api: 'POST https://api-production.fossapay.com/api/v1/payouts'
+description: 'Send NGN directly from your business master wallet'
+---
+
+Creates a payout from the authenticated merchant's permanent NGN master wallet. You do not send a `customerId`, wallet ID, or source account—the API derives the source wallet from your live API key.
+
+The destination account number determines how the payout is routed:
+
+| Destination | Route returned | Fee |
+|---|---|---|
+| A customer wallet belonging to your business | `same_business` | Free |
+| A FossaPay wallet belonging to another business | `fossapay_cross_business` | Applicable payout fee |
+| An external Nigerian bank account | `external_bank` | Applicable payout fee |
+
+<Tip>
+  Perform a [Bank Name Enquiry](/api-reference/fiat-transfers/bank-name-enquiry) first and submit the returned bank code, bank name, account name, and account number.
+</Tip>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  An active production FossaPay API key with full permission. The associated business must be verified.
+</ParamField>
+
+<ParamField header="X-Idempotency-Key" type="string" required>
+  A unique key of up to 255 characters for this logical payout. `Idempotency-Key` is also accepted. If both headers are sent, their values must match.
+</ParamField>
+
+## Body
+
+<ParamField body="amount" type="integer" required>
+  Amount the beneficiary should receive in NGN. Minimum `1`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Currency code. Currently only `NGN` is supported.
+</ParamField>
+
+<ParamField body="reference" type="string" required>
+  Your unique payout reference, 1–100 characters. Allowed characters are letters, numbers, `.`, `_`, `:`, and `-`.
+</ParamField>
+
+<ParamField body="destinationBankCode" type="string" required>
+  Bank code returned by the supported-banks or bank-name-enquiry endpoint.
+</ParamField>
+
+<ParamField body="destinationBankName" type="string" required>
+  Beneficiary bank name, up to 199 characters.
+</ParamField>
+
+<ParamField body="destinationAccountName" type="string" required>
+  Verified beneficiary account name, up to 199 characters.
+</ParamField>
+
+<ParamField body="destinationAccountNumber" type="string" required>
+  Beneficiary account number, up to 199 characters. FossaPay uses this value to detect same-business and cross-business wallet destinations automatically.
+</ParamField>
+
+<ParamField body="remarks" type="string">
+  Optional payout narration, up to 255 characters.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Optional merchant-defined JSON, up to 4,096 UTF-8 bytes. It is returned unchanged in API responses and payout webhooks.
+</ParamField>
+
+## Request
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/payouts \
+  --header 'x-api-key: YOUR_LIVE_API_KEY' \
+  --header 'X-Idempotency-Key: payout-order-10025-v1' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "amount": 5000,
+    "currency": "NGN",
+    "reference": "PAYOUT-10025",
+    "destinationBankCode": "058",
+    "destinationBankName": "Guaranty Trust Bank",
+    "destinationAccountName": "ADA LOVELACE",
+    "destinationAccountNumber": "0123456789",
+    "remarks": "Vendor settlement",
+    "metadata": {
+      "vendorId": "VEN-42",
+      "invoiceId": "INV-10025"
+    }
+  }'
+```
+
+## Response
+
+The endpoint returns HTTP `202`. A same-business transfer may already be `completed`; other routes normally begin as `processing` and reach a terminal state asynchronously.
+
+```json
+{
+  "status": "success",
+  "statusCode": 202,
+  "message": "Payout request processed successfully",
+  "data": {
+    "payoutId": "a9af907d-965f-4ad8-9472-f437fc11df21",
+    "transactionId": "5a0bb85c-268b-44fa-a57d-70b2944688bc",
+    "reference": "PAYOUT-10025",
+    "status": "processing",
+    "route": "external_bank",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "totalDebited": "5080.00",
+    "currency": "NGN",
+    "recipient": {
+      "bankCode": "058",
+      "bankName": "Guaranty Trust Bank",
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789"
+    },
+    "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
+    "metadata": {
+      "vendorId": "VEN-42",
+      "invoiceId": "INV-10025"
+    },
+    "completedAt": null,
+    "failedAt": null,
+    "reversedAt": null
+  }
+}
+```
+
+## Idempotency
+
+- Retrying the identical request with the same idempotency key returns the original payout without another debit.
+- Reusing an idempotency key with a different body returns HTTP `409`.
+- Each `reference` must also be unique for the authenticated merchant.
+- If a request times out, retrieve the payout by reference before deciding whether to retry. Never retry a payout with a new key merely because the first response was delayed.
+
+## Statuses
+
+| Status | Meaning |
+|---|---|
+| `processing` | Accepted and awaiting a final provider result. Do not retry. |
+| `completed` | The payout completed successfully. |
+| `reversed` | The payout did not complete and the reserved funds were returned. |
+| `failed` | The payout failed. Retrieve its latest state and contact support if funds appear reserved. |
+
+## Errors
+
+| HTTP status | When it occurs |
+|---|---|
+| `400` | Invalid body, missing/conflicting idempotency headers, missing master wallet, self-payment, insufficient funds, or unavailable payout configuration/provider. |
+| `401` | Missing, invalid, inactive, revoked, non-live, or non-full-permission API key. |
+| `403` | The merchant has not completed business verification. |
+| `409` | Duplicate reference or incompatible reuse of an idempotency key. |
+
+<Warning>
+  Treat `processing` as non-terminal. Confirm the outcome using a signed payout webhook or either retrieval endpoint before marking a payout final.
+</Warning>
+

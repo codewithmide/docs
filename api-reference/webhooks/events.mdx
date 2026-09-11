@@ -149,6 +149,114 @@ Fired after an incoming checkout payment is returned to the sender. This can fol
 }
 ```
 
+## Payout Events
+
+Master-wallet payout events are emitted when a payout reaches a terminal state. Use `data.reference` to reconcile with your request and `data.payoutId` when retrieving the payout through the API.
+
+### payout.completed
+
+Fired when the payout completes successfully. A same-business transfer may produce this event immediately during the create request.
+
+```json
+{
+  "eventId": "evt_payout_completed_001",
+  "eventType": "payout.completed",
+  "data": {
+    "payoutId": "a9af907d-965f-4ad8-9472-f437fc11df21",
+    "transactionId": "5a0bb85c-268b-44fa-a57d-70b2944688bc",
+    "reference": "PAYOUT-10025",
+    "status": "completed",
+    "route": "external_bank",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "totalDebited": "5080.00",
+    "currency": "NGN",
+    "recipient": {
+      "bankCode": "058",
+      "bankName": "Guaranty Trust Bank",
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789"
+    },
+    "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
+    "metadata": { "invoiceId": "INV-10025" },
+    "completedAt": "2026-09-11T12:05:10.000Z",
+    "failedAt": null,
+    "reversedAt": null
+  },
+  "timestamp": "2026-09-11T12:05:10.100Z"
+}
+```
+
+### payout.failed
+
+Fired when a payout fails and does not have a confirmed full reversal. Do not automatically create a replacement payout. Retrieve the payout and contact support if funds remain reserved.
+
+```json
+{
+  "eventId": "evt_payout_failed_001",
+  "eventType": "payout.failed",
+  "data": {
+    "payoutId": "a9af907d-965f-4ad8-9472-f437fc11df21",
+    "transactionId": "5a0bb85c-268b-44fa-a57d-70b2944688bc",
+    "reference": "PAYOUT-10025",
+    "status": "failed",
+    "route": "external_bank",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "totalDebited": "5080.00",
+    "currency": "NGN",
+    "recipient": {
+      "bankCode": "058",
+      "bankName": "Guaranty Trust Bank",
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789"
+    },
+    "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
+    "metadata": { "invoiceId": "INV-10025" },
+    "completedAt": null,
+    "failedAt": "2026-09-11T12:05:10.000Z",
+    "reversedAt": null
+  },
+  "timestamp": "2026-09-11T12:05:10.100Z"
+}
+```
+
+### payout.reversed
+
+Fired when the payout does not complete and FossaPay confirms that the reserved payout amount and fee have been returned to the merchant master wallet.
+
+```json
+{
+  "eventId": "evt_payout_reversed_001",
+  "eventType": "payout.reversed",
+  "data": {
+    "payoutId": "a9af907d-965f-4ad8-9472-f437fc11df21",
+    "transactionId": "5a0bb85c-268b-44fa-a57d-70b2944688bc",
+    "reference": "PAYOUT-10025",
+    "status": "reversed",
+    "route": "external_bank",
+    "amount": "5000.00",
+    "fee": "80.00",
+    "totalDebited": "5080.00",
+    "currency": "NGN",
+    "recipient": {
+      "bankCode": "058",
+      "bankName": "Guaranty Trust Bank",
+      "accountName": "ADA LOVELACE",
+      "accountNumber": "0123456789"
+    },
+    "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
+    "metadata": { "invoiceId": "INV-10025" },
+    "completedAt": null,
+    "failedAt": "2026-09-11T12:05:10.000Z",
+    "reversedAt": "2026-09-11T12:05:12.000Z"
+  },
+  "timestamp": "2026-09-11T12:05:12.100Z"
+}
+```
+
+The `route` value is one of `same_business`, `fossapay_cross_business`, or `external_bank`. Same-business payouts have a zero fee.
+
 ## Deposit Events
 
 ### deposit.completed
@@ -360,7 +468,7 @@ Fired when a wallet balance is updated.
     "toAccount": {
       "accountNumber": "0987654321",
       "accountName": "Savings Wallet",
-      "bankName": "GTBank",
+      "bankName": "GTBank"
     },
     "amount": 25000,
     "currency": "NGN",
@@ -393,6 +501,15 @@ app.post('/webhooks/fossapay', async (req, res) => {
       await handleCheckoutTerminalState(eventType, data);
       break;
 
+    case 'payout.completed':
+      await handlePayoutCompleted(data);
+      break;
+
+    case 'payout.failed':
+    case 'payout.reversed':
+      await handlePayoutTerminalState(eventType, data);
+      break;
+
     case 'deposit.completed':
       await handleDepositCompleted(data);
       break;
@@ -417,3 +534,4 @@ app.post('/webhooks/fossapay', async (req, res) => {
       console.log('Unhandled event:', eventType, eventId);
   }
 });
+```

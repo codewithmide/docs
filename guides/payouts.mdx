@@ -1,280 +1,237 @@
 ---
 title: Payouts Guide
-description: 'Complete guide to sending money with FossaPay'
+description: 'Send NGN from a business master wallet or customer wallet with FossaPay'
 ---
 
 ## Overview
 
-Send money to another FossaPay customer or to an external Nigerian bank account using FossaPay's Payouts API. This guide covers single payouts, bulk disbursements, and handling payout failures.
+FossaPay supports business-funded payouts directly from your permanent NGN master wallet, as well as the existing customer-funded transfer APIs. Choose the flow based on who owns the source funds.
 
-## Choose the Correct Transfer Type
+| Flow | Source | Destination | Fee behavior |
+|---|---|---|---|
+| [Master Wallet Payout](/api-reference/payouts/create-payout) | Your business master NGN wallet | Same-business customer, another FossaPay business, or an external bank | Free within the same business; payout fee otherwise |
+| [Wallet-to-Wallet Transfer](/api-reference/virtual-account/wallet-transfer) | A customer wallet | Another customer wallet under the same business | Free |
+| [Customer Inter-Bank Transfer](/api-reference/fiat-transfers/inter-bank-transfer) | A customer wallet selected with `customerId` | External Nigerian bank account | Applicable transfer fee |
 
-| Transfer type | Use when | Fee |
-|---|---|---|
-| [Wallet-to-Wallet Transfer](/api-reference/virtual-account/wallet-transfer) | The sender and recipient are both FossaPay customers under the same business | Free |
-| [Inter-Bank Transfer](/api-reference/fiat-transfers/inter-bank-transfer) | The recipient uses an account at another supported Nigerian bank | Calculate the applicable fee before sending |
-
-<Note>
-  Wallet-to-wallet transfer is an internal movement between two customer wallets under your business. Inter-bank transfer sends money outside that wallet network to another bank.
-</Note>
+<Info>
+  Use the Master Wallet Payout API when the funds belong to the business. It derives the source wallet from your API key, so you do not provide a `customerId`, source wallet ID, or source account number.
+</Info>
 
 ## Prerequisites
 
-- Sufficient balance in your FossaPay wallet or bank account
-- Verified business account
-- Live API keys for production
+- A verified FossaPay business
+- An active production API key with full permission
+- An active permanent NGN master wallet
+- Sufficient available balance for the payout amount and any applicable fee
+- A webhook endpoint configured with your webhook secret
 
-## Single Payout
+No separate payout API key, IP allowlisting, or per-merchant payout activation is required.
 
-### Basic Inter-Bank Transfer
+## How Master Wallet Routing Works
+
+FossaPay looks up the submitted destination account number before moving funds.
+
+### Same business
+
+When the destination is an active customer wallet owned by your business:
+
+- `route` is `same_business`
+- `fee` is `0.00`
+- `totalDebited` equals `amount`
+- the transfer can complete immediately
+
+### Another FossaPay business
+
+When the destination is an active FossaPay wallet owned by another business:
+
+- `route` is `fossapay_cross_business`
+- the configured payout fee applies
+- the payout is processed through the charged payout rail
+
+### External bank
+
+When the destination account is not a FossaPay wallet:
+
+- `route` is `external_bank`
+- the configured payout fee applies
+- a final provider result is delivered asynchronously
+
+<Warning>
+  Do not attempt to select the route in your request. Always send verified beneficiary details; FossaPay determines the route from the destination account number.
+</Warning>
+
+## Validate the Beneficiary
+
+Retrieve supported banks and perform a name enquiry before creating the payout.
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cus_123",
-    "destinationBankCode": "058",
-    "destinationAccountName": "Jane Smith",
-    "destinationAccountNumber": "0123456789",
-    "destinationBankName": "GTBank",
-    "reference": "transfer-1705315200000",
-    "remarks": "Salary payment - January 2024",
-    "amount": 25000
-  }'
-```
-
-**Response:**
-```json
-{
-  "status": true,
-  "statusCode": 200,
-  "message": "Transfer request is being processed",
-  "data": {
-    "reference": "transfer-1705315200000"
-  }
-}
-```
-
-### Validate Account First
-
-```bash
-curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
+  --header 'x-api-key: YOUR_LIVE_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{
     "accountNumber": "0123456789",
     "bankCode": "058"
   }'
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Account details retrieved successfully",
-  "data": {
-    "accountNumber": "0123456789",
-    "accountName": "JANE SMITH",
-    "bankCode": "058",
-    "bankName": "GTBank"
-  }
-}
-```
+Compare the returned name with your intended beneficiary before proceeding.
 
-Proceed with transfer if name matches.
+## Create a Payout
 
-## Multiple Transfers
-
-For multiple transfers, make individual API calls or implement batch processing in your application.
-
-## Handling Webhooks
+Generate one idempotency key for each logical payout and persist it with your reference.
 
 ```javascript
-app.post('/webhooks/fossapay', async (req, res) => {
-  res.status(200).send('OK');
+import crypto from 'node:crypto';
 
-  const { event, data } = req.body;
+const reference = 'PAYOUT-10025';
+const idempotencyKey = crypto.randomUUID();
 
-  switch (event) {
-    case 'withdrawal.completed':
-      await handleTransferCompleted(data);
-      break;
-
-    case 'withdrawal.failed':
-      await handleTransferFailed(data);
-      break;
+const response = await fetch(
+  'https://api-production.fossapay.com/api/v1/payouts',
+  {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
+      'X-Idempotency-Key': idempotencyKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      amount: 5000,
+      currency: 'NGN',
+      reference,
+      destinationBankCode: '058',
+      destinationBankName: 'Guaranty Trust Bank',
+      destinationAccountName: 'ADA LOVELACE',
+      destinationAccountNumber: '0123456789',
+      remarks: 'Vendor settlement',
+      metadata: {
+        invoiceId: 'INV-10025'
+      }
+    })
   }
+);
+
+const result = await response.json();
+```
+
+The beneficiary receives `amount`. For charged routes, your master wallet is debited by `amount + fee`, exposed as `totalDebited`.
+
+## Handle the Initial Status
+
+HTTP `202` means the request was accepted—not necessarily that the beneficiary has received the money.
+
+- If `data.status` is `completed`, the payout is final and successful.
+- If it is `processing`, store `payoutId`, `transactionId`, `reference`, and `providerReference`, then wait for a webhook or retrieve the payout.
+- Never submit a second payout with a new idempotency key because the first request timed out.
+
+## Reconcile a Payout
+
+Retrieve by FossaPay payout ID:
+
+```bash
+curl https://api-production.fossapay.com/api/v1/payouts/PAYOUT_ID \
+  -H 'x-api-key: YOUR_LIVE_API_KEY'
+```
+
+Or retrieve by your unique reference:
+
+```bash
+curl https://api-production.fossapay.com/api/v1/payouts/reference/PAYOUT-10025 \
+  -H 'x-api-key: YOUR_LIVE_API_KEY'
+```
+
+Use reference lookup when you do not know whether a create request reached FossaPay.
+
+## Process Payout Webhooks
+
+Master-wallet payouts emit:
+
+- `payout.completed`
+- `payout.failed`
+- `payout.reversed`
+
+```javascript
+app.post('/webhooks/fossapay', (req, res) => {
+  if (!verifyFossaPaySignature(req.body.data, req.get('x-fossapay-signature'))) {
+    return res.sendStatus(401);
+  }
+
+  res.sendStatus(200);
+
+  const { eventId, eventType, data } = req.body;
+  enqueueWebhook(async () => {
+    if (await eventWasProcessed(eventId)) return;
+
+    switch (eventType) {
+      case 'payout.completed':
+        await markPayoutCompleted(data.reference, data);
+        break;
+      case 'payout.reversed':
+        await markPayoutReversed(data.reference, data);
+        break;
+      case 'payout.failed':
+        await flagPayoutForReview(data.reference, data);
+        break;
+    }
+
+    await recordProcessedEvent(eventId);
+  });
 });
-
-async function handleTransferCompleted(transfer) {
-  // Update transaction status
-  await db.transactions.update({
-    reference: transfer.reference
-  }, {
-    status: 'completed',
-    completed_at: transfer.completed_at
-  });
-
-  // Notify recipient
-  await sendNotification(transfer.customerId, {
-    title: 'Transfer Completed',
-    message: `₦${transfer.amount.toLocaleString()} has been sent to your account`
-  });
-}
-
-async function handleTransferFailed(transfer) {
-  // Update status
-  await db.transactions.update({
-    reference: transfer.reference
-  }, {
-    status: 'failed',
-    failure_reason: transfer.failure_reason
-  });
-
-  // Alert admin
-  await sendAlert({
-    type: 'transfer_failed',
-    reference: transfer.reference,
-    reason: transfer.failure_reason
-  });
-}
 ```
 
-## Checking Payout Status
+FossaPay signs `JSON.stringify(body.data)` with HMAC-SHA256. See [Webhook Verification](/api-reference/webhooks/overview) for complete Node.js and Python examples.
 
-```javascript
-const payout = await client.payouts.getStatus('pay_abc123');
-
-console.log(payout);
-// {
-//   "payout_id": "pay_abc123",
-//   "amount": 25000,
-//   "status": "completed",
-//   "account_number": "0123456789",
-//   "bank_name": "GTBank",
-//   "reference": "payout-1705315200000",
-//   "completed_at": "2024-01-15T11:05:23Z"
-// }
-```
-
-## Bank Codes
-
-Common Nigerian bank codes:
-
-| Bank Code | Bank Name |
-|-----------|-----------|
-| 044 | Access Bank |
-| 063 | Access Bank (Diamond) |
-| 050 | Ecobank Nigeria |
-| 070 | Fidelity Bank |
-| 011 | First Bank of Nigeria |
-| 214 | First City Monument Bank |
-| 058 | Guaranty Trust Bank |
-| 030 | Heritage Bank |
-| 301 | Jaiz Bank |
-| 082 | Keystone Bank |
-| 50211 | Kuda Bank |
-| 090175 | Rubies MFB |
-| 221 | Stanbic IBTC Bank |
-| 068 | Standard Chartered |
-| 232 | Sterling Bank |
-| 100 | Suntrust Bank |
-| 032 | Union Bank |
-| 033 | United Bank for Africa |
-| 215 | Unity Bank |
-| 035 | Wema Bank |
-| 057 | Zenith Bank |
-
-<Tip>
-Get the full list of supported banks via the API: `/v1/transfers/fiat/get-supported-banks`
-</Tip>
-
-## Error Handling
-
-```javascript
-try {
-  const payout = await client.payouts.create({
-    amount: 25000,
-    account_number: '0123456789',
-    bank_code: '058'
-  });
-} catch (error) {
-  if (error.code === 'INSUFFICIENT_BALANCE') {
-    // Handle insufficient balance
-    await notifyAdmin('Insufficient balance for payout');
-  } else if (error.code === 'INVALID_ACCOUNT') {
-    // Handle invalid account
-    await notifyUser('Invalid account details');
-  } else {
-    // Handle other errors
-    console.error('Payout failed:', error);
-  }
-}
-```
-
-## Common Error Codes
-
-| Code | Description | Solution |
-|------|-------------|----------|
-| `INSUFFICIENT_BALANCE` | Not enough funds | Top up your balance |
-| `INVALID_ACCOUNT` | Account doesn't exist | Verify account details |
-| `DAILY_LIMIT_EXCEEDED` | Exceeded daily limit | Wait or request increase |
-| `BANK_UNAVAILABLE` | Bank temporarily unavailable | Retry later |
-| `DUPLICATE_REFERENCE` | Reference already used | Use unique reference |
-
-## Best Practices
+## Idempotency Rules
 
 <AccordionGroup>
-  <Accordion title="Always Validate Accounts">
-    Use account validation before payouts to prevent failures:
-    ```javascript
-    const validation = await client.payouts.validateAccount({
-      account_number: accountNumber,
-      bank_code: bankCode
-    });
-    ```
+  <Accordion title="Reuse the key only for the same request">
+    The same request body and idempotency key return the existing payout. A different body with that key returns HTTP `409`.
   </Accordion>
-
-  <Accordion title="Use Unique References">
-    Generate unique references for each payout:
-    ```javascript
-    const reference = `payout-${Date.now()}-${userId}`;
-    ```
+  <Accordion title="Keep references unique">
+    A payout reference is unique per merchant. Use your own order, invoice, or withdrawal identifier so support and reconciliation are straightforward.
   </Accordion>
-
-  <Accordion title="Check Balance First">
-    Verify sufficient balance before initiating payouts:
-    ```javascript
-    const balance = await client.wallets.getBalance();
-    if (balance.available >= totalAmount) {
-      // Proceed with payout
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="Handle Webhooks">
-    Always implement webhook handlers for real-time status updates.
-  </Accordion>
-
-  <Accordion title="Store Payout IDs">
-    Save payout IDs for reconciliation and support.
+  <Accordion title="Resolve ambiguous responses before retrying">
+    If the connection fails after submission, retrieve by reference. If found, continue tracking that payout. If it is not found, retry the identical body with the original idempotency key.
   </Accordion>
 </AccordionGroup>
+
+## Terminal States
+
+| Status | Action |
+|---|---|
+| `completed` | Mark the payout successful. |
+| `reversed` | Mark it unsuccessful; the payout funds were returned. |
+| `failed` | Mark it failed and retrieve the latest state. Contact FossaPay support if funds still appear reserved. |
+
+Do not deliberately retry a terminal payout under a new reference without making a new business decision in your own system.
+
+## Go-Live Checklist
+
+- [ ] Use a verified business and a full-permission live API key.
+- [ ] Keep API keys server-side only.
+- [ ] Validate the beneficiary before creating a payout.
+- [ ] Generate and persist a unique reference and idempotency key.
+- [ ] Store all returned payout and provider identifiers.
+- [ ] Treat `processing` as non-terminal.
+- [ ] Verify webhook signatures before processing events.
+- [ ] Deduplicate webhook deliveries using `eventId`.
+- [ ] Reconcile delayed webhooks with the GET endpoints.
+- [ ] Test same-business, cross-business, and external-bank routing with controlled amounts.
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card color="#07C983" title="Wallet-to-Wallet Transfer" icon="wallet" href="/api-reference/virtual-account/wallet-transfer">
-    Free transfers between two customers under your business
+  <Card color="#07C983" title="Create Master Wallet Payout" icon="money-bill-transfer" href="/api-reference/payouts/create-payout">
+    Send directly from your business funds
   </Card>
-  <Card color="#0080FF" title="Inter-Bank Transfer" icon="building-columns" href="/api-reference/fiat-transfers/inter-bank-transfer">
-    Transfers to accounts at external banks
+  <Card color="#0080FF" title="Get Payout by ID" icon="magnifying-glass" href="/api-reference/payouts/get-payout">
+    Retrieve the latest payout status
   </Card>
-  <Card color="#0080FF" title="Bank Name Enquiry API" icon="code" href="/api-reference/fiat-transfers/bank-name-enquiry">
-    Validate account details
+  <Card color="#0080FF" title="Wallet-to-Wallet Transfer" icon="wallet" href="/api-reference/virtual-account/wallet-transfer">
+    Customer-funded transfers within one business
   </Card>
-  <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
-    Handle transfer webhooks
+  <Card color="#0080FF" title="Webhook Events" icon="webhook" href="/api-reference/webhooks/events">
+    See complete payout event payloads
   </Card>
 </CardGroup>

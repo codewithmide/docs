@@ -1,0 +1,30 @@
+---
+title: 'Get Payout by Reference'
+api: 'GET https://api-production.fossapay.com/api/v1/payouts/reference/{reference}'
+description: 'Retrieve a master-wallet payout using your merchant reference'
+---
+
+<ParamField header="x-api-key" type="string" required>
+  The active live API key belonging to the merchant that created the payout.
+</ParamField>
+
+<ParamField path="reference" type="string" required>
+  The merchant-defined `reference` submitted when the payout was created.
+</ParamField>
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/payouts/reference/PAYOUT-10025 \
+  --header 'x-api-key: YOUR_LIVE_API_KEY'
+```
+
+The response has the same shape as [Get Payout by ID](/api-reference/payouts/get-payout).
+
+Use this endpoint to reconcile an ambiguous create request. If the create request timed out, look up its reference before attempting another request.
+
+| HTTP status | When it occurs |
+|---|---|
+| `401` | Missing, invalid, or inactive API key. |
+| `403` | Merchant is not eligible. |
+| `404` | Payout does not exist for the authenticated merchant. |
+

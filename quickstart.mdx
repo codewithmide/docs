@@ -134,7 +134,7 @@ app.use(express.json());
 app.post('/webhooks/fossapay', (req, res) => {
   // 1. Verify webhook signature
   const signature = req.headers['x-fossapay-signature'];
-  const isValid = verifySignature(req.body, signature);
+  const isValid = verifySignature(req.body.data, signature);
 
   if (!isValid) {
     return res.status(401).send('Invalid signature');
@@ -144,9 +144,9 @@ app.post('/webhooks/fossapay', (req, res) => {
   res.status(200).send('Webhook received');
 
   // 3. Process the webhook
-  const { event, data } = req.body;
+  const { eventType, data } = req.body;
 
-  if (event === 'deposit.completed') {
+  if (eventType === 'deposit.completed') {
     console.log('Deposit completed!');
     console.log('Amount:', data.amount);
     console.log('Transaction ID:', data.transactionId);
@@ -156,11 +156,11 @@ app.post('/webhooks/fossapay', (req, res) => {
   }
 });
 
-function verifySignature(payload, signature) {
+function verifySignature(data, signature) {
   const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
   const hash = crypto
     .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
+    .update(JSON.stringify(data))
     .digest('hex');
 
   return hash === signature;
@@ -184,16 +184,15 @@ app = Flask(__name__)
 def handle_webhook():
     # 1. Verify signature
     signature = request.headers.get('X-FossaPay-Signature')
-    is_valid = verify_signature(request.data, signature)
+    payload = request.json
+    is_valid = verify_signature(payload['data'], signature)
 
     if not is_valid:
         return 'Invalid signature', 401
 
     # 2. Respond immediately
-    payload = request.json
-
     # 3. Process webhook
-    event = payload['event']
+    event = payload['eventType']
     data = payload['data']
 
     if event == 'deposit.completed':
@@ -206,11 +205,12 @@ def handle_webhook():
 
     return 'Webhook received', 200
 
-def verify_signature(payload, signature):
+def verify_signature(data, signature):
     secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
+    serialized_data = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
     hash = hmac.new(
         secret.encode(),
-        payload,
+        serialized_data.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
 
@@ -247,23 +247,26 @@ curl https://api-production.fossapay.com/api/v1/wallets/fiat/transactions/txn_ab
 
 ## Step 7: Send a Small Production Payout
 
-Now let's send money from your wallet to a bank account using a small live amount:
+Now send a small amount directly from your business master NGN wallet to a bank account you control. Generate and retain one idempotency key for this logical payout:
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
+curl -X POST https://api-production.fossapay.com/api/v1/payouts \
   -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
+  -H "X-Idempotency-Key: payout-quickstart-001" \
   -H "Content-Type: application/json" \
   -d '{
-    "customerId": "cus_123456789",
     "destinationBankCode": "044",
     "destinationAccountName": "Test Recipient",
     "destinationAccountNumber": "0000000001",
     "destinationBankName": "ACCESS BANK",
-    "reference": "payout-'$(date +%s)'",
+    "reference": "QUICKSTART-PAYOUT-001",
     "remarks": "Test payout",
-    "amount": 25000
+    "amount": 100,
+    "currency": "NGN"
   }'
 ```
+
+An HTTP `202` response may contain `data.status: "processing"`. Wait for `payout.completed`, `payout.failed`, or `payout.reversed`, or retrieve the payout by ID/reference. Do not repeat an uncertain payout using a new idempotency key.
 
 ## Complete Example
 
@@ -279,9 +282,9 @@ app.use(express.json());
 app.post('/webhooks/fossapay', async (req, res) => {
   res.status(200).send('OK');
 
-  const { event, data } = req.body;
+  const { eventType, data } = req.body;
 
-  if (event === 'deposit.completed') {
+  if (eventType === 'deposit.completed') {
     // Credit user's balance
     await creditUserBalance(data.customerId, data.amount);
 

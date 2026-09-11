@@ -79,6 +79,14 @@
             ]
           },
           {
+            "group": "Master Wallet Payouts",
+            "pages": [
+              "api-reference/payouts/create-payout",
+              "api-reference/payouts/get-payout",
+              "api-reference/payouts/get-payout-by-reference"
+            ]
+          },
+          {
             "group": "NGN Transfers",
             "pages": [
               "api-reference/fiat-transfers/get-supported-banks",

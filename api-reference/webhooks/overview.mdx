@@ -124,7 +124,7 @@ def verify_webhook(body, received_signature, secret):
     Use the event's checkout or transaction identifiers and current status. Your handler should tolerate retries and events arriving later than expected.
   </Accordion>
   <Accordion title="Reconcile through the API">
-    If a checkout webhook is delayed or processing fails, retrieve the checkout by ID or merchant reference before taking action.
+    If a checkout or payout webhook is delayed, retrieve the resource by its FossaPay ID or your merchant reference before taking action.
   </Accordion>
   <Accordion title="Expect retries">
     Failed webhook deliveries are retried up to five times. `X-Retry-Count` is included on retries.
@@ -147,5 +147,8 @@ ngrok http 3000
   </Card>
   <Card color="#0080FF" title="Checkout Guide" href="/guides/checkouts">
     Integrate one-time NGN checkouts
+  </Card>
+  <Card color="#0080FF" title="Payouts Guide" href="/guides/payouts">
+    Send from your business master wallet
   </Card>
 </CardGroup>
