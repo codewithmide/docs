@@ -1,28 +1,27 @@
 ---
 title: 'Get Supported Banks'
-api: 'GET https://api-production.fossapay.com/api/v1/transfers/fiat/banks'
-description: 'Get supported banks for transfers'
+openapi: 'GET /api/v1/transfers/fiat/banks'
+description: 'Retrieve the current Nigerian banks and codes supported for NGN transfers'
 ---
 
 ## Request
 
 <ParamField header="x-api-key" type="string" required>
-  API Key for authentication
+  Active production API key.
 </ParamField>
 
 ### Request Example
 
 ```bash
 curl -X GET https://api-production.fossapay.com/api/v1/transfers/fiat/banks \
-  -H "x-api-key: your_api_key_here"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```javascript
 const response = await fetch('https://api-production.fossapay.com/api/v1/transfers/fiat/banks', {
   method: 'GET',
   headers: {
-    'x-api-key': 'your_api_key_here',
-    'Content-Type': 'application/json'
+    'x-api-key': process.env.FOSSAPAY_API_KEY
   }
 });
 
@@ -31,6 +30,7 @@ if (!response.ok) {
 }
 
 const banks = await response.json();
+if (!response.ok) throw new Error(banks.message);
 ```
 
 ## Response
@@ -70,10 +70,9 @@ const banks = await response.json();
 <ResponseExample>
 ```json Error Response (400)
 {
-  "status": false,
+  "status": "error",
   "statusCode": 400,
-  "message": "Bad request",
-  "error": "Invalid API key"
+  "message": "API key is invalid"
 }
 ```
 </ResponseExample>
@@ -81,10 +80,19 @@ const banks = await response.json();
 <ResponseExample>
 ```json Error Response (500)
 {
-  "status": false,
+  "status": "error",
   "statusCode": 500,
-  "message": "Internal server error",
-  "error": "Failed to retrieve supported banks"
+  "message": "Internal server error"
 }
 ```
 </ResponseExample>
+
+Use the bank code exactly as returned for name enquiry and transfer requests. Do not maintain a permanent hard-coded copy of this list.
+
+## Errors
+
+| Status | Typical cause |
+|---|---|
+| `400` | Operation or provider request is unavailable |
+| `401` | Missing or invalid API key |
+| `5xx` | Temporary FossaPay or provider failure |

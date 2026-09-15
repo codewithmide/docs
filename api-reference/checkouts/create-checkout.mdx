@@ -1,6 +1,6 @@
 ---
 title: 'Create Checkout'
-api: 'POST https://api-production.fossapay.com/api/v1/checkouts'
+openapi: 'POST /api/v1/checkouts'
 description: 'Create a one-time 30-minute NGN checkout wallet'
 ---
 
@@ -50,7 +50,7 @@ Creates a merchant-scoped checkout and returns the exact amount and bank account
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "x-api-key: $FOSSAPAY_API_KEY" \
   -H "X-Idempotency-Key: checkout-order-10025-v1" \
   -H "Content-Type: application/json" \
   -d '{
@@ -59,8 +59,8 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
     "reference": "ORDER-10025",
     "feeBearer": "customer",
     "customer": {
-      "name": "Ada Lovelace",
-      "email": "ada@example.com"
+      "name": "John Doe",
+      "email": "john.doe@example.com"
     },
     "metadata": {
       "orderId": "10025"
@@ -93,8 +93,8 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
       "expiresAt": "2026-09-11T10:30:00.000Z"
     },
     "customer": {
-      "name": "Ada Lovelace",
-      "email": "ada@example.com"
+      "name": "John Doe",
+      "email": "john.doe@example.com"
     },
     "metadata": {
       "orderId": "10025"

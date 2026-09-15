@@ -1,195 +1,150 @@
 ---
-title: "skill.md"
-description: "Use Claude Code to integrate the FossaPay API into your application"
-icon: "wand-magic-sparkles"
+title: 'AI-Assisted Development'
+description: 'Use FossaPay documentation safely with AI coding assistants'
+icon: 'wand-magic-sparkles'
 ---
 
-# FossaPay Docs Skill
+AI coding assistants can help scaffold a FossaPay integration, explain endpoint contracts, and review webhook or reconciliation logic. Treat generated code as a draft: verify it against this documentation and test it with controlled production operations before handling regular volume.
 
-Use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to integrate the FossaPay API into your application. The skill helps you generate integration code, understand API responses, and handle webhooks.
+<Warning>
+  Never paste a production API key, webhook secret, customer record, bank account, or unredacted production log into an AI prompt.
+</Warning>
 
-## What Can It Do?
+## Provide authoritative context
 
-<CardGroup cols={2}>
-  <Card title="Generate API Code" icon="code">
-    Get working code snippets in JavaScript, Python, or cURL for any FossaPay endpoint
-  </Card>
-  <Card title="Handle Webhooks" icon="webhook">
-    Set up webhook listeners and verify signatures correctly
-  </Card>
-  <Card title="Build Integrations" icon="puzzle-piece">
-    Get guided help building payment flows, payouts, and crypto features
-  </Card>
-  <Card title="Debug Issues" icon="bug">
-    Troubleshoot API errors and understand response formats
-  </Card>
-</CardGroup>
+When asking an assistant for implementation help, include links or copied excerpts from the relevant FossaPay documentation pages. State these platform constraints explicitly:
 
-## Quick Start
+- the base URL is `https://api-production.fossapay.com/api/v1`;
+- FossaPay currently has no staging or sandbox environment;
+- API keys must remain on trusted server infrastructure;
+- external customers must have `type: "individual"`;
+- Solana is the only supported stablecoin network;
+- checkout and master-wallet payout creation require idempotency keys; and
+- webhook signatures cover exactly `JSON.stringify(body.data)`.
 
-<Steps>
-  <Step title="Install Claude Code">
-    ```bash
-    npm install -g @anthropic-ai/claude-code
-    ```
-  </Step>
-  <Step title="Start Claude Code">
-    ```bash
-    claude
-    ```
-  </Step>
-  <Step title="Ask for help">
-    ```
-    Help me integrate FossaPay to accept payments in my Node.js app
-    ```
-  </Step>
-</Steps>
+## Prompt template
 
-## Example Prompts
+```text
+Implement [FossaPay operation] in [language/framework].
 
-### Generate Integration Code
+Use this documentation as the source of truth:
+- [link to concept or guide]
+- [link to endpoint reference]
 
-```
-Generate code to create a customer and NGN wallet using the FossaPay API
+Requirements:
+- Keep x-api-key and webhook secrets server-side.
+- Use https://api-production.fossapay.com/api/v1.
+- Parse the standard status/statusCode/message/data envelope.
+- Preserve decimal precision for money and token values.
+- Treat processing states as non-terminal.
+- Reconcile ambiguous writes before retrying.
+- Do not invent fields, endpoints, statuses, or rate limits.
 ```
 
-```
-Show me how to send a payout to a Nigerian bank account
-```
+## Useful review tasks
 
-```
-Create a webhook handler for FossaPay payment notifications in Express.js
-```
+Ask an assistant to:
 
-### Understand the API
+- generate a typed HTTP client from a specific endpoint contract;
+- add status-aware error handling to an existing integration;
+- review whether secrets can reach client-side code or logs;
+- implement webhook signature verification and `eventId` deduplication;
+- check idempotency behavior for checkout or payout creation;
+- add decimal-safe money handling;
+- write contract tests from documented request and response examples; or
+- identify places where an ambiguous timeout could create a duplicate operation.
 
-```
-What parameters do I need to create a crypto wallet?
-```
+## Complete server-side example
 
-```
-How do I verify a bank account before sending money?
-```
-
-```
-What webhook events should I listen for?
-```
-
-### Build Features
-
-```
-Help me build a complete payment acceptance flow with webhooks
-```
-
-```
-How do I implement crypto deposits in my app?
-```
-
-```
-Generate a payout function with error handling and retries
-```
-
-## What You'll Get
-
-When you ask for integration help, Claude will:
-
-1. **Read the API documentation** to understand the exact requirements
-2. **Generate working code** with proper authentication and error handling
-3. **Include multiple languages** (JavaScript, Python, cURL) when helpful
-4. **Explain the flow** so you understand what's happening
-5. **Handle edge cases** like webhook signature verification
-
-## Example Output
-
-Ask: *"Generate code to accept payments with FossaPay"*
-
-Claude will provide:
+This example creates an individual customer and parses the HTTP response before using the returned UUID.
 
 ```javascript
-// 1. Create a customer
-const customer = await fetch('https://api-production.fossapay.com/api/v1/customers', {
-  method: 'POST',
-  headers: {
-    'x-api-key': process.env.FOSSAPAY_API_KEY,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    firstName: 'John',
-    lastName: 'Doe',
-    emailAddress: 'john@example.com',
-    mobileNumber: '+2348012345678',
-    dateOfBirth: '1990-01-15',
-    address: '123 Main St',
-    city: 'Lagos',
-    country: 'Nigeria',
-    type: 'individual'
-  })
-});
+const customerResponse = await fetch(
+  'https://api-production.fossapay.com/api/v1/customers',
+  {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      firstName: 'John',
+      middleName: 'Michael',
+      lastName: 'Doe',
+      emailAddress: 'john.doe@example.com',
+      mobileNumber: '+2348012345678',
+      dateOfBirth: '1990-08-15',
+      address: '123 Example Street',
+      city: 'Lagos',
+      country: 'Nigeria',
+      type: 'individual'
+    })
+  }
+);
 
-// 2. Create a NGN wallet for collections
-const wallet = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/create', {
-  method: 'POST',
-  headers: {
-    'x-api-key': process.env.FOSSAPAY_API_KEY,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    customerId: customer.data.id,
-    walletName: 'Main Wallet',
-    walletReference: 'wallet_001'
-  })
-});
+const customerBody = await customerResponse.json();
 
-// 3. Share wallet.data.accountNumber with your user
-// 4. Listen for deposit.completed webhook
+if (!customerResponse.ok) {
+  throw new Error(
+    `Customer creation failed (${customerResponse.status}): ${customerBody.message}`
+  );
+}
+
+const walletResponse = await fetch(
+  'https://api-production.fossapay.com/api/v1/wallets/fiat/create',
+  {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      customerId: customerBody.data.id,
+      walletName: 'John Doe',
+      walletReference: 'wallet-customer-1042'
+    })
+  }
+);
+
+const walletBody = await walletResponse.json();
+
+if (!walletResponse.ok) {
+  throw new Error(
+    `Wallet creation failed (${walletResponse.status}): ${walletBody.message}`
+  );
+}
 ```
 
-Plus webhook handling code, error handling, and explanations.
+The code runs only on a trusted backend. It does not expose credentials to a browser or mobile application.
 
-## API Coverage
+## Validate generated code
 
-The skill has knowledge of all FossaPay endpoints:
+Before accepting AI-generated integration code, confirm that it:
 
-| Category | What You Can Do |
-|----------|-----------------|
-| Customers | Create accounts, list customers, get details |
-| NGN Wallets | Create wallets, check balances, view transactions |
-| NGN Transfers | Send to banks, verify accounts, calculate fees |
-| Crypto Wallets | Create wallets, check balances, get addresses |
-| Crypto Transfers | Send crypto, estimate fees |
-| Webhooks | Handle all payment and transfer events |
+- uses an endpoint and field names present in the API Reference;
+- sends `Content-Type` only when a JSON body is present;
+- never logs authentication or webhook secrets;
+- checks `response.ok` before consuming a success payload;
+- stores FossaPay IDs and your references;
+- uses one stable idempotency key for each checkout or payout retry;
+- deduplicates webhooks with a persistent unique constraint on `eventId`;
+- separates webhook delivery status from financial transaction status;
+- uses decimal-safe arithmetic; and
+- contains no real customer identity or production account data in fixtures.
 
-<Card title="Full API Reference" icon="book" href="/api-reference/customers/index">
-  View complete API documentation with all parameters and responses
-</Card>
+## Choose the correct documentation
 
-## Tips for Best Results
+| Task | Start here |
+|---|---|
+| Create customers | [Customers](/concepts/customers) |
+| Receive persistent NGN deposits | [NGN Collections](/guides/collections) |
+| Accept one-time exact payments | [Checkout Wallet](/guides/checkouts) |
+| Move customer-owned NGN | [NGN Transfers](/guides/ngn-transfers) |
+| Send merchant-owned NGN | [Master Wallet Payouts](/guides/payouts) |
+| Use USDC or USDT | [Stablecoin Wallets](/concepts/stablecoin-wallets) |
+| Process asynchronous events | [Webhooks](/concepts/webhooks) |
+| Secure credentials | [Authentication](/authentication) |
 
-<Tip>
-  **Be specific** - Instead of "help with payments", try "generate code to create an NGN wallet and handle the deposit webhook in Python"
-</Tip>
-
-<Tip>
-  **Ask follow-ups** - Claude remembers context, so you can ask "now add error handling" or "convert that to Python"
-</Tip>
-
-<Tip>
-  **Request explanations** - Ask "explain what each step does" if you want to understand the flow better
-</Tip>
-
-## Need Help?
-
-<CardGroup cols={2}>
-  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
-    Get started with FossaPay in minutes
-  </Card>
-  <Card title="Authentication" icon="lock" href="/authentication">
-    Learn about API keys and security
-  </Card>
-  <Card title="Webhooks" icon="bell" href="/concepts/webhooks">
-    Set up real-time notifications
-  </Card>
-  <Card title="Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
-    Get help from the community
-  </Card>
-</CardGroup>
+<Note>
+  If generated code conflicts with the FossaPay documentation or an observed API response, stop and reconcile the discrepancy before deploying it.
+</Note>

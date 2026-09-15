@@ -1,76 +1,212 @@
 ---
 title: Customers
-description: 'Understanding customer management in FossaPay'
+description: 'Create and manage the individual customers your business serves'
 ---
 
-## What are Customers?
-
-Customers represent your end users within the FossaPay ecosystem. Every wallet, transaction, and compliance check is associated with a customer account.
+A FossaPay customer represents an individual end user served by your business. The customer becomes the owner of customer-scoped NGN and stablecoin wallets and is isolated to the merchant that created it.
 
 <Info>
-  Customer accounts are required before you can create wallets or perform transactions on behalf of your users.
+  The Customers API does not create business customers. The only accepted `type` is `individual`.
 </Info>
 
-## Customer Lifecycle
+## Customer lifecycle
 
-### 1. Customer Creation
-Create a customer account with basic information:
+<Steps>
+  <Step title="Create the individual">
+    Submit the customer's identity, contact, and residential information to `POST /api/v1/customers`.
+  </Step>
+  <Step title="Store the customer ID">
+    Persist the returned FossaPay UUID alongside your own customer identifier.
+  </Step>
+  <Step title="Provision a wallet">
+    Create an [NGN wallet](/concepts/ngn-wallets) or [stablecoin wallet](/concepts/stablecoin-wallets) using the customer UUID.
+  </Step>
+  <Step title="Retrieve and reconcile">
+    Retrieve the customer by UUID or use the paginated list endpoint for operational search and administration.
+  </Step>
+</Steps>
+
+Creating a customer does not automatically create a wallet or bank account. Wallet provisioning is a separate API operation.
+
+## Customer type
+
+Every external customer request must include:
+
+```json
+{
+  "type": "individual"
+}
+```
+
+The field remains required for contract compatibility. Any other value is rejected with HTTP `422` before the request reaches the downstream banking provider.
+
+Do not send a business name as a customer name. Your FossaPay merchant account represents the business; records created through this API represent the individuals that business serves.
+
+## Name requirements
+
+The external API accepts up to three personal names, with one name in each field:
+
+| Field | Requirement |
+|---|---|
+| `firstName` | Required; exactly one given name |
+| `middleName` | Optional; exactly one middle name |
+| `lastName` | Required; exactly one family name |
+
+Use this structure:
+
+```json
+{
+  "firstName": "John",
+  "middleName": "Michael",
+  "lastName": "Doe"
+}
+```
+
+Do not combine multiple names in one field. For example, `lastName: "Michael Doe"` is invalid.
+
+Each name may contain Unicode letters and combining marks. A hyphen, straight apostrophe, or typographic apostrophe may join parts of the same name. Spaces, numbers, and other punctuation are rejected. Leading and trailing whitespace is removed before validation.
+
+<Warning>
+  There is no `Business` fallback in the external Customers API. Missing or invalid personal names cause the request to fail instead of substituting a business label.
+</Warning>
+
+## Required information
+
+| Field | Requirement |
+|---|---|
+| `firstName` | One valid given name |
+| `middleName` | Optional; one valid middle name |
+| `lastName` | One valid family name |
+| `emailAddress` | Non-empty customer email address; unique within your merchant account |
+| `mobileNumber` | Non-empty customer phone number |
+| `dateOfBirth` | Date string in `YYYY-MM-DD` format |
+| `address` | Non-empty residential address |
+| `city` | Non-empty city of residence |
+| `country` | Country supported by the downstream provider |
+| `type` | Must be exactly `individual` |
+
+The request body is allowlisted. Unknown fields are rejected rather than silently stored or forwarded.
+
+## Create a customer
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/customers \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/customers \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
     "firstName": "John",
-    "lastName": "Doe",
     "middleName": "Michael",
+    "lastName": "Doe",
     "emailAddress": "john.doe@example.com",
     "mobileNumber": "+2348012345678",
     "dateOfBirth": "1990-08-15",
-    "address": "123 Main Street",
+    "address": "123 Example Street",
     "city": "Lagos",
     "country": "Nigeria",
     "type": "individual"
   }'
 ```
 
-### 2. Wallet Creation
-Once verified, create wallets for the customer:
+An HTTP `201` response returns the FossaPay customer record:
 
-```bash
-curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cus_123456789",
-    "walletName": "Main Wallet",
-    "walletReference": "wallet_ref_001"
-  }'
+```json
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Customer created successfully",
+  "data": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "firstName": "John",
+    "middleName": "Michael",
+    "lastName": "Doe",
+    "emailAddress": "john.doe@example.com",
+    "mobileNumber": "+2348012345678",
+    "dob": "1990-08-15",
+    "address": "123 Example Street",
+    "customerType": "individual",
+    "businessId": "22222222-2222-4222-8222-222222222222",
+    "createdAt": "2026-09-15T09:00:00+01:00"
+  }
+}
 ```
 
-## Customer Tiers
+Store `data.id`; wallet creation and customer-funded transfer operations require this UUID. Notice that the request field is `dateOfBirth`, while the response field is `dob`.
 
-Currently, FossaPay supports individual customer accounts. All customers are created with the `individual` tier.
+<Note>
+  FossaPay currently supports production access only. This request creates a live customer record.
+</Note>
 
-## Best Practices
+## Data handling
 
-<AccordionGroup>
-  <Accordion title="Store Customer IDs">
-    Always store FossaPay customer IDs in your database for future API calls.
-  </Accordion>
+FossaPay stores the customer information required to identify the individual and operate the account. During production customer creation:
 
-  <Accordion title="Use Metadata">
-    Store additional customer data in metadata for easier management.
-  </Accordion>
-</AccordionGroup>
+- personal names, date of birth, address, city, customer type, and country identifiers are sent to the banking provider as required for account provisioning;
+- `emailAddress` and `mobileNumber` are retained by FossaPay but are not sent to the banking provider; and
+- arbitrary or unknown request properties are rejected and are not forwarded.
 
-## Next Steps
+Collect only information you are authorized to process. Treat customer identity and contact fields as sensitive personal data throughout your systems.
+
+## List customers
+
+`GET /api/v1/customers` returns only customers owned by the authenticated merchant.
+
+| Parameter | Default | Rules |
+|---|---:|---|
+| `page` | `1` | Integer greater than or equal to `1` |
+| `limit` | `10` | Integer from `1` to `100` |
+| `search` | Empty | Searches first name, last name, and email address |
+| `sortBy` | `createdAt` | `createdAt`, `firstName`, `lastName`, or `emailAddress` |
+| `sortOrder` | `DESC` | `ASC` or `DESC` |
+
+Use the list endpoint for administrative search and pagination. When you already have the customer UUID, use `GET /api/v1/customers/{customerId}` instead.
+
+## Ownership and access
+
+Customer operations are merchant-scoped. An API key can retrieve only customers associated with its merchant account. A UUID obtained from another merchant does not grant access to that record.
+
+Persist your own user-to-customer mapping. Do not repeatedly search by personal information to rediscover a customer ID.
+
+The public Customers API currently provides create, list, and retrieve operations. It does not expose customer update or deletion endpoints.
+
+## Errors and safe retries
+
+| Status | Typical cause | Action |
+|---|---|---|
+| `400` | Duplicate email for the merchant, unsupported country, or downstream customer-creation rejection | Correct the conflict or provider requirement before retrying |
+| `401` | Missing or invalid API key | Correct authentication |
+| `404` | Customer UUID not found for the authenticated merchant | Verify your stored merchant/customer mapping |
+| `422` | Missing field, unknown field, invalid name, invalid date format, or a `type` other than `individual` | Correct the request body before retrying |
+| `5xx` | Temporary FossaPay or provider failure | Reconcile before attempting the write again |
+
+Customer creation does not provide idempotency semantics. If the connection fails after submission, search your merchant's customers using the unique email address before retrying. If no record appears but the outcome remains uncertain, retain the request timestamp and contact support instead of repeatedly submitting the same identity.
+
+## Operational checklist
+
+- [ ] Represent only individual end users through the Customers API.
+- [ ] Send no more than one personal name in each supported name field.
+- [ ] Set `type` to `individual`.
+- [ ] Keep email addresses unique within your merchant account.
+- [ ] Persist the returned FossaPay customer UUID with your own user ID.
+- [ ] Keep API keys and personal data out of client-side code and unnecessary logs.
+- [ ] Reconcile an ambiguous create request before retrying.
+- [ ] Create the required wallet only after customer creation succeeds.
+
+## API reference
+
+| Operation | Endpoint | Reference |
+|---|---|---|
+| Create a customer | `POST /api/v1/customers` | [Create customer](/api-reference/customers/create-customer) |
+| List customers | `GET /api/v1/customers` | [Get all customers](/api-reference/customers/get-all-customers) |
+| Retrieve a customer | `GET /api/v1/customers/{customerId}` | [Get customer by ID](/api-reference/customers/get-customer-by-id) |
+
+## Next steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Create Customer API" icon="code" href="/api-reference/customers/create-customer">
-    API reference for customer creation
+  <Card title="NGN wallets" icon="building-columns" href="/concepts/ngn-wallets">
+    Provision a dedicated NGN bank account for the customer.
   </Card>
-  <Card color="#0080FF" title="Wallets" icon="wallet" href="/concepts/wallets">
-    Create wallets for customers
+  <Card title="Stablecoin wallets" icon="coins" href="/concepts/stablecoin-wallets">
+    Create a Solana wallet for supported USDC and USDT operations.
   </Card>
 </CardGroup>

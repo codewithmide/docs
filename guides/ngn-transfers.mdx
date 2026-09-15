@@ -1,0 +1,198 @@
+---
+title: NGN Transfers
+description: 'Move customer-owned NGN between FossaPay wallets or to Nigerian bank accounts'
+---
+
+NGN transfer APIs move funds owned by an individual customer. Use the destination and source ownership to select the correct flow.
+
+<Warning>
+  Do not use a customer transfer endpoint for business-owned funds. Send merchant funds through the [Master Wallet Payouts API](/guides/payouts).
+</Warning>
+
+## Choose the transfer flow
+
+| Source funds | Destination | Use | Fee behavior |
+|---|---|---|---|
+| Customer NGN wallet | Another customer wallet under the same merchant | Wallet-to-wallet transfer | Free |
+| Customer NGN wallet | Supported Nigerian bank account | Customer inter-bank transfer | Configured transfer fee |
+| Merchant master NGN wallet | Customer or external bank | Master Wallet Payout | Free only for same-business routing; payout fee otherwise |
+
+## Prerequisites
+
+- An authenticated production API key
+- An individual customer owned by the authenticated merchant
+- An active NGN wallet for that customer
+- Sufficient available balance
+- A unique reference generated and stored before submission
+- A verified webhook endpoint for asynchronous status changes
+
+## Transfer to a Nigerian bank account
+
+### 1. Retrieve supported banks
+
+Call `GET /api/v1/transfers/fiat/banks` and use the returned bank code. Do not maintain an unversioned hard-coded bank list.
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/transfers/fiat/banks \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+### 2. Verify the beneficiary
+
+Perform name enquiry using the selected bank code and account number:
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "bankCode": "044",
+    "accountNumber": "0123456789"
+  }'
+```
+
+Display the returned account name and require the user to confirm it. Use the verified name and bank details in the transfer request.
+
+<Note>
+  A successful name enquiry validates the account details at that moment. It does not reserve funds or guarantee that the later transfer will succeed.
+</Note>
+
+### 3. Calculate the fee
+
+```bash
+curl --request GET \
+  --url 'https://api-production.fossapay.com/api/v1/transfers/fiat/calculate-fee?amount=50000' \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+For a customer inter-bank transfer:
+
+- `amount` is the amount intended for the beneficiary;
+- `feeAmount` is charged in addition to `amount`; and
+- the customer wallet must have at least `amount + feeAmount` available.
+
+Always use the server-calculated fee. Do not embed fee rules in your application.
+
+### 4. Submit the transfer
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "customerId": "11111111-1111-4111-8111-111111111111",
+    "destinationBankCode": "044",
+    "destinationAccountName": "JOHN DOE",
+    "destinationAccountNumber": "0123456789",
+    "destinationBankName": "ACCESS BANK",
+    "reference": "TRF-2026-10025",
+    "remarks": "Customer withdrawal",
+    "amount": 50000
+  }'
+```
+
+All request fields are required. `customerId` selects the customer wallet to debit; do not send a source account number.
+
+An HTTP `200` response confirms that FossaPay accepted the request flow:
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Transfer request is being processed",
+  "data": {
+    "reference": "TRF-2026-10025"
+  }
+}
+```
+
+Do not interpret this response alone as proof that the beneficiary was credited. Persist the reference and reconcile the terminal transaction state.
+
+### 5. Finalize from verified state
+
+Customer inter-bank transfers are represented as wallet withdrawals. Process the applicable verified withdrawal event and use the wallet transaction endpoint when confirmation is delayed or disputed.
+
+| Transaction status | Action |
+|---|---|
+| `pending` or `processing` | Keep the operation unresolved and do not initiate a replacement |
+| `success` | Mark the withdrawal complete exactly once |
+| `failed` | Confirm reversal/balance state before allowing another attempt |
+| `reversed` | Record that funds were returned and keep the original operation terminal |
+
+## Transfer between customer wallets
+
+Both wallet account numbers must belong to the authenticated merchant.
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "fromAccount": "9710000000",
+    "toAccount": "9710000001",
+    "amount": 5000,
+    "reference": "W2W-2026-10025",
+    "narration": "Transfer to John Doe"
+  }'
+```
+
+The transfer is free. FossaPay reserves the source balance, records withdrawal and deposit legs, performs the provider transfer, then marks both records successful. If the provider call fails, the local source reservation is rolled back and both transaction records are marked failed.
+
+Reference handling provides replay protection:
+
+- an existing successful source/reference returns the prior success;
+- a pending reference is reported as already processing; and
+- a failed or conflicting reference returns an error and must not be reused for a new operation.
+
+## References and ambiguous outcomes
+
+Neither customer inter-bank transfer nor wallet-to-wallet transfer uses the checkout/payout `X-Idempotency-Key` contract. The request `reference` is the replay and reconciliation identifier.
+
+Generate it before calling FossaPay, persist it with the request body, and never replace it solely because your HTTP client timed out. First inspect wallet transactions and balances. A new reference represents a new business decision and can move money again.
+
+## Error handling
+
+| Status | Typical cause | Action |
+|---|---|---|
+| `400` | Unsupported operation, insufficient funds, missing customer wallet, provider failure, or unresolved transfer | Read the message and reconcile before retrying |
+| `401` | Missing or invalid API key | Correct authentication |
+| `403` | A source, destination, or transaction belongs to another merchant | Correct your ownership mapping |
+| `404` | Account, wallet, customer balance, or transaction not found | Verify stored identifiers |
+| `409` | Transfer reference already used | Retrieve the original operation; do not resubmit it as new |
+| `422` | Invalid or missing request field | Correct the request body |
+| `5xx` | Temporary FossaPay or provider failure | Treat the outcome as ambiguous and reconcile |
+
+## Reconciliation controls
+
+- Store the customer ID, wallet ID, account numbers, reference, amount, fee quote, and returned transaction IDs.
+- Verify webhook signatures and enforce uniqueness on `eventId`.
+- Keep webhook delivery state separate from transaction state.
+- Compare available balance before and after a resolved operation.
+- Use decimal-safe arithmetic for NGN amounts.
+- Route unresolved or reversal-failed operations to manual review.
+- Never expose full beneficiary details in routine logs.
+
+## API reference
+
+| Operation | Endpoint | Reference |
+|---|---|---|
+| List supported banks | `GET /api/v1/transfers/fiat/banks` | [Supported banks](/api-reference/fiat-transfers/get-supported-banks) |
+| Verify account details | `POST /api/v1/transfers/fiat/bank-name-enquiry` | [Name enquiry](/api-reference/fiat-transfers/bank-name-enquiry) |
+| Calculate transfer fee | `GET /api/v1/transfers/fiat/calculate-fee` | [Calculate fee](/api-reference/fiat-transfers/calculate-fee) |
+| Transfer between wallets | `POST /api/v1/wallets/fiat/transfers/wallet-to-wallet` | [Wallet transfer](/api-reference/virtual-account/wallet-transfer) |
+| Transfer to a bank | `POST /api/v1/transfers/fiat/inter-bank` | [Inter-bank transfer](/api-reference/fiat-transfers/inter-bank-transfer) |
+
+## Production checklist
+
+- [ ] Select the API according to source-fund ownership.
+- [ ] Retrieve the current bank list and verify the beneficiary.
+- [ ] Calculate the current fee and confirm sufficient available balance.
+- [ ] Generate and persist one unique reference per logical transfer.
+- [ ] Treat acceptance and processing responses as non-terminal.
+- [ ] Verify and deduplicate webhook events.
+- [ ] Reconcile timeouts before creating another operation.
+- [ ] Maintain a manual-review path for unresolved or reversal failures.

@@ -4,7 +4,7 @@
   "theme": "mint",
   "name": "FossaPay",
   "colors": {
-    "primary": "#0080FF",
+    "primary": "#0066CC",
     "light": "#07C983",
     "dark": "#0080FF"
   },
@@ -27,6 +27,8 @@
             "pages": [
               "concepts/customers",
               "concepts/wallets",
+              "concepts/ngn-wallets",
+              "concepts/stablecoin-wallets",
               "concepts/webhooks"
             ]
           },
@@ -35,6 +37,7 @@
             "pages": [
               "guides/checkouts",
               "guides/collections",
+              "guides/ngn-transfers",
               "guides/payouts"
             ]
           },
@@ -52,7 +55,6 @@
           {
             "group": "Customers",
             "pages": [
-              "api-reference/customers/index",
               "api-reference/customers/create-customer",
               "api-reference/customers/get-all-customers",
               "api-reference/customers/get-customer-by-id"
@@ -100,7 +102,6 @@
             "group": "Crypto Wallets",
             "pages": [
               "api-reference/crypto-wallets/create-wallet",
-              "api-reference/crypto-wallets/get-balance",
               "api-reference/crypto-wallets/get-master-wallet",
               "api-reference/crypto-wallets/get-wallet-by-id",
               "api-reference/crypto-wallets/get-wallet-by-address",

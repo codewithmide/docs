@@ -1,13 +1,13 @@
 ---
 title: 'Calculate Crypto Transfer Fee'
-api: 'GET https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee'
+openapi: 'GET /api/v1/transfers/crypto/calculate-fee'
 description: 'Calculate the payout fee for a crypto transfer in USDC or USDT'
 ---
 
 ## Request
 
 <ParamField header="x-api-key" type="string" required>
-  API Key for authentication
+  Active production API key.
 </ParamField>
 
 ## Query Parameters
@@ -24,7 +24,7 @@ description: 'Calculate the payout fee for a crypto transfer in USDC or USDT'
 
 ```bash
 curl -g 'https://api-production.fossapay.com/api/v1/transfers/crypto/calculate-fee?amount=200&currency=usdc' \
-  -H "x-api-key: your_api_key_here"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```javascript
@@ -37,7 +37,7 @@ const response = await fetch(
   {
     method: 'GET',
     headers: {
-      'x-api-key': 'your_api_key_here',
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
     },
   }
 );
@@ -76,7 +76,11 @@ const feeData = await response.json();
 | `data.amount` | The amount you passed in the query |
 | `data.currency` | The stablecoin (`usdc` or `usdt`) |
 | `data.feeAmount` | The fee charged for the crypto payout |
-| `data.total` | `amount` + `feeAmount` (total including fee) |
+| `data.total` | `amount` + `feeAmount`, provided as the fee-quote total |
+
+<Note>
+  In the current crypto transfer flow, the submitted transfer `amount` is gross and the fee is deducted before the recipient transfer. Use the quote to calculate the expected net recipient amount; do not interpret `data.total` as the amount debited by that transfer flow.
+</Note>
 
 ## Validation errors
 
@@ -84,3 +88,4 @@ const feeData = await response.json();
 | ----------- | ------------- |
 | `422` | Missing or invalid query params (e.g. `amount` not a positive number, `currency` empty or not `usdc`/`usdt`) |
 | `400` | `amount` or `currency` missing after validation, or unsupported currency at the service layer |
+| `401` | Missing or invalid API key |

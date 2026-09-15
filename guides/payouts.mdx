@@ -1,5 +1,5 @@
 ---
-title: Payouts Guide
+title: Master Wallet Payouts
 description: 'Send NGN from a business master wallet or customer wallet with FossaPay'
 ---
 
@@ -67,7 +67,7 @@ Retrieve supported banks and perform a name enquiry before creating the payout.
 ```bash
 curl --request POST \
   --url https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
-  --header 'x-api-key: YOUR_LIVE_API_KEY' \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
   --header 'Content-Type: application/json' \
   --data '{
     "accountNumber": "0123456789",
@@ -102,7 +102,7 @@ const response = await fetch(
       reference,
       destinationBankCode: '058',
       destinationBankName: 'Guaranty Trust Bank',
-      destinationAccountName: 'ADA LOVELACE',
+      destinationAccountName: 'JOHN DOE',
       destinationAccountNumber: '0123456789',
       remarks: 'Vendor settlement',
       metadata: {
@@ -131,17 +131,25 @@ Retrieve by FossaPay payout ID:
 
 ```bash
 curl https://api-production.fossapay.com/api/v1/payouts/PAYOUT_ID \
-  -H 'x-api-key: YOUR_LIVE_API_KEY'
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 Or retrieve by your unique reference:
 
 ```bash
 curl https://api-production.fossapay.com/api/v1/payouts/reference/PAYOUT-10025 \
-  -H 'x-api-key: YOUR_LIVE_API_KEY'
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 Use reference lookup when you do not know whether a create request reached FossaPay.
+
+## Endpoint map
+
+| Operation | Endpoint | Reference |
+|---|---|---|
+| Create a payout | `POST /api/v1/payouts` | [Create payout](/api-reference/payouts/create-payout) |
+| Get payout by ID | `GET /api/v1/payouts/{id}` | [Get payout](/api-reference/payouts/get-payout) |
+| Get payout by reference | `GET /api/v1/payouts/reference/{reference}` | [Get payout by reference](/api-reference/payouts/get-payout-by-reference) |
 
 ## Process Payout Webhooks
 

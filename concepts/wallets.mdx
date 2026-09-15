@@ -1,334 +1,92 @@
 ---
 title: Wallets
-description: 'Multi-currency wallet infrastructure for your fintech'
+description: 'Understand customer and merchant wallets across NGN and stablecoin rails'
 ---
 
-## What are Wallets?
+Wallets are the accounts through which FossaPay attributes balances and money movement. Every wallet has an owner, a currency rail, and a specific operational purpose.
 
-Wallets are digital accounts that hold customer balances in multiple currencies. With FossaPay's wallet infrastructure, you can create customer wallets, hold balances in NGN and stablecoins, and manage internal ledgers seamlessly.
+## Wallet model
 
-<Info>
-  Wallets enable you to build neobank features like balance holding, peer-to-peer transfers, and multi-currency accounts without managing complex ledger infrastructure.
-</Info>
+| Wallet | Owner | Rail | Primary use |
+|---|---|---|---|
+| Customer NGN wallet | Individual customer | NGN bank account | Persistent collections and customer-funded transfers |
+| Master NGN wallet | Merchant | NGN bank account | Business-owned funds and master-wallet payouts |
+| Customer stablecoin wallet | Individual customer | Solana | Customer USDC and USDT deposits and transfers |
+| Master stablecoin wallet | Merchant | Solana | Merchant-owned stablecoin balances and addresses |
 
-## Key Features
+<Warning>
+  Choose the source wallet according to economic ownership. Customer funds must use customer-wallet operations; business funds must use the merchant master wallet and Payouts API.
+</Warning>
 
-<CardGroup cols={2}>
-  <Card color="#0080FF" title="Multi-Currency Support" icon="coins">
-    Hold balances in NGN, USDT, USDC, and other stablecoins
-  </Card>
-  <Card color="#0080FF" title="Instant Transfers" icon="bolt">
-    Move money between wallets in milliseconds
-  </Card>
-  <Card color="#0080FF" title="Real-time Balance" icon="gauge">
-    Query balances and transaction history instantly
-  </Card>
-  <Card color="#0080FF" title="Double-Entry Ledger" icon="book">
-    Bank-grade accounting with full audit trail
-  </Card>
-</CardGroup>
+## Customer and master wallets
 
-## Wallet Types
+A customer wallet is linked to a customer UUID created through the Customers API. The authenticated merchant must own that customer.
 
-### Customer Wallets
-Individual wallets for your end users. Each wallet can hold multiple currencies.
+A master wallet belongs directly to the merchant. Retrieve it using the authenticated API key; no customer or wallet identifier is supplied. Master-wallet funds must not be represented as belonging to an individual customer.
 
-```json
-{
-  "type": "individual",
-  "customer_id": "cus_abc123",
-  "customer_name": "John Doe",
-  "customer_email": "john@example.com",
-  "currencies": ["NGN", "USDT", "USDC"]
-}
-```
+## NGN and stablecoin rails
 
-## Supported Currencies
+NGN wallets expose bank account details and separate available and ledger balances. Stablecoin wallets expose a Solana address and token balances. These are separate resources—an NGN wallet ID cannot be used with a stablecoin endpoint, and a blockchain address cannot identify an NGN wallet.
 
-| Currency | Code | Type | Status |
-|----------|------|------|--------|
-| Nigerian Naira | NGN | NGN | Active |
-| Tether USD | USDT | Stablecoin | Active |
-| USD Coin | USDC | Stablecoin | Active |
+FossaPay currently supports production access only. All wallet operations can affect live resources.
 
-## Wallet Operations
+## Balances
 
-### Crediting Wallets (Adding Money)
+| Balance | Meaning |
+|---|---|
+| Available balance | Funds currently available for a new operation |
+| Ledger balance | Funds recorded on the provider ledger, including amounts that may not yet be available |
+| Token balance | Provider-reported balance for a supported stablecoin on a Solana address |
 
-Add funds to a wallet from various sources:
-
-**From NGN Wallet Payment:**
-```javascript
-// Automatic via webhook when payment is received
-// Webhook handler
-app.post('/webhooks/fossapay', (req, res) => {
-  const { event, data } = req.body;
-
-  if (event === 'deposit.completed') {
-    // Credit the customer's wallet
-    // Use the wallet ID from your database
-    await creditCustomerWallet(data.customerId, data.amount);
-  }
-});
-```
-
-
-### Debiting Wallets (Removing Money)
-
-Remove funds from a wallet:
-
-**For Payout:**
-```javascript
-// When customer requests withdrawal
-// 1. Debit the wallet (conceptually)
-// 2. Process inter-bank transfer
-
-// API call to initiate transfer
-curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/inter-bank \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cus_123",
-    "destinationBankCode": "044",
-    "destinationAccountName": "Customer Name",
-    "destinationAccountNumber": "0123456789",
-    "destinationBankName": "ACCESS BANK",
-    "reference": "withdrawal-001",
-    "remarks": "Bank withdrawal",
-    "amount": 25000
-  }'
-```
-
-
-### Wallet-to-Wallet Transfers
-
-Transfer funds instantly and free of charge between two FossaPay customers under the same business. Both the sending and receiving account numbers must belong to FossaPay NGN wallets created under your business:
-
-```javascript
-const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
-  method: 'POST',
-  headers: {
-    'x-api-key': 'YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    fromAccount: '1234567890', // sender's account number
-    toAccount: '0987654321',   // receiver's account number
-    amount: 10000,
-    reference: 'p2p-transfer-001',
-    narration: 'Payment for services'
-  })
-});
-
-const data = await response.json();
-```
+Use the current authenticated wallet response as the balance authority before initiating an operation. Do not derive a balance solely by adding webhook amounts in your application.
 
 <Note>
-  Wallet-to-wallet transfers are free and atomic - either both the debit and credit succeed, or neither happens. Use an inter-bank transfer when the recipient uses an external bank.
+  Money and token values may be returned as decimal strings. Use a decimal or money library instead of binary floating-point arithmetic.
 </Note>
 
-### Balance Inquiry
+## Ownership isolation
 
-Check wallet balance in real-time:
+Wallet lookups are merchant-scoped. A valid API key does not authorize access to another merchant's customer or wallet. Persist the IDs returned under each merchant and never accept an arbitrary wallet ID from a client without applying your own ownership checks.
 
-```javascript
-const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_xyz789', {
-  headers: {
-    'x-api-key': 'YOUR_API_KEY'
-  }
-});
+## Wallet lifecycle
 
-const data = await response.json();
-const balance = data.data;
+1. Create the individual customer.
+2. Create the appropriate customer wallet.
+3. Persist the wallet ID, customer ID, reference, and account or address details.
+4. Retrieve balances and transaction history for operational use.
+5. Process verified webhook events exactly once.
+6. Reconcile important operations through authenticated retrieval endpoints.
 
-console.log(balance);
-// {
-//   "id": "wal_xyz789",
-//   "availableBalance": "150000.00",
-//   "ledgerBalance": "150000.00"
-// }
-```
+Wallet creation does not provide general idempotency semantics. If a create response is lost, retrieve or reconcile the customer's wallet before submitting another request.
 
-## Balance Types
+## Transactions and webhooks
 
-### Available Balance
-Funds that can be used immediately for transactions.
+Wallet transactions describe financial state. Webhook records describe delivery attempts. A failed webhook delivery does not make its financial transaction failed, and a successful webhook response does not independently prove that funds moved.
 
-### Ledger Balance
-Total balance including pending transactions.
+Use:
 
-### Pending Balance
-Funds that are in transit or on hold.
+- transaction IDs and references for reconciliation;
+- `eventId` for webhook deduplication;
+- terminal transaction statuses for final internal state; and
+- wallet retrieval for current provider-reported balances.
 
-```
-Ledger Balance = Available Balance + Pending Balance
-```
-
-## Transaction History
-
-Retrieve wallet transaction history:
-
-```javascript
-const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_xyz789/transactions?startDate=2024-01-01&endDate=2024-01-31&limit=50&page=1', {
-  headers: {
-    'x-api-key': 'YOUR_API_KEY'
-  }
-});
-
-const data = await response.json();
-const transactions = data.transactions;
-```
-
-**Response:**
-```json
-{
-  "wallet_id": "wal_xyz789",
-  "currency": "NGN",
-  "transactions": [
-    {
-      "id": "txn_001",
-      "type": "credit",
-      "amount": 50000,
-      "balance_before": 100000,
-      "balance_after": 150000,
-      "narration": "Wallet top-up",
-      "reference": "ref_001",
-      "created_at": "2024-01-15T10:30:00Z"
-    },
-    {
-      "id": "txn_002",
-      "type": "debit",
-      "amount": 25000,
-      "balance_before": 150000,
-      "balance_after": 125000,
-      "narration": "Transfer to Jane",
-      "reference": "ref_002",
-      "created_at": "2024-01-16T14:20:00Z"
-    }
-  ],
-  "pagination": {
-    "total": 125,
-    "limit": 50,
-    "offset": 0
-  }
-}
-```
-
-
-
-## Wallet Limits
-
-| Operation | Limit |
-|-----------|-------|
-| Wallets per business | Unlimited |
-| Currencies per wallet | 10 |
-| Minimum balance | ₦0 (or equivalent) |
-| Maximum balance | ₦100,000,000 (or equivalent) |
-| Daily transaction limit | ₦50,000,000 (or equivalent) |
-| Transactions per second | 100 |
-
-## Best Practices
-
-<AccordionGroup>
-  <Accordion title="Use References for Idempotency">
-    Always provide unique references to prevent duplicate transactions:
-    ```javascript
-    const reference = `txn_${Date.now()}_${userId}`;
-    ```
-  </Accordion>
-
-  <Accordion title="Check Balance Before Debit">
-    Verify sufficient balance before attempting to debit:
-    ```javascript
-    const response = await fetch(`https://api-production.fossapay.com/api/v1/wallets/fiat/${walletId}`, {
-      headers: {
-        'x-api-key': 'YOUR_API_KEY'
-      }
-    });
-
-    const data = await response.json();
-    const balance = data.data;
-
-    if (parseFloat(balance.availableBalance) >= amount) {
-      // Proceed with debit
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="Store Transaction IDs">
-    Always store transaction IDs returned by FossaPay for reconciliation and support.
-  </Accordion>
-
-  <Accordion title="Implement Webhooks">
-    Listen to wallet webhooks for real-time updates:
-    - `transfer.completed`
-    - `withdrawal.completed`
-  </Accordion>
-</AccordionGroup>
-
-## Common Use Cases
-
-### Neobank Wallet
-```javascript
-// Create NGN wallet when user signs up
-curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cus_123",
-    "walletName": "Main Wallet",
-    "walletReference": "wallet_'$(date +%s)'"
-  }'
-
-// The wallet account number can be used for collections
-```
-### Marketplace Split Payments
-
-```javascript
-// Receive payment via webhook
-const payment = event.data; // from webhook
-
-// Split payment logic (crediting is handled via webhooks or internal processes)
-// Merchant receives 80%, platform receives 20%
-// Wallets are credited automatically based on webhook configuration
-```
-### Peer-to-Peer Transfers
-
-This free flow applies only when both users are customers under your business and both accounts are FossaPay NGN wallets.
-
-```javascript
-// User sends money to another user
-const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/transfers/wallet-to-wallet', {
-  method: 'POST',
-  headers: {
-    'x-api-key': 'YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    fromAccount: senderAccountNumber, // sender's account number
-    toAccount: receiverAccountNumber,   // receiver's account number
-    amount: 5000,
-    reference: 'p2p-' + Date.now(),
-    narration: 'Payment from friend'
-  })
-});
-
-const data = await response.json();
-```
-
-## Next Steps
+## Choose a wallet rail
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Create NGN Wallet" icon="code" href="/api-reference/virtual-account/create-wallet">
-    Create your first wallet via API
+  <Card title="NGN wallets" icon="naira-sign" href="/concepts/ngn-wallets">
+    Provision bank accounts, collect NGN, inspect balances, and move customer funds.
   </Card>
-  <Card color="#0080FF" title="Collections" icon="building-columns" href="/guides/collections">
-    Accept payments into wallets
-  </Card>
-  <Card color="#0080FF" title="Payouts" icon="money-bill-transfer" href="/guides/payouts">
-    Withdraw from wallets to bank accounts
-  </Card>
-  <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
-    Listen to wallet events
+  <Card title="Stablecoin wallets" icon="coins" href="/concepts/stablecoin-wallets">
+    Provision Solana wallets and manage supported USDC and USDT activity.
   </Card>
 </CardGroup>
+
+## Operational checklist
+
+- [ ] Identify whether the funds belong to a customer or the merchant.
+- [ ] Persist customer, wallet, transaction, and merchant references together.
+- [ ] Keep NGN and stablecoin identifiers separate.
+- [ ] Treat non-terminal statuses as unresolved.
+- [ ] Verify and deduplicate webhook events.
+- [ ] Reconcile balances and transactions through authenticated endpoints.
+- [ ] Keep API keys, personal data, and full account details out of unnecessary logs.

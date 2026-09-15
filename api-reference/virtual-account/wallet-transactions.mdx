@@ -1,6 +1,6 @@
 ---
 title: 'Fetch Wallet Transactions'
-api: 'GET https://api-production.fossapay.com/api/v1/wallets/fiat/{walletId}/transactions'
+openapi: 'GET /api/v1/wallets/fiat/{walletId}/transactions'
 description: 'Retrieve all NGN wallet transactions with pagination'
 ---
 
@@ -41,14 +41,14 @@ description: 'Retrieve all NGN wallet transactions with pagination'
 ## Request Example
 
 ```bash
-curl "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit" \
-  -H "x-api-key: fk_production_DTKUG..."
+curl "https://api-production.fossapay.com/api/v1/wallets/fiat/33333333-3333-4333-8333-333333333333/transactions?page=1&limit=10&transactionType=deposit" \
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```javascript
-const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=1&limit=10&transactionType=deposit&startDate=2024-01-01&endDate=2024-01-31', {
+const response = await fetch('https://api-production.fossapay.com/api/v1/wallets/fiat/33333333-3333-4333-8333-333333333333/transactions?page=1&limit=10&transactionType=deposit&startDate=2024-01-01&endDate=2024-01-31', {
   headers: {
-    'x-api-key': 'fk_production_DTKUG...'
+    'x-api-key': process.env.FOSSAPAY_API_KEY
   }
 });
 
@@ -57,9 +57,10 @@ const transactions = data.transactions;
 ```
 
 ```python
+import os
 import requests
 
-url = "https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions"
+url = "https://api-production.fossapay.com/api/v1/wallets/fiat/33333333-3333-4333-8333-333333333333/transactions"
 params = {
     "page": 1,
     "limit": 10,
@@ -67,7 +68,7 @@ params = {
     "startDate": "2024-01-01",
     "endDate": "2024-01-31"
 }
-headers = {"x-api-key": "fk_production_DTKUG..."}
+headers = {"x-api-key": os.environ["FOSSAPAY_API_KEY"]}
 
 response = requests.get(url, headers=headers, params=params)
 data = response.json()
@@ -179,11 +180,11 @@ transactions = data["transactions"]
 {
   "transactions": [
     {
-      "transactionId": "txn_abc123",
+      "transactionId": "44444444-4444-4444-8444-444444444401",
       "transactionType": "deposit",
-      "walletId": "wal_xyz789",
+      "walletId": "33333333-3333-4333-8333-333333333333",
       "accountNumber": "1234567890",
-      "status": "completed",
+      "status": "success",
       "amount": 50000,
       "fee": 0,
       "originator": {
@@ -196,19 +197,19 @@ transactions = data["transactions"]
       "createdAt": "2024-01-15T10:30:45Z"
     },
     {
-      "transactionId": "txn_def456",
+      "transactionId": "44444444-4444-4444-8444-444444444402",
       "transactionType": "withdrawal",
-      "walletId": "wal_xyz789",
+      "walletId": "33333333-3333-4333-8333-333333333333",
       "accountNumber": "1234567890",
-      "status": "completed",
+      "status": "success",
       "amount": 75000,
       "fee": 50,
       "beneficiary": {
         "accountNumber": "1122334455",
-        "accountName": "JANE SMITH",
+        "accountName": "JOHN DOE",
         "bankName": "Zenith Bank"
       },
-      "narration": "Payment to Jane Smith",
+      "narration": "Payment to John Doe",
       "reference": "FP-20240115-002",
       "createdAt": "2024-01-15T14:20:30Z"
     }
@@ -222,9 +223,9 @@ transactions = data["transactions"]
 
 ```json Error Response
 {
-  "status": false,
-  "message": "Wallet not found",
-  "code": "WALLET_NOT_FOUND"
+  "status": "error",
+  "statusCode": 404,
+  "message": "Wallet not found"
 }
 ```
 </ResponseExample>
@@ -237,9 +238,9 @@ let page = 1;
 let allTransactions = [];
 
 while (true) {
-  const response = await fetch(`https://api-production.fossapay.com/api/v1/wallets/fiat/wal_abc123xyz/transactions?page=${page}&limit=50`, {
+  const response = await fetch(`https://api-production.fossapay.com/api/v1/wallets/fiat/33333333-3333-4333-8333-333333333333/transactions?page=${page}&limit=50`, {
     headers: {
-      'x-api-key': 'fk_production_DTKUG...'
+      'x-api-key': process.env.FOSSAPAY_API_KEY
     }
   });
 
@@ -263,3 +264,12 @@ console.log(`Retrieved ${allTransactions.length} transactions`);
 <Tip>
   Store transaction IDs for reconciliation and audit purposes.
 </Tip>
+
+## Errors
+
+| Status | Typical cause |
+|---|---|
+| `401` | Missing or invalid API key |
+| `403` | Wallet belongs to another merchant |
+| `404` | Wallet not found |
+| `422` | Invalid query parameter |

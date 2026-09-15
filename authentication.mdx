@@ -1,99 +1,144 @@
 ---
 title: Authentication
-description: 'Learn how to authenticate your API requests with FossaPay'
+description: 'Authenticate server-to-server requests with a production FossaPay API key'
 ---
 
-## API Authentication
-
-FossaPay uses API keys to authenticate requests. You can view and manage your API keys in the [FossaPay Dashboard](https://dashboard.fossapay.com/settings?tab=api-keys).
+FossaPay authenticates API requests with a secret API key sent in the `x-api-key` request header. The key identifies your merchant account and determines which customers, wallets, checkouts, payouts, and transactions the request can access.
 
 <Warning>
-  **Production only.** FossaPay currently uses production systems for every API request, so keep your live API keys secure and only test with amounts and actions you are comfortable running against production.
+  FossaPay currently provides production access only. There is no staging or sandbox environment. Every authenticated request reaches production and can create or affect live financial resources.
 </Warning>
 
-## API Key Types
+## Before you begin
 
-FossaPay currently provides live production API keys:
+To generate an API key, your merchant account must have:
 
-<CardGroup cols={2}>
-  <Card color="#0080FF" title="Live Keys" icon="circle-check">
-    Use live keys to authenticate production requests and manage real customer data.
-  </Card>
-</CardGroup>
+- completed business verification;
+- two-factor authentication enabled; and
+- access to **Dashboard → Settings → API Keys**.
 
-## Getting Your API Keys
+Production API keys use the `fk_production_` prefix.
 
-1. Sign up or log in to your [FossaPay Dashboard](https://dashboard.fossapay.com)
-2. Navigate to **Settings** → **API Keys**
-3. Copy your **Live Key**
-4. Use the live key for all API requests
+## Generate and store a key
 
-## Making Authenticated Requests
+1. Sign in to the [FossaPay Dashboard](https://dashboard.fossapay.com).
+2. Open **Settings → API Keys**.
+3. Generate a production API key and complete the two-factor authentication challenge.
+4. Copy the key into a secrets manager or protected server environment.
 
-Include your secret key in the `x-api-key` header of your API requests:
+<Warning>
+  Treat an API key like a password. Never place it in browser code, a mobile application, a public repository, a screenshot, an analytics event, or a support message.
+</Warning>
+
+For local server-side development, load the base URL and key from environment variables:
 
 ```bash
-curl https://api-production.fossapay.com/api/v1/wallets/fiat/create \
-  -H "x-api-key: fk_production_DTKUG..." \
-  -H "Content-Type: application/json"
+export FOSSAPAY_API_URL="https://api-production.fossapay.com/api/v1"
+export FOSSAPAY_API_KEY="fk_production_REPLACE_WITH_YOUR_KEY"
 ```
 
-### Authentication Header Format
+Do not commit `.env` files, and avoid commands that leave real credentials in shell history.
 
+## Authenticate a request
+
+Send the API key in the `x-api-key` header on every protected endpoint:
+
+```bash
+curl --request GET \
+  --url "$FOSSAPAY_API_URL/customers?page=1&limit=1" \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
 ```
-x-api-key: fk_production_DTKUG...
+
+Header names are case-insensitive, but the documentation uses `x-api-key` consistently. Do not add `Bearer` or another authentication scheme to the value.
+
+```text
+x-api-key: fk_production_REPLACE_WITH_YOUR_KEY
 ```
 
-## API Key Format
+An authenticated request returns the normal endpoint response. For example:
 
-FossaPay API keys follow this format:
-
-- **Production Key**: `fk_production_DTKUG...`
-
-## Request Headers
-
-Every API request should include these headers:
-
-| Header | Value | Required |
-|--------|-------|----------|
-| `x-api-key` | `fk_production_DTKUG...` | Yes |
-| `Content-Type` | `application/json` | Yes |
-| `X-Idempotency-Key` | Unique request identifier | Required when creating a checkout or master-wallet payout |
-
-### Example Request
-
-```javascript
-const axios = require('axios');
-
-const response = await axios.post(
-  'https://api-production.fossapay.com/api/v1/wallets/fiat/create',
-  {
-    customerId: 'cus_123456789',
-    walletName: 'Main Wallet',
-    walletReference: 'wallet_ref_001'
-  },
-  {
-    headers: {
-      'x-api-key': 'fk_production_DTKUG...',
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': 'unique-request-id-12345'
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Customers retrieved successfully",
+  "data": {
+    "result": [],
+    "pagination": {
+      "page": 1,
+      "limit": 1,
+      "total": 0,
+      "totalPages": 0,
+      "hasNextPage": false,
+      "hasPrevPage": false
     }
   }
-);
+}
 ```
 
-## Idempotency
+The returned customer data depends on the resources already owned by your merchant account.
 
-Creating a checkout or master-wallet payout requires an idempotency key. Send either `X-Idempotency-Key` (recommended) or the backward-compatible `Idempotency-Key` header. If both headers are sent, their values must match exactly or the API returns `400 Bad Request`.
+## Request headers
 
-Reusing the same key with the same request payload returns the original resource without creating or debiting another one. Reusing it with a different payload returns `409 Conflict`. Idempotency keys can contain up to 255 characters and are scoped to your merchant account.
+| Header | When to send it | Purpose |
+|---|---|---|
+| `x-api-key` | Every protected request | Authenticates the merchant |
+| `Content-Type: application/json` | Requests with a JSON body | Declares the request-body format |
+| `X-Idempotency-Key` | Creating a checkout or master-wallet payout | Prevents duplicate logical operations |
+| `x-timezone` | Optional | Requests supported timestamps in the supplied timezone; the default is `Africa/Lagos` |
+
+Authentication and idempotency solve different problems. An API key establishes who is calling; an idempotency key identifies one logical write operation. Never use an API key as an idempotency key.
+
+## Server-side example
+
+```javascript
+const response = await fetch(
+  `${process.env.FOSSAPAY_API_URL}/wallets/fiat/create`,
+  {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      customerId: '11111111-1111-4111-8111-111111111111',
+      walletName: 'John Doe',
+      walletReference: 'wallet-customer-1042'
+    })
+  }
+);
+
+const body = await response.json();
+
+if (!response.ok) {
+  throw new Error(`FossaPay request failed (${response.status}): ${body.message}`);
+}
+```
+
+The example must run on infrastructure you control. Your frontend should call your backend, and your backend should authenticate with FossaPay.
+
+## Merchant isolation
+
+An API key is associated with one merchant. FossaPay uses that merchant association to scope protected resources:
+
+- customers created with the key belong to that merchant;
+- customer and wallet lookups are restricted to that merchant's records;
+- checkout and payout references are evaluated within that merchant; and
+- a valid key does not grant access to another merchant's resources.
+
+Persist the FossaPay resource IDs returned to your merchant. A `403` or `404` during retrieval can indicate an incorrect ID or a resource that is not owned by the authenticated merchant.
+
+## Idempotency for financial writes
+
+`POST /checkouts` and `POST /payouts` require an idempotency header. Use `X-Idempotency-Key` for new integrations. The legacy `Idempotency-Key` header is also accepted for compatibility.
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
-  -H "x-api-key: fk_production_DTKUG..." \
-  -H "Content-Type: application/json" \
-  -H "X-Idempotency-Key: checkout-order-10025-v1" \
-  -d '{
+curl --request POST \
+  --url "$FOSSAPAY_API_URL/checkouts" \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "X-Idempotency-Key: checkout-order-10025-v1" \
+  --header "Content-Type: application/json" \
+  --data '{
     "amount": 5000,
     "currency": "NGN",
     "reference": "ORDER-10025",
@@ -101,85 +146,109 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
   }'
 ```
 
-<Tip>
-  Generate a new, stable key for each logical operation and retain it when retrying after a timeout. A UUID or your own operation identifier works well.
-</Tip>
+Apply these rules:
 
-## Error Handling
+- generate one stable key for each logical checkout or payout;
+- store it with your internal operation record before sending the request;
+- retry an uncertain request with the same key and identical body;
+- never reuse the key for a different request body;
+- limit the value to 255 characters; and
+- if both supported idempotency headers are sent, give them exactly the same value.
 
-### Authentication Errors
+The same key and body return the original resource without creating another operation. Reusing the key with a different body returns HTTP `409`. Missing, oversized, or conflicting idempotency headers return HTTP `400`.
 
-If authentication fails, you'll receive a `401 Unauthorized` response:
+<Note>
+  Idempotency requirements are endpoint-specific. Do not add `X-Idempotency-Key` to wallet creation merely because it is a write request.
+</Note>
+
+## Authentication failures
+
+Errors use FossaPay's standard response envelope. A missing key returns HTTP `401`:
 
 ```json
 {
-  "success": false,
-  "message": "Invalid API key",
-  "code": "INVALID_API_KEY"
+  "status": "error",
+  "statusCode": 401,
+  "message": "API key is required"
 }
 ```
 
-Common authentication errors:
+An unrecognized key also returns HTTP `401`:
 
-| Error Code | Description |
-|------------|-------------|
-| `INVALID_API_KEY` | The API key provided is invalid |
-| `EXPIRED_API_KEY` | The API key has expired |
-| `MISSING_API_KEY` | No API key was provided |
+```json
+{
+  "status": "error",
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
 
-## Security Best Practices
+Some protected endpoint groups use a more specific equivalent message, such as `API key is required in the x-api-key header` or `API key is invalid or inactive`.
+
+| Status | Meaning | Recommended action |
+|---|---|---|
+| `400` | A required operation header is missing or invalid | Correct the request; do not retry it unchanged |
+| `401` | The API key is missing, invalid, inactive, or revoked | Verify the header and key; generate or deploy a valid key if necessary |
+| `403` | The merchant is not permitted to perform the operation or does not own the resource | Confirm business verification and resource ownership |
+| `404` | The merchant-scoped resource was not found | Verify the resource ID or merchant reference |
+| `409` | A reference conflicts or an idempotency key was reused with different data | Reconcile the original operation; do not generate a replacement blindly |
+| `429` | The applicable request limit was exceeded | Back off and retry with jitter |
+
+Do not automatically retry `401`, `403`, or validation failures. Correct the credential, account state, ownership mapping, or request first.
+
+## Key rotation and revocation
+
+Rotate credentials without interrupting service:
+
+1. generate a new production key;
+2. store and deploy it through your secret-management process;
+3. verify authenticated reads and controlled writes with the new key;
+4. remove the previous key from every workload; and
+5. delete the previous key in the dashboard.
+
+If a key may have been exposed, stop using it immediately, delete it in the dashboard, deploy a replacement, and review request and transaction activity for unexpected operations.
+
+## Operational security checklist
+
+- Keep API calls on trusted server-side infrastructure.
+- Inject keys at runtime from a secrets manager or protected environment variable.
+- Redact `x-api-key` from application, proxy, error-tracking, and observability logs.
+- Restrict production-secret access to workloads and personnel that require it.
+- Enable secret scanning for source repositories and deployment artifacts.
+- Rotate keys after personnel, vendor, or infrastructure access changes.
+- Monitor `401`, `403`, and `429` rates for configuration errors or abuse.
+- Keep webhook signing secrets separate from API keys.
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="Store Keys Securely">
-    - Never hardcode API keys in your application
-    - Use environment variables or secure key management systems
-    - Rotate keys regularly
+  <Accordion title="The API says the key is required">
+    Confirm that `x-api-key` reaches FossaPay. Review reverse-proxy and HTTP-client configuration for headers that may be removed before forwarding.
   </Accordion>
-
-  <Accordion title="Use HTTPS Only">
-    - All API requests must use HTTPS
-    - HTTP requests will be rejected
+  <Accordion title="The API says the key is invalid or inactive">
+    Remove whitespace and quotation marks from the configured value, confirm that you deployed the complete production key, and check that the key still exists in the dashboard.
   </Accordion>
-
-  <Accordion title="Restrict API Key Access">
-    - Limit API key permissions to only what's needed
-    - Use different keys for different applications or services
-    - Monitor API key usage in your dashboard
+  <Accordion title="The request succeeds for one resource but not another">
+    Confirm that the resource belongs to the merchant associated with the key. Customer, wallet, checkout, payout, and transaction access is merchant-scoped.
   </Accordion>
-
-  <Accordion title="Implement Rate Limiting">
-    - FossaPay implements rate limiting to protect against abuse
-    - Current limit: 100 requests per minute
-    - Contact support for higher limits
+  <Accordion title="A write timed out after submission">
+    Do not assume the operation failed. For checkout and payout creation, retry the identical request with its original idempotency key or retrieve the resource using its ID or merchant reference.
   </Accordion>
 </AccordionGroup>
 
-## Verifying Authentication
-
-Verify your authentication setup with this simple request:
-
-```bash
-curl https://api-production.fossapay.com/api/v1/customers \
-  -H "x-api-key: fk_production_DTKUG..."
-```
-
-**Successful Response:**
-
-```json
-{
-  "success": true,
-  "message": "List of customers retrieved successfully",
-  "data": []
-}
-```
-
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Accept a Checkout Payment" icon="credit-card" href="/guides/checkouts">
-    Create a one-time NGN checkout
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Authenticate and create your first customer and NGN wallet.
   </Card>
-  <Card color="#0080FF" title="Create a Customer" icon="code" href="/concepts/customers">
-    Make your first API call
+  <Card title="Customers" icon="users" href="/concepts/customers">
+    Understand customer validation and merchant ownership.
+  </Card>
+  <Card title="Checkouts" icon="credit-card" href="/guides/checkouts">
+    Create idempotent one-time NGN checkout sessions.
+  </Card>
+  <Card title="Payouts" icon="money-bill-transfer" href="/guides/payouts">
+    Send funds safely from the merchant master wallet.
   </Card>
 </CardGroup>

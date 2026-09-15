@@ -1,12 +1,12 @@
 ---
 title: "Get All Customers"
-api: "GET https://api-production.fossapay.com/api/v1/customers"
-description: "Retrieve a list of all customers"
+openapi: "GET /api/v1/customers"
+description: "Retrieve customers owned by the authenticated merchant"
 ---
 
 ## Overview
 
-Retrieve a list of all customer accounts in your system.
+Retrieve a merchant-scoped, paginated list of customers. Results are ordered by the selected field and direction.
 
 ## Request
 
@@ -17,7 +17,7 @@ Retrieve a list of all customer accounts in your system.
 ### Parameters
 
 <ParamField query="sortOrder" type="string">
-  Sort order: `asc` or `desc` (default: `desc`)
+  Sort direction: `asc` or `desc` (default: `desc`). Values are case-insensitive.
 </ParamField>
 
 <ParamField query="sortBy" type="string">
@@ -51,37 +51,8 @@ Retrieve a list of all customer accounts in your system.
   Human-readable response message
 </ResponseField>
 
-<ResponseField name="data" type="array">
-  Array of customer objects
-</ResponseField>
-
-<ResponseField name="pagination" type="object">
-  <Expandable title="properties">
-    <ResponseField name="page" type="number">
-      Current page number
-    </ResponseField>
-
-    <ResponseField name="limit" type="number">
-      Number of items per page
-    </ResponseField>
-
-    <ResponseField name="total" type="number">
-      Total number of customers
-    </ResponseField>
-
-    <ResponseField name="totalPages" type="number">
-      Total number of pages
-    </ResponseField>
-
-    <ResponseField name="hasNextPage" type="boolean">
-      Whether there is a next page
-    </ResponseField>
-
-    <ResponseField name="hasPrevPage" type="boolean">
-      Whether there is a previous page
-    </ResponseField>
-
-  </Expandable>
+<ResponseField name="data" type="object">
+  Contains `result`, an array of customer objects, and `pagination`, the page metadata.
 </ResponseField>
 
 ### Response Example
@@ -92,29 +63,31 @@ Retrieve a list of all customer accounts in your system.
   "status": "success",
   "statusCode": 200,
   "message": "Customers retrieved successfully",
-  "data": [
-    {
-      "id": "fh8e2e1f-e253-23ac-b8ft-31ed2t7fb0df",
-      "businessId": "xse5f9867-f6b3-4dda-9d1e-aa335fbf7a3a",
-      "firstName": "John",
-      "lastName": "Ben",
-      "middleName": "Doe",
-      "emailAddress": "john.doe@gmail.com",
-      "mobileNumber": "0918458251",
-      "dob": "1991-08-15",
-      "customerType": "individual",
-      "address": "12 customer rd.",
-      "city": "Lagos",
-      "createdAt": "2021-01-08T21:39:52+01:00"
+  "data": {
+    "result": [
+      {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "businessId": "22222222-2222-4222-8222-222222222222",
+        "firstName": "John",
+        "lastName": "Doe",
+        "middleName": "Michael",
+        "emailAddress": "john.doe@example.com",
+        "mobileNumber": "+2348012345678",
+        "dob": "1990-08-15",
+        "customerType": "individual",
+        "address": "123 Example Street",
+        "city": "Lagos",
+        "createdAt": "2026-01-08T21:39:52+01:00"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 7,
-    "totalPages": 1,
-    "hasNextPage": false,
-    "hasPrevPage": false
   }
 }
 ```
@@ -136,7 +109,7 @@ Retrieve a list of all customer accounts in your system.
 
 ```bash
 curl -X GET "https://api-production.fossapay.com/api/v1/customers?sortOrder=desc&sortBy=createdAt&search=john&page=1&limit=10" \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 </Tab>
@@ -148,19 +121,25 @@ const response = await fetch(
   {
     method: "GET",
     headers: {
-      "x-api-key": "YOUR_API_KEY",
+      "x-api-key": process.env.FOSSAPAY_API_KEY,
     },
   },
 );
 
 const customers = await response.json();
-console.log(customers);
+if (!response.ok) throw new Error(customers.message);
 ```
 
 </Tab>
 </Tabs>
 
-## Rate Limits
+## Errors
 
-- Maximum 100 requests per minute per API key
-- Burst limit of 20 requests per second
+| Status | Typical cause |
+|---|---|
+| `401` | Missing or invalid API key |
+| `422` | Invalid page, limit, sort field, or sort order |
+
+<Note>
+  Results are scoped to the merchant associated with `x-api-key`. An empty `result` array is a successful response.
+</Note>

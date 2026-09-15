@@ -1,0 +1,128 @@
+---
+title: Stablecoin Wallets
+description: 'Provision Solana wallets and manage customer USDC and USDT activity'
+---
+
+Stablecoin wallets assign a Solana address to an individual customer. FossaPay currently supports the `solana` network and the `usdc` and `usdt` stablecoins.
+
+<Warning>
+  FossaPay does not currently support an EVM wallet option. Send `network: "solana"` exactly; other values are rejected before wallet creation.
+</Warning>
+
+## Prerequisites
+
+- Create the `individual` customer first.
+- Retain the customer UUID returned by FossaPay.
+- Use the production API key belonging to the same merchant.
+- Decide how your system will map the customer to the returned Solana address.
+
+## Create a customer wallet
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/crypto/create \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "network": "solana",
+    "customerId": "11111111-1111-4111-8111-111111111111"
+  }'
+```
+
+Wallet creation returns a provider wallet identifier, Solana address, and network. Persist the complete response with the customer UUID.
+
+Only one Solana wallet can be created for the same customer. If a response is lost, reconcile the existing wallet before retrying; wallet creation does not provide idempotency semantics.
+
+## Addresses and ownership
+
+Solana addresses are public deposit destinations, not authentication credentials. An address can receive supported assets from external senders, but authenticated wallet details and transaction history remain merchant-scoped.
+
+Validate the full address before displaying or using it. Do not truncate addresses in storage, comparison, signing, or transfer requests. Truncation is suitable only for presentation after the complete value has been retained.
+
+## Supported assets
+
+| Value | Meaning |
+|---|---|
+| `network: "solana"` | The only supported blockchain network |
+| `currency: "usdc"` | USD Coin on the supported Solana integration |
+| `currency: "usdt"` | Tether USD on the supported Solana integration |
+
+Do not infer support for a token from its symbol alone. Sending an unsupported asset or using another network can make funds unavailable to the integration.
+
+## Retrieve wallets and balances
+
+Customer wallets can be retrieved by FossaPay wallet ID or full blockchain address. The master endpoint returns merchant-owned stablecoin addresses and their provider-reported token balances.
+
+Token balances contain human-readable and raw representations where supplied by the provider. Preserve decimal precision and do not use JavaScript binary floating point for ledger calculations.
+
+<Note>
+  Wallet retrieval responses may be cached briefly. Use transaction state and confirmed provider results for operation reconciliation rather than assuming two immediate balance reads must differ.
+</Note>
+
+## Calculate a transfer fee
+
+Before sending, call:
+
+```text
+GET /api/v1/transfers/crypto/calculate-fee?amount=100&currency=usdc
+```
+
+The response reports the configured fee quote. Fee configuration can change, so request a current quote instead of hard-coding pricing.
+
+## Send stablecoins
+
+`POST /api/v1/transfers/crypto` sends from the customer's wallet to a Solana recipient.
+
+| Field | Requirement |
+|---|---|
+| `customerId` | UUID of the customer funding the transfer |
+| `recipient` | Complete destination Solana address |
+| `network` | Must be exactly `solana` |
+| `currency` | `usdc` or `usdt` |
+| `amount` | Numeric submitted amount |
+
+The current transfer flow treats the submitted amount as the gross token amount. The configured fee is deducted and the recipient transfer uses the net amount (`amount - fee`). Confirm the current fee before presenting the expected recipient amount.
+
+The initial response reports provider processing; it is not final settlement. Persist the returned data and wait for the corresponding verified terminal event or reconcile the transaction through wallet history.
+
+<Warning>
+  Confirm the customer, token, network, destination address, gross amount, fee, net amount, and available balance before submission. Confirmed blockchain transfers cannot be reversed by FossaPay.
+</Warning>
+
+## Status and finality
+
+| Status | Meaning | Action |
+|---|---|---|
+| `pending` or `processing` | Submission or blockchain processing is incomplete | Do not mark the transfer final |
+| `success` | The transaction completed successfully | Reconcile the amount, fee, hash, and recipient |
+| `failed` | The transaction did not complete | Inspect the latest transaction and balance before deciding on another transfer |
+
+When available, store the transaction hash and explorer link alongside the FossaPay transaction ID and references.
+
+## Safe retry behavior
+
+Crypto transfer creation does not accept a merchant-provided idempotency key or reference. A timeout after submission is therefore ambiguous. Do not immediately send the same transfer again. Retrieve wallet transaction history and inspect balances before making a new business decision.
+
+## API reference
+
+| Operation | Endpoint | Reference |
+|---|---|---|
+| Create customer wallet | `POST /api/v1/wallets/crypto/create` | [Create wallet](/api-reference/crypto-wallets/create-wallet) |
+| Get master wallet | `GET /api/v1/wallets/crypto/master` | [Get master wallet](/api-reference/crypto-wallets/get-master-wallet) |
+| Get wallet by ID | `GET /api/v1/wallets/crypto/{walletId}` | [Get by ID](/api-reference/crypto-wallets/get-wallet-by-id) |
+| Get wallet by address | `GET /api/v1/wallets/crypto/address/{address}` | [Get by address](/api-reference/crypto-wallets/get-wallet-by-address) |
+| List wallet transactions | `GET /api/v1/wallets/crypto/{walletId}/transactions` | [Wallet transactions](/api-reference/crypto-wallets/wallet-transactions) |
+| Get a transaction | `GET /api/v1/wallets/crypto/transactions/{transactionId}` | [Wallet transaction](/api-reference/crypto-wallets/wallet-transaction) |
+| Calculate transfer fee | `GET /api/v1/transfers/crypto/calculate-fee` | [Calculate fee](/api-reference/crypto-transfers/calculate-fee) |
+| Send stablecoins | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
+
+## Production checklist
+
+- [ ] Accept only `solana`, `usdc`, and `usdt` where applicable.
+- [ ] Persist complete addresses and identifiers without truncation.
+- [ ] Use decimal-safe token handling.
+- [ ] Quote fees before presenting the recipient amount.
+- [ ] Treat processing responses as non-terminal.
+- [ ] Verify and deduplicate webhook events.
+- [ ] Reconcile ambiguous submissions before sending again.
+- [ ] Never promise reversibility after blockchain confirmation.

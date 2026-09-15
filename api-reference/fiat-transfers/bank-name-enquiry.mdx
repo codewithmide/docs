@@ -1,32 +1,32 @@
 ---
 title: 'Bank Name Enquiry'
-api: 'POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry'
-description: 'Perform bank account name enquiry'
+openapi: 'POST /api/v1/transfers/fiat/bank-name-enquiry'
+description: 'Resolve an account name before submitting an NGN transfer'
 ---
 
 ## Request
 
 <ParamField header="x-api-key" type="string" required>
-  API Key for authentication
+  Active production API key.
 </ParamField>
 
 <ParamField body="bankCode" type="string" required>
-  The bank code for the account enquiry
+  Bank code returned by the supported-banks endpoint.
 </ParamField>
 
 <ParamField body="accountNumber" type="string" required>
-  The account number to enquire about
+  Destination account number to resolve.
 </ParamField>
 
 ### Request Example
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry \
-  -H "x-api-key: your_api_key_here" \
+  -H "x-api-key: $FOSSAPAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "bankCode": "00014",
-    "accountNumber": "1232129310"
+    "bankCode": "044",
+    "accountNumber": "0123456789"
   }'
 ```
 
@@ -34,12 +34,12 @@ curl -X POST https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name
 const response = await fetch('https://api-production.fossapay.com/api/v1/transfers/fiat/bank-name-enquiry', {
   method: 'POST',
   headers: {
-    'x-api-key': 'your_api_key_here',
+    'x-api-key': process.env.FOSSAPAY_API_KEY,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    bankCode: '00014',
-    accountNumber: '1232129310'
+    bankCode: '044',
+    accountNumber: '0123456789'
   })
 });
 
@@ -60,10 +60,10 @@ const enquiry = await response.json();
   "message": "Bank name enquiry completed successfully",
   "data": {
     "sessionID": "000003677112224942366991412665",
-    "destinationInstitutionCode": "00014",
+    "destinationInstitutionCode": "044",
     "channelCode": 2,
-    "accountNumber": "1232129310",
-    "accountName": "JANE ELIM DOE",
+    "accountNumber": "0123456789",
+    "accountName": "JOHN DOE",
     "kycLevel": "3",
     "responseCode": "00"
   }
@@ -74,10 +74,9 @@ const enquiry = await response.json();
 <ResponseExample>
 ```json Error Response (400)
 {
-  "status": false,
+  "status": "error",
   "statusCode": 400,
-  "message": "Bad request",
-  "error": "Invalid bank code or account number"
+  "message": "Bank account details could not be verified"
 }
 ```
 </ResponseExample>
@@ -85,10 +84,22 @@ const enquiry = await response.json();
 <ResponseExample>
 ```json Error Response (500)
 {
-  "status": false,
-  "statusCode": 500,
-  "message": "Internal server error",
-  "error": "Bank name enquiry failed"
+  "status": "error",
+  "statusCode": 503,
+  "message": "Bank account details could not be verified. Please try again shortly"
 }
 ```
 </ResponseExample>
+
+<Warning>
+  A successful enquiry does not guarantee a later transfer. Confirm that the returned account name matches the intended beneficiary before proceeding.
+</Warning>
+
+## Errors
+
+| Status | Typical cause |
+|---|---|
+| `400` | Provider rejected the bank code or account details |
+| `401` | Missing or invalid API key |
+| `422` | Missing or invalid request field |
+| `503` | Name-enquiry provider temporarily unavailable |

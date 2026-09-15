@@ -1,109 +1,125 @@
 ---
 title: Introduction
+description: 'Understand FossaPay’s payment infrastructure, core resources, and integration model'
 ---
 
-Welcome to the FossaPay API documentation.
+FossaPay provides payment and wallet infrastructure for businesses that need to collect, hold, and transfer funds in NGN and supported stablecoins through one server-side API.
 
-FossaPay is a payment infrastructure built for neobanks, fintechs, and businesses that need to move money quickly and safely. Through a single API, you can issue virtual accounts, manage wallets, automate payouts, and settle funds in NGN or stablecoins.
+You can create individual customers, provision customer wallets, accept bank-transfer payments, send customer- or business-funded transfers, and receive signed webhook notifications as transactions change state.
 
-This documentation explains how FossaPay works, what you can build with it, and how to get started from your first API call to live transactions.
+## Platform capabilities
 
-### What is FossaPay?
+| Capability | What it provides | Learn more |
+|---|---|---|
+| Customers | Merchant-scoped individual customer records used by wallet and transfer operations | [Customers](/concepts/customers) |
+| NGN wallets | Dedicated bank accounts for customer collections, wallet retrieval, balances, and transaction history | [NGN wallets](/concepts/ngn-wallets) |
+| Checkout Wallet | Time-limited payment instructions for one-time NGN orders and invoices | [Checkout Wallet](/guides/checkouts) |
+| Stablecoin wallets | Customer and master wallets on Solana for supported USDC and USDT operations | [Stablecoin wallets](/concepts/stablecoin-wallets) |
+| NGN transfers | Customer-funded transfers between FossaPay wallets or to Nigerian bank accounts | [NGN transfers](/guides/ngn-transfers) |
+| Master wallet payouts | Business-funded NGN payouts from the merchant's permanent master wallet | [Master wallet payouts](/guides/payouts) |
+| Webhooks | Signed notifications for deposits, withdrawals, transfers, checkouts, payouts, and wallet changes | [Webhooks](/concepts/webhooks) |
 
-FossaPay is a unified payment and wallet infrastructure that helps products launch and scale faster.
+## Resource model
 
-With FossaPay, you can:
-- Create and assign NGN virtual accounts on demand
-- Accept bank transfers and wallet payments
-- Hold and manage balances in NGN and stablecoins
-- Automate payouts and settlements
-- Track transactions in real time
-- Receive instant webhook events
+FossaPay integrations are organized around merchants, customers, wallets, and financial operations.
 
-### Why Choose FossaPay?
+<Steps>
+  <Step title="Merchant">
+    Your business is the top-level owner of API keys, master wallets, customers, webhook endpoints, and all associated activity.
+  </Step>
+  <Step title="Customer">
+    A customer represents an individual end user served by your business. Customer records are merchant-scoped.
+  </Step>
+  <Step title="Wallet">
+    Customer wallets hold funds attributed to an individual. Master wallets hold funds owned by the business. NGN and stablecoin wallets use separate API resources.
+  </Step>
+  <Step title="Financial operation">
+    Deposits, transfers, checkouts, and payouts create records with identifiers and statuses that you use for reconciliation.
+  </Step>
+  <Step title="Webhook event">
+    When an asynchronous operation changes state, FossaPay delivers a signed event to each active webhook configured for the merchant.
+  </Step>
+</Steps>
+
+## Understand fund ownership
+
+Choose an API based on who owns the source funds and what the payment is intended to do.
+
+| Source funds | Intended operation | Use |
+|---|---|---|
+| Customer | Receive recurring or wallet top-up payments | Customer NGN wallet |
+| Customer | Send to another customer wallet under the same business | Wallet-to-wallet transfer |
+| Customer | Send to an external Nigerian bank account | Customer inter-bank transfer |
+| Business | Send NGN from the merchant master wallet | Master Wallet Payouts API |
+| Customer | Send supported stablecoins to a blockchain address | Stablecoin transfer |
+| Buyer paying an order | Make a one-time NGN bank transfer for an exact amount | Checkout Wallet |
+
+<Warning>
+  Do not use a customer wallet to represent business-owned funds or a master wallet to represent customer-owned funds. The source determines the correct API, fee treatment, and reconciliation flow.
+</Warning>
+
+## Integration lifecycle
+
+Most integrations follow this sequence:
+
+1. Create and verify your merchant account in the FossaPay dashboard.
+2. Obtain an API key.
+3. Make authenticated requests from your backend using the `x-api-key` header.
+4. Store your own references together with returned FossaPay resource IDs.
+5. Configure a public HTTPS webhook endpoint and securely store its secret.
+6. Verify webhook signatures, acknowledge deliveries quickly, and process events idempotently.
+7. Reconcile important operations with authenticated retrieval endpoints.
+
+## Authentication and production access
+
+Public API requests use an API key in the `x-api-key` header:
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/customers \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+Keep API keys on trusted servers. Never embed them in browser code, mobile applications, public repositories, or client-visible logs.
+
+## Asynchronous processing
+
+Some requests return before the underlying financial operation reaches a terminal state. An accepted or processing response does not necessarily mean funds reached the beneficiary.
+
+For asynchronous operations:
+
+- persist the returned identifiers and your request reference;
+- treat processing states as non-terminal;
+- verify and deduplicate webhook deliveries using `eventId`;
+- finalize your own records only from the appropriate terminal state;
+- use GET endpoints to reconcile delayed or ambiguous notifications.
+
+Webhook delivery state and transaction state are independent. For example, `fetch failed` means FossaPay could not deliver a webhook to your server; it does not mean the corresponding financial transaction failed.
+
+## Choose an integration path
 
 <CardGroup cols={2}>
-  <Card color="#0080FF"
-    title="Launch in a week"
-    icon="rocket"
-  >
-    Go live very fast. No heavy setup or compliance headaches.
+  <Card title="Create customers and wallets" icon="users" href="/concepts/customers">
+    Model individual customers, then provision NGN or stablecoin wallets.
   </Card>
-  <Card color="#0080FF"
-    title="Single API"
-    icon="code"
-  >
-    Everything you need through one unified API - from collections to payouts.
+  <Card title="Accept NGN collections" icon="building-columns" href="/guides/collections">
+    Receive recurring deposits through customer-specific bank accounts.
   </Card>
-  <Card color="#0080FF"
-    title="Real-time Operations"
-    icon="bolt"
-  >
-    Instant webhooks, real-time reconciliation, and immediate settlements.
+  <Card title="Accept checkout payments" icon="cart-shopping" href="/guides/checkouts">
+    Create one-time payment instructions for an exact NGN amount.
   </Card>
-  <Card color="#0080FF"
-    title="Bank-grade Security"
-    icon="shield-check"
-  >
-    99.9% uptime with enterprise-level security and encryption.
+  <Card title="Send NGN" icon="money-bill-transfer" href="/guides/ngn-transfers">
+    Choose between customer-funded transfers and business-funded payouts.
   </Card>
 </CardGroup>
 
-### Built for Neobanks and Fintechs
+## Documentation structure
 
-Whether you're building a digital bank, a payment platform, or a fintech product, FossaPay provides the foundation you need:
+- **Documentation** explains product concepts, lifecycle, implementation decisions, security, and operational guidance.
+- **API Reference** defines exact HTTP methods, paths, headers, parameters, request bodies, and response shapes.
 
-- **Neobanks** - Launch your own branded banking platform
-- **Lending Platforms** - Manage disbursements and collections
-- **Payment Processors** - Handle high-volume transactions
-- **Crypto Platforms** - Bridge NGN and stablecoins seamlessly
-- **Marketplaces** - Split payments and manage seller payouts
-
-### Getting Started
-
-<CardGroup cols={2}>
-  <Card color="#0080FF"
-    title="Quickstart"
-    icon="play"
-    href="/quickstart"
-  >
-    Get up and running in minutes with our quickstart guide
-  </Card>
-  <Card color="#0080FF"
-    title="API Reference"
-    icon="code"
-    href="/api-reference"
-  >
-    Explore our comprehensive API documentation
-  </Card>
-  <Card color="#0080FF"
-    title="White-Label Solution"
-    icon="building"
-    href="/white-label/overview"
-  >
-    Learn about our white-label neobank solution
-  </Card>
-</CardGroup>
-
-## Core Features
-
-### Collections API
-Accept payments through NGN wallets with instant webhook notifications on every transaction.
-
-### Payouts API
-Send NGN directly from your business master wallet. Transfers to customer wallets under your business are free, while payouts to other FossaPay businesses and external Nigerian bank accounts use the charged payout rail.
-
-### Wallet Infrastructure
-Create customer wallets, hold balances in NGN and stablecoins, and manage ledgers with ease.
+Start with the [Quickstart](/quickstart), then use the relevant product guide alongside its API Reference pages while implementing.
 
 ## Support
 
-Need help? We're here for you:
-
-- **Email**: product@fossapay.com
-- **Documentation**: You're already here!
-- **Dashboard**: [dashboard.fossapay.com](https://dashboard.fossapay.com)
-
-<Note>
-  Ready to get started? [Get API Access](https://dashboard.fossapay.com/register) and go live in 2 weeks.
-</Note>
+For integration support, contact [product@fossapay.com](mailto:product@fossapay.com). Include the FossaPay resource ID, your merchant reference, and the timestamp. Never send API keys or webhook secrets.

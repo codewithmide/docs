@@ -1,13 +1,13 @@
 ---
 title: 'Calculate NGN Transfer Fee'
-api: 'GET https://api-production.fossapay.com/api/v1/transfers/fiat/calculate-fee'
+openapi: 'GET /api/v1/transfers/fiat/calculate-fee'
 description: 'Calculate the payout fee for an NGN transfer amount in NGN'
 ---
 
 ## Request
 
 <ParamField header="x-api-key" type="string" required>
-  API Key for authentication
+  Active production API key.
 </ParamField>
 
 ## Query Parameters
@@ -22,7 +22,7 @@ Fees are always calculated for **NGN** payouts. You do not pass a currency param
 
 ```bash
 curl -g 'https://api-production.fossapay.com/api/v1/transfers/fiat/calculate-fee?amount=50000' \
-  -H "x-api-key: your_api_key_here"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```javascript
@@ -32,7 +32,7 @@ const response = await fetch(
   {
     method: 'GET',
     headers: {
-      'x-api-key': 'your_api_key_here',
+      'x-api-key': process.env.FOSSAPAY_API_KEY,
     },
   }
 );
@@ -72,3 +72,12 @@ const feeData = await response.json();
 | `data.currency` | Always `NGN` for NGN payout fee quotes |
 | `data.feeAmount` | The fee charged for the payout |
 | `data.total` | `amount` + `feeAmount` (total debited including fee) |
+
+The quote reflects current fee configuration. Retrieve it before presenting the total debit; do not hard-code pricing.
+
+## Errors
+
+| Status | Typical cause |
+|---|---|
+| `400` | Amount is missing or cannot be quoted |
+| `401` | Missing or invalid API key |

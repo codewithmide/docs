@@ -80,7 +80,8 @@
             "schema": {
               "type": "string",
               "enum": ["asc", "desc"],
-              "default": "desc"
+              "default": "desc",
+              "description": "Case-insensitive. Values are normalized internally to ASC or DESC."
             }
           },
           {
@@ -295,7 +296,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -312,6 +314,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The wallet does not belong to the authenticated business",
             "content": {
               "application/json": {
                 "schema": {
@@ -361,6 +373,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The wallet does not belong to the authenticated business",
             "content": {
               "application/json": {
                 "schema": {
@@ -476,6 +498,16 @@
               }
             }
           },
+          "403": {
+            "description": "The wallet does not belong to the authenticated business",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Wallet not found",
             "content": {
@@ -527,6 +559,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The transaction does not belong to the authenticated business",
             "content": {
               "application/json": {
                 "schema": {
@@ -587,6 +629,36 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The source or destination wallet does not belong to the authenticated business",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transaction reference has already been used",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error, including a missing or blank narration",
             "content": {
               "application/json": {
                 "schema": {
@@ -835,53 +907,6 @@
         }
       }
     },
-    "/api/v1/wallets/{wallet_id}/balance": {
-      "get": {
-        "operationId": "CryptoWalletsController_getBalance",
-        "tags": ["Crypto Wallets"],
-        "summary": "Get wallet balance",
-        "parameters": [
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet balance retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CryptoWalletBalanceResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/wallets/crypto/master": {
       "get": {
         "operationId": "CryptoWalletsController_findMaster",
@@ -1080,7 +1105,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER"]
+              "enum": ["deposit", "withdrawal", "p2p_internal", "p2p_external"]
             }
           },
           {
@@ -1265,7 +1290,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0
             }
           },
           {
@@ -1273,7 +1299,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": ["usdc", "usdt"]
             }
           }
         ],
@@ -2008,7 +2035,8 @@
         "required": ["customerId", "walletName", "walletReference"],
         "properties": {
           "customerId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "walletName": {
             "type": "string"
@@ -2021,7 +2049,7 @@
       },
       "FiatWalletCreated": {
         "type": "object",
-        "required": ["walletId", "bankName", "bankCode", "accountNumber"],
+        "required": ["walletId", "bankName", "bankCode", "accountName", "accountNumber"],
         "properties": {
           "walletId": {
             "type": "string"
@@ -2032,6 +2060,9 @@
           "bankCode": {
             "type": "string"
           },
+          "accountName": {
+            "type": "string"
+          },
           "accountNumber": {
             "type": "string"
           }
@@ -2040,10 +2071,15 @@
       },
       "FiatWalletCreateResponse": {
         "type": "object",
-        "required": ["success", "message", "data"],
+        "required": ["status", "statusCode", "message", "data"],
         "properties": {
-          "success": {
-            "type": "boolean"
+          "status": {
+            "type": "string",
+            "const": "success"
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 201
           },
           "message": {
             "type": "string"
@@ -2062,7 +2098,8 @@
             "type": "string"
           },
           "customerId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "availableBalance": {
             "type": "string"
@@ -2149,10 +2186,15 @@
       },
       "FiatMasterWalletResponse": {
         "type": "object",
-        "required": ["success", "message", "data"],
+        "required": ["status", "statusCode", "message", "data"],
         "properties": {
-          "success": {
-            "type": "boolean"
+          "status": {
+            "type": "string",
+            "const": "success"
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 200
           },
           "message": {
             "type": "string"
@@ -2174,7 +2216,8 @@
             "enum": ["deposit", "withdrawal"]
           },
           "walletId": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet identifier returned by the custody provider. It is distinct from the internal crypto-address UUID used by some retrieval endpoints."
           },
           "accountNumber": {
             "type": "string"
@@ -2268,7 +2311,7 @@
       },
       "FiatWalletTransferRequest": {
         "type": "object",
-        "required": ["fromAccount", "toAccount", "amount", "reference"],
+        "required": ["fromAccount", "toAccount", "amount", "reference", "narration"],
         "properties": {
           "fromAccount": {
             "type": "string"
@@ -2283,17 +2326,25 @@
             "type": "string"
           },
           "narration": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": ".*\\S.*"
           }
         },
         "additionalProperties": false
       },
       "FiatWalletTransferResponse": {
         "type": "object",
-        "required": ["success", "message"],
+        "required": ["status", "statusCode", "message"],
         "properties": {
-          "success": {
-            "type": "boolean"
+          "status": {
+            "type": "string",
+            "const": "success"
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 201
           },
           "message": {
             "type": "string"
@@ -2418,7 +2469,8 @@
         ],
         "properties": {
           "customerId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "destinationBankCode": {
             "type": "string"
@@ -2512,10 +2564,11 @@
         "properties": {
           "network": {
             "type": "string",
-            "enum": ["solana", "evm"]
+            "enum": ["solana"]
           },
           "customerId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -2532,17 +2585,22 @@
           },
           "network": {
             "type": "string",
-            "enum": ["solana", "evm"]
+            "enum": ["solana"]
           }
         },
         "additionalProperties": true
       },
       "CryptoWalletCreateResponse": {
         "type": "object",
-        "required": ["success", "message", "data"],
+        "required": ["status", "statusCode", "message", "data"],
         "properties": {
-          "success": {
-            "type": "boolean"
+          "status": {
+            "type": "string",
+            "const": "success"
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 201
           },
           "message": {
             "type": "string"
@@ -2575,7 +2633,7 @@
           },
           "network": {
             "type": "string",
-            "enum": ["solana", "evm"]
+            "enum": ["solana"]
           },
           "tokens": {
             "type": "object",
@@ -2586,58 +2644,17 @@
         },
         "additionalProperties": true
       },
-      "CryptoWalletBalanceItem": {
+      "CryptoMasterWalletResponse": {
         "type": "object",
-        "required": ["currency", "available_balance", "ledger_balance", "pending_balance"],
-        "properties": {
-          "currency": {
-            "type": "string"
-          },
-          "available_balance": {
-            "type": "number"
-          },
-          "ledger_balance": {
-            "type": "number"
-          },
-          "pending_balance": {
-            "type": "number"
-          }
-        },
-        "additionalProperties": true
-      },
-      "CryptoWalletBalanceResponse": {
-        "type": "object",
-        "required": ["status", "data"],
+        "required": ["status", "statusCode", "message", "data"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["success", "error"]
+            "const": "success"
           },
-          "data": {
-            "type": "object",
-            "required": ["wallet_id", "balances"],
-            "properties": {
-              "wallet_id": {
-                "type": "string"
-              },
-              "balances": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/CryptoWalletBalanceItem"
-                }
-              }
-            },
-            "additionalProperties": true
-          }
-        },
-        "additionalProperties": true
-      },
-      "CryptoMasterWalletResponse": {
-        "type": "object",
-        "required": ["success", "message", "data"],
-        "properties": {
-          "success": {
-            "type": "boolean"
+          "statusCode": {
+            "type": "integer",
+            "const": 200
           },
           "message": {
             "type": "string"
@@ -2692,7 +2709,7 @@
           "status": {
             "type": "string"
           },
-          "amountInCrypto": {
+          "tokenAmount": {
             "type": "string"
           },
           "tokenSymbol": {
@@ -2829,14 +2846,16 @@
           },
           "network": {
             "type": "string",
-            "enum": ["solana", "evm"]
+            "enum": ["solana"]
           },
           "currency": {
             "type": "string",
             "enum": ["usdc", "usdt"]
           },
           "amount": {
-            "type": "number"
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Gross token amount. FossaPay deducts the quoted fee and sends the remainder to the recipient."
           }
         },
         "additionalProperties": false
@@ -2869,7 +2888,8 @@
                 "additionalProperties": true
               },
               "network": {
-                "type": "string"
+                "type": "string",
+                "enum": ["SOLANA"]
               },
               "recipientAddress": {
                 "type": "string"

@@ -1,6 +1,6 @@
 ---
 title: 'Expire Checkout'
-api: 'POST https://api-production.fossapay.com/api/v1/checkouts/{id}/expire'
+openapi: 'POST /api/v1/checkouts/{id}/expire'
 description: 'Expire a pending checkout wallet before its scheduled expiry'
 ---
 
@@ -14,7 +14,7 @@ description: 'Expire a pending checkout wallet before its scheduled expiry'
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6/expire \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```json

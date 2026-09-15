@@ -1,6 +1,6 @@
 ---
 title: 'Create Master Wallet Payout'
-api: 'POST https://api-production.fossapay.com/api/v1/payouts'
+openapi: 'POST /api/v1/payouts'
 description: 'Send NGN directly from your business master wallet'
 ---
 
@@ -71,7 +71,7 @@ The destination account number determines how the payout is routed:
 ```bash
 curl --request POST \
   --url https://api-production.fossapay.com/api/v1/payouts \
-  --header 'x-api-key: YOUR_LIVE_API_KEY' \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
   --header 'X-Idempotency-Key: payout-order-10025-v1' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -80,7 +80,7 @@ curl --request POST \
     "reference": "PAYOUT-10025",
     "destinationBankCode": "058",
     "destinationBankName": "Guaranty Trust Bank",
-    "destinationAccountName": "ADA LOVELACE",
+    "destinationAccountName": "JOHN DOE",
     "destinationAccountNumber": "0123456789",
     "remarks": "Vendor settlement",
     "metadata": {
@@ -112,7 +112,7 @@ The endpoint returns HTTP `202`. A same-business transfer may already be `comple
     "recipient": {
       "bankCode": "058",
       "bankName": "Guaranty Trust Bank",
-      "accountName": "ADA LOVELACE",
+      "accountName": "JOHN DOE",
       "accountNumber": "0123456789"
     },
     "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
@@ -155,4 +155,3 @@ The endpoint returns HTTP `202`. A same-business transfer may already be `comple
 <Warning>
   Treat `processing` as non-terminal. Confirm the outcome using a signed payout webhook or either retrieval endpoint before marking a payout final.
 </Warning>
-

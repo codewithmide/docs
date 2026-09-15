@@ -1,6 +1,6 @@
 ---
 title: 'Get Checkout by Reference'
-api: 'GET https://api-production.fossapay.com/api/v1/checkouts/reference/{reference}'
+openapi: 'GET /api/v1/checkouts/reference/{reference}'
 description: 'Retrieve a checkout wallet using your merchant reference'
 ---
 
@@ -14,7 +14,7 @@ description: 'Retrieve a checkout wallet using your merchant reference'
 
 ```bash
 curl https://api-production.fossapay.com/api/v1/checkouts/reference/ORDER-10025 \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```json

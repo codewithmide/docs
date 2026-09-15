@@ -1,6 +1,6 @@
 ---
 title: 'Get Checkout by ID'
-api: 'GET https://api-production.fossapay.com/api/v1/checkouts/{id}'
+openapi: 'GET /api/v1/checkouts/{id}'
 description: 'Retrieve a checkout wallet using its FossaPay ID'
 ---
 
@@ -14,7 +14,7 @@ description: 'Retrieve a checkout wallet using its FossaPay ID'
 
 ```bash
 curl https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6 \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```json

@@ -1,662 +1,153 @@
 ---
 title: Webhooks
-description: 'Real-time event notifications from FossaPay'
+description: 'Securely receive asynchronous payment and transfer events from FossaPay'
 ---
 
-## What are Webhooks?
+FossaPay sends webhook events when asynchronous financial operations change state. Use them for fast updates, but retain API-based reconciliation because delivery failure and transaction failure are different conditions.
 
-Webhooks are HTTP callbacks that FossaPay sends to your server when events occur in your account. They enable you to receive real-time notifications about payments, payouts, settlements, and other important events.
+## Configure an endpoint
+
+Add a public HTTPS endpoint from **Dashboard → Settings → Webhooks**, then securely store the generated secret. Every active webhook configured for your merchant receives applicable merchant events; event-by-event subscription filtering is not currently part of the public integration.
+
+Your endpoint should:
+
+- accept `POST` requests over HTTPS;
+- verify the signature before trusting the event;
+- return a 2xx response quickly;
+- queue business processing outside the request;
+- tolerate duplicate and out-of-order delivery.
+
+## Delivery envelope
+
+```json
+{
+  "eventId": "evt_mu1pstuy_63a894ef9100ec4b",
+  "eventType": "deposit.completed",
+  "data": {
+    "transactionId": "44444444-4444-4444-8444-444444444444",
+    "status": "success"
+  },
+  "timestamp": "2026-09-14T20:48:02.222Z"
+}
+```
+
+The fields inside `data` depend on the event type. Build handlers around stable identifiers and the event's documented payload rather than assuming all event types share one transaction shape.
+
+### Delivery headers
+
+| Header | Meaning |
+|---|---|
+| `x-fossapay-Signature` | Lowercase hexadecimal HMAC-SHA256 signature |
+| `X-Event-Id` | Same delivery identifier as `body.eventId` |
+| `X-Event-Type` | Same event name as `body.eventType` |
+| `X-Retry-Count` | Present on retry attempts |
+
+HTTP header names are case-insensitive.
+
+## Verify the signature
+
+FossaPay computes HMAC-SHA256 over exactly `JSON.stringify(body.data)` using your webhook secret. It does **not** sign the complete envelope.
+
+```javascript
+import crypto from 'node:crypto';
+
+export function verifyFossaPayWebhook(body, signature, secret) {
+  if (!body || typeof body.data !== 'object' || !secret) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(body.data))
+    .digest('hex');
+
+  const received = String(signature || '');
+  if (received.length !== expected.length) return false;
+
+  return crypto.timingSafeEqual(
+    Buffer.from(received, 'utf8'),
+    Buffer.from(expected, 'utf8')
+  );
+}
+```
+
+<Warning>
+  Preserve the parsed `data` key order when re-serializing in another language. Do not pretty-print it, sort its keys, or include `eventId`, `eventType`, or `timestamp` in the signed string.
+</Warning>
+
+## Acknowledge and process safely
+
+```javascript
+app.post('/webhooks/fossapay', async (req, res) => {
+  const signature = req.get('x-fossapay-signature');
+  if (!verifyFossaPayWebhook(req.body, signature, process.env.FOSSAPAY_WEBHOOK_SECRET)) {
+    return res.sendStatus(401);
+  }
+
+  const accepted = await insertInboxEventIfNew({
+    eventId: req.body.eventId,
+    eventType: req.body.eventType,
+    data: req.body.data
+  });
+
+  res.sendStatus(200);
+  if (accepted) await queueWebhookEvent(req.body.eventId);
+});
+```
+
+Place a unique constraint on `eventId`. Within your worker, make each financial state transition idempotent using the relevant transaction, checkout, payout, or reference identifier too.
+
+## Event catalogue
+
+| Area | Events | Consumer action |
+|---|---|---|
+| Deposits | `deposit.completed` | Reconcile the transaction and credit/notify once |
+| Customer withdrawals | `withdrawal.completed`, `withdrawal.failed` | Finalize or fail the customer-funded withdrawal |
+| Stablecoin transfers | `transfer.completed`, `transfer.failed` | Finalize or fail the transfer |
+| Wallet movement | `wallet.balance.updated` | Refresh or reconcile the affected wallet |
+| Checkouts | `checkout.completed`, `checkout.failed`, `checkout.expired`, `checkout.reversed` | Fulfill only completed checkouts; stop or reverse fulfillment for other terminal states as appropriate |
+| Master payouts | `payout.completed`, `payout.failed`, `payout.reversed` | Finalize the business-funded payout |
+
+See [Webhook Events](/api-reference/webhooks/events) for event-specific examples.
+
+## Retries and delivery status
+
+Any non-2xx response, network error, DNS failure, or timeout marks that delivery attempt as failed. FossaPay schedules up to five retries with exponential backoff from five minutes: approximately 5, 10, 20, 40, and 80 minutes. A background worker checks due deliveries every five minutes, so actual delivery can occur slightly later.
 
 <Info>
-  Webhooks eliminate the need for polling and ensure your application stays in sync with FossaPay in real-time.
+  A later successful retry sets the webhook delivery to delivered. It does not alter the underlying financial transaction, which may already be successful.
 </Info>
 
-## Why Use Webhooks?
+Use the dashboard webhook event log to inspect response status, error messages, retry count, and delivery state, and to retry an eligible failed event. Even with retries, your application should periodically reconcile important pending operations through their GET endpoints.
+
+## Event-specific reconciliation
+
+| Event family | Reconciliation endpoint |
+|---|---|
+| Customer NGN wallet activity | [Wallet transactions](/api-reference/virtual-account/wallet-transactions) or [transaction by ID](/api-reference/virtual-account/wallet-transaction) |
+| Stablecoin wallet activity | [Crypto wallet transactions](/api-reference/crypto-wallets/wallet-transactions) or [transaction by ID](/api-reference/crypto-wallets/wallet-transaction) |
+| Checkout | [Get checkout by ID](/api-reference/checkouts/get-checkout) or [by reference](/api-reference/checkouts/get-checkout-by-reference) |
+| Master payout | [Get payout by ID](/api-reference/payouts/get-payout) or [by reference](/api-reference/payouts/get-payout-by-reference) |
+
+## Security and operations
+
+- Keep webhook secrets out of source control, client applications, and logs.
+- Reject an invalid or missing signature.
+- Rotate a secret if it may have been exposed, then update your receiver atomically.
+- Validate `eventType` against an allowlist and ignore unknown events safely.
+- Store the original envelope for audit with appropriate encryption and retention controls.
+- Monitor non-2xx rates and queue latency.
+- Do not rely on source-IP allowlisting as a substitute for HMAC verification.
+
+## Testing
+
+There is no public webhook simulation endpoint. Test the handler locally with a fixture signed by the same algorithm, then perform a controlled production operation. Confirm signature verification, duplicate handling, queue processing, and reconciliation before processing regular volume.
+
+## API reference
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Real-time Updates" icon="bolt">
-    Get notified immediately when events occur
+  <Card title="Webhook overview" icon="webhook" href="/api-reference/webhooks/overview">
+    Delivery structure and verification reference.
   </Card>
-  <Card color="#0080FF" title="Reduce Polling" icon="clock">
-    No need to constantly check for updates
-  </Card>
-  <Card color="#0080FF" title="Automated Workflows" icon="robot">
-    Trigger actions automatically based on events
-  </Card>
-  <Card color="#0080FF" title="Better UX" icon="smile">
-    Update your users instantly about transaction status
-  </Card>
-</CardGroup>
-
-## Webhook Events
-
-### Checkout Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `checkout.completed` | Checkout payment completed | After the exact payable amount is confirmed |
-| `checkout.failed` | Checkout payment failed | When processing fails, including amount mismatch |
-| `checkout.expired` | Checkout expired | When a pending checkout passes or reaches its expiry |
-| `checkout.reversed` | Checkout payment reversed | After checkout funds are returned to the sender |
-
-### Master Wallet Payout Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `payout.completed` | Master-wallet payout completed | When the beneficiary payout succeeds |
-| `payout.failed` | Master-wallet payout failed | When the payout fails without a confirmed full reversal |
-| `payout.reversed` | Master-wallet payout reversed | When the payout funds are confirmed returned |
-
-### Deposit Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `deposit.completed` | Deposit completed successfully | When a deposit is successfully processed |
-
-### Withdrawal Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `withdrawal.completed` | Withdrawal completed successfully | When a withdrawal is successfully processed |
-
-### Transfer Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `transfer.completed` | Transfer completed successfully | When a transfer is successfully processed |
-| `transfer.failed` | Transfer failed | When a transfer fails to process |
-
-### Wallet Events
-
-| Event | Description | When it fires |
-|-------|-------------|---------------|
-| `wallet.balance.updated` | Wallet balance updated | When a wallet balance is updated |
-
-## Setting Up Webhooks
-
-### Configure Webhook URL
-
-Set your webhook endpoint in the dashboard or via API:
-
-**Via Dashboard:**
-1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
-2. Enter your webhook URL
-3. Copy the webhook secret
-
-**Via API:**
-```javascript
-await fossapay.webhooks.configure({
-  url: 'https://your-app.com/webhooks/fossapay',
-  events: [
-    'deposit.completed',
-    'withdrawal.completed',
-    'transfer.completed',
-    'transfer.failed',
-    'wallet.balance.updated',
-    'checkout.completed',
-    'checkout.failed',
-    'checkout.expired',
-    'checkout.reversed',
-    'payout.completed',
-    'payout.failed',
-    'payout.reversed'
-  ],
-  secret: 'your-webhook-secret' // Optional: for signature verification
-});
-```
-
-### Webhook URL Requirements
-
-Your webhook endpoint must:
-- Use HTTPS (HTTP not allowed in production)
-- Respond within 30 seconds
-- Return a 2xx status code for successful receipt
-- Handle duplicate events gracefully
-
-<Warning>
-  Webhook URLs must be publicly accessible. Use services like [ngrok](https://ngrok.com) for local development.
-</Warning>
-
-## Webhook Payload
-
-All webhooks follow this structure:
-
-```json
-{
-  "eventType": "deposit.completed",
-  "eventId": "evt_abc123xyz",
-  "timestamp": "2024-01-15T10:30:45Z",
-  "data": {
-    "transactionId": "txn_001",
-    "customerId": "cus_123",
-    "sender": {
-      "address": "0x123...",
-      "chain": "Ethereum"
-    },
-    "recipient": {
-      "address": "0x456...",
-      "chain": "Ethereum"
-    },
-    "amount": 1000000,
-    "currency": "USDT",
-    "reference": "dep-20240115-001",
-    "status": "completed",
-    "transactionType": "deposit",
-    "blockchain": "Ethereum",
-    "transactionHash": "0x789...",
-    "explorerLink": "https://etherscan.io/tx/0x789...",
-    "timestamp": "2024-01-15T10:30:40Z"
-  }
-}
-```
-
-## Implementing Webhook Handler
-
-### Basic Handler (Node.js/Express)
-
-```javascript
-const express = require('express');
-const crypto = require('crypto');
-const app = express();
-
-app.use(express.json());
-
-app.post('/webhooks/fossapay', async (req, res) => {
-  // 1. Verify webhook signature
-  const signature = req.headers['x-fossapay-signature'];
-  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
-  if (!verifySignature(req.body.data, signature, secret)) {
-    return res.status(401).send('Invalid signature');
-  }
-
-  // 2. Respond quickly (within 30 seconds)
-  res.status(200).send('Webhook received');
-
-  // 3. Process webhook asynchronously
-  processWebhook(req.body).catch(err => {
-    console.error('Webhook processing failed:', err);
-  });
-});
-
-async function processWebhook(payload) {
-  const { eventType, data } = payload;
-
-  switch (eventType) {
-    case 'deposit.completed':
-      await handleDepositCompleted(data);
-      break;
-
-    case 'withdrawal.completed':
-      await handleWithdrawalCompleted(data);
-      break;
-
-    case 'transfer.completed':
-      await handleTransferCompleted(data);
-      break;
-
-    case 'transfer.failed':
-      await handleTransferFailed(data);
-      break;
-
-    case 'wallet.balance.updated':
-      await handleWalletBalanceUpdated(data);
-      break;
-
-    case 'payout.completed':
-      await handlePayoutCompleted(data);
-      break;
-
-    case 'payout.failed':
-    case 'payout.reversed':
-      await handlePayoutTerminalState(eventType, data);
-      break;
-
-    default:
-      console.log('Unhandled event:', eventType);
-  }
-}
-
-async function handleDepositCompleted(data) {
-  // Credit customer wallet
-  await db.transactions.create({
-    id: data.transactionId,
-    customer_id: data.customerId,
-    amount: data.amount,
-    type: 'credit',
-    status: 'completed'
-  });
-
-  await db.wallets.increment({
-    customer_id: data.customerId,
-    amount: data.amount
-  });
-
-  // Notify customer
-  await sendNotification(data.customerId, {
-    title: 'Deposit Received',
-    message: `Your wallet has been credited with ${data.amount} ${data.currency}`
-  });
-}
-
-function verifySignature(data, signature, secret) {
-  const hash = crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(data))
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(hash, 'hex')
-  );
-}
-
-app.listen(3000);
-```
-
-### Python/Flask Example
-
-```python
-from flask import Flask, request, jsonify
-import hashlib
-import hmac
-import json
-
-app = Flask(__name__)
-
-@app.route('/webhooks/fossapay', methods=['POST'])
-def handle_webhook():
-    # Verify signature
-    signature = request.headers.get('x-fossapay-signature')
-    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
-    payload = request.json
-    if not verify_signature(payload['data'], signature, secret):
-        return 'Invalid signature', 401
-
-    # Respond quickly
-    # Process asynchronously
-    process_webhook.delay(payload)  # Using Celery
-
-    return 'Webhook received', 200
-
-def verify_signature(data, signature, secret):
-    serialized_data = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
-    hash = hmac.new(
-        secret.encode(),
-        serialized_data.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-
-    return hmac.compare_digest(hash, signature)
-
-def process_webhook(payload):
-    event = payload['eventType']
-    data = payload['data']
-
-    if event == 'deposit.completed':
-        handle_deposit_completed(data)
-    elif event == 'withdrawal.completed':
-        handle_withdrawal_completed(data)
-    elif event == 'transfer.completed':
-        handle_transfer_completed(data)
-    elif event == 'transfer.failed':
-        handle_transfer_failed(data)
-    elif event == 'wallet.balance.updated':
-        handle_wallet_balance_updated(data)
-    elif event == 'payout.completed':
-        handle_payout_completed(data)
-    elif event in ('payout.failed', 'payout.reversed'):
-        handle_payout_terminal_state(event, data)
-```
-
-## Security
-
-### Signature Verification
-
-FossaPay signs all webhooks with HMAC SHA256:
-
-```javascript
-const crypto = require('crypto');
-
-function verifyWebhookSignature(data, signature, secret) {
-  const hash = crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(data))
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(hash),
-    Buffer.from(signature)
-  );
-}
-```
-
-
-<Tip>
-  Use IP whitelisting as an additional layer of security, not as a replacement for signature verification.
-</Tip>
-
-## Retry Logic
-
-If your endpoint doesn't respond with a 2xx status, FossaPay retries:
-
-| Attempt | Delay |
-|---------|-------|
-| 1st retry | 5 minutes |
-| 2nd retry | 30 minutes |
-| 3rd retry | 2 hours |
-| 4th retry | 6 hours |
-| 5th retry | 24 hours |
-
-After 5 failed attempts, the webhook is marked as failed and no more retries occur.
-
-<Warning>
-  Check your webhook logs in the dashboard for failed deliveries and investigate issues promptly.
-</Warning>
-
-## Idempotency
-
-Webhooks may be delivered more than once. Implement idempotent handling:
-
-```javascript
-async function handleDepositCompleted(data) {
-  const existingTransaction = await db.transactions.findOne({
-    id: data.transactionId
-  });
-
-  if (existingTransaction) {
-    console.log('Transaction already processed');
-    return; // Skip duplicate
-  }
-
-  // Process deposit
-  await db.transactions.create({
-    id: data.transactionId,
-    // ... other fields
-  });
-}
-```
-
-## Testing Webhooks
-
-### Local Testing with ngrok
-
-```bash
-# Start ngrok
-ngrok http 3000
-
-# Use the HTTPS URL in FossaPay dashboard
-# Example: https://abc123.ngrok.io/webhooks/fossapay
-```
-
-### Simulate Webhooks
-
-Test your webhook handler with simulated events:
-
-```bash
-curl -X POST https://api-production.fossapay.com/api/v1/webhooks/simulate \
-  -H "Authorization: Bearer fk_production_DTKUG..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event": "deposit.completed",
-    "customer_id": "cus_123",
-    "amount": 1000000,
-    "currency": "USDT"
-  }'
-```
-
-### Webhook Logs
-
-View webhook delivery logs in your dashboard:
-1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
-2. Scroll down to "Webhook Events"
-3. Filter by event type
-4. Replay failed webhooks
-
-## Best Practices
-
-<AccordionGroup>
-  <Accordion title="Respond Quickly">
-    Always return 200 immediately, then process asynchronously:
-    ```javascript
-    app.post('/webhooks', (req, res) => {
-      res.status(200).send('OK');
-      processAsync(req.body); // Don't await
-    });
-    ```
-  </Accordion>
-
-  <Accordion title="Verify Signatures">
-    Never trust webhooks without signature verification:
-    ```javascript
-    if (!verifySignature(payload, signature, secret)) {
-      return res.status(401).send('Unauthorized');
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="Handle Duplicates">
-    Use event_id or transaction_id to detect duplicates:
-    ```javascript
-    const processed = await redis.get(`webhook:${event_id}`);
-    if (processed) return;
-
-    await redis.set(`webhook:${event_id}`, '1', 'EX', 86400);
-    ```
-  </Accordion>
-
-  <Accordion title="Log Everything">
-    Log all webhook receipts for debugging and auditing:
-    ```javascript
-    logger.info('Webhook received', {
-      event_id: payload.eventId,
-      eventType: payload.eventType,
-      timestamp: payload.timestamp
-    });
-    ```
-  </Accordion>
-
-  <Accordion title="Monitor Failures">
-    Set up alerts for webhook failures:
-    ```javascript
-    if (failureCount > threshold) {
-      await sendAlert('Webhook failures detected');
-    }
-    ```
-  </Accordion>
-</AccordionGroup>
-
-## Webhook Payload Examples
-
-### Deposit Completed (Crypto)
-
-```json
-{
-  "eventType": "deposit.completed",
-  "eventId": "evt_abc123",
-  "timestamp": "2024-01-15T10:30:45Z",
-  "data": {
-    "transactionId": "txn_001",
-    "customerId": "cus_123",
-    "sender": {
-      "address": "0x123...",
-      "chain": "Ethereum"
-    },
-    "recipient": {
-      "address": "0x456...",
-      "chain": "Ethereum"
-    },
-    "amount": 1000000,
-    "currency": "USDT",
-    "reference": "dep-20240115-001",
-    "status": "completed",
-    "transactionType": "deposit",
-    "blockchain": "Ethereum",
-    "transactionHash": "0x789...",
-    "explorerLink": "https://etherscan.io/tx/0x789...",
-    "timestamp": "2024-01-15T10:30:40Z"
-  }
-}
-```
-
-### Deposit Completed (NGN)
-
-```json
-{
-  "eventType": "deposit.completed",
-  "eventId": "evt_def456",
-  "timestamp": "2024-01-15T11:00:00Z",
-  "data": {
-    "transactionId": "txn_002",
-    "customerId": "cus_456",
-    "sender": {
-      "accountName": "John Doe",
-      "accountNumber": "0987654321",
-      "bankName": "GTBank"
-    },
-    "recipient": {
-      "accountName": "Jane Smith",
-      "accountNumber": "0123456789",
-      "bankName": "GTBank"
-    },
-    "amount": 50000,
-    "currency": "NGN",
-    "fee": 500,
-    "reference": "dep-20240115-002",
-    "status": "completed",
-    "transactionType": "deposit",
-    "notes": "Bank transfer deposit",
-    "timestamp": "2024-01-15T11:00:00Z"
-  }
-}
-```
-
-### Withdrawal Completed
-
-```json
-{
-  "eventType": "withdrawal.completed",
-  "eventId": "evt_xyz789",
-  "timestamp": "2024-01-15T11:45:23Z",
-  "data": {
-    "transactionId": "txn_003",
-    "customerId": "cus_789",
-    "recipient": {
-      "accountName": "Jane Smith",
-      "accountNumber": "0123456789",
-      "bankName": "GTBank"
-    },
-    "amount": 25000,
-    "currency": "NGN",
-    "reference": "wth-20240115-001",
-    "status": "completed",
-    "transactionType": "withdrawal",
-    "timestamp": "2024-01-15T11:45:20Z"
-  }
-}
-```
-
-### Transfer Completed
-
-```json
-{
-  "eventType": "transfer.completed",
-  "eventId": "evt_transfer1",
-  "timestamp": "2024-01-15T12:30:00Z",
-  "data": {
-    "transactionId": "txn_004",
-    "customerId": "cus_123",
-    "sender": {
-      "address": "0x123...",
-      "chain": "Ethereum"
-    },
-    "recipient": {
-      "address": "0x456...",
-      "chain": "Ethereum"
-    },
-    "amount": 500000,
-    "currency": "USDT",
-    "reference": "trf-20240115-001",
-    "status": "completed",
-    "transactionType": "transfer",
-    "blockchain": "Ethereum",
-    "transactionHash": "0xabc...",
-    "timestamp": "2024-01-15T12:30:00Z"
-  }
-}
-```
-
-### Transfer Failed
-
-```json
-{
-  "eventType": "transfer.failed",
-  "eventId": "evt_transfer2",
-  "timestamp": "2024-01-15T13:15:00Z",
-  "data": {
-    "transactionId": "txn_005",
-    "customerId": "cus_456",
-    "sender": {
-      "address": "0x789...",
-      "chain": "Ethereum"
-    },
-    "recipient": {
-      "address": "0xabc...",
-      "chain": "Ethereum"
-    },
-    "amount": 300000,
-    "currency": "USDT",
-    "reference": "trf-20240115-002",
-    "status": "failed",
-    "transactionType": "transfer",
-    "blockchain": "Ethereum",
-    "transactionHash": "0xdef...",
-    "timestamp": "2024-01-15T13:15:00Z"
-  }
-}
-```
-
-### Wallet Balance Updated
-
-```json
-{
-  "eventType": "wallet.balance.updated",
-  "eventId": "evt_balance1",
-  "timestamp": "2024-01-15T14:00:00Z",
-  "data": {
-    "fromAccount": {
-      "accountNumber": "0123456789",
-      "accountName": "Main Wallet",
-      "bankName": "GTBank"
-    },
-    "toAccount": {
-      "accountNumber": "0987654321",
-      "accountName": "Savings Wallet",
-      "bankName": "GTBank"
-    },
-    "amount": 25000,
-    "currency": "NGN",
-    "reference": "bal-20240115-001",
-    "type": "withdrawal/deposit",
-    "customerId": "cus_123",
-    "narration": "Transfer between accounts",
-    "timestamp": "2024-01-15T14:00:00Z"
-  }
-}
-```
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card color="#0080FF" title="Configure Webhooks" icon="gear" href="https://dashboard.fossapay.com/settings?tab=webhooks">
-    Set up your webhook endpoint
-  </Card>
-  <Card color="#0080FF" title="View Webhook Logs" icon="list" href="https://dashboard.fossapay.com/settings?tab=webhooks">
-    Monitor webhook deliveries
-  </Card>
-  <Card color="#0080FF" title="Collections Guide" icon="book" href="/guides/collections">
-    Handle payment webhooks
-  </Card>
-  <Card color="#0080FF" title="Payouts Guide" icon="book" href="/guides/payouts">
-    Handle payout webhooks
+  <Card title="Webhook events" icon="bolt" href="/api-reference/webhooks/events">
+    Event names and payload examples.
   </Card>
 </CardGroup>

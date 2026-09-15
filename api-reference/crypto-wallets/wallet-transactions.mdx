@@ -1,6 +1,6 @@
 ---
 title: 'Get All Wallet Transactions'
-api: 'GET https://api-production.fossapay.com/api/v1/wallets/crypto/{walletId}/transactions'
+openapi: 'GET /api/v1/wallets/crypto/{walletId}/transactions'
 description: 'Retrieve all transactions for a crypto wallet'
 ---
 
@@ -27,7 +27,7 @@ description: 'Retrieve all transactions for a crypto wallet'
 </ParamField>
 
 <ParamField query="transactionType" type="string">
-  Filter by transaction type: `DEPOSIT`, `WITHDRAWAL`, `TRANSFER`
+  Filter by the lowercase transaction values supported by the API, such as `deposit` or `withdrawal`.
 </ParamField>
 
 <ParamField query="startDate" type="string">
@@ -41,26 +41,25 @@ description: 'Retrieve all transactions for a crypto wallet'
 ## Request Example
 
 ```bash
-curl -X GET "https://api-production.fossapay.com/api/v1/wallets/crypto/user:u3d/transactions?page=1&limit=10&transactionType=DEPOSIT" \
-  -H "x-api-key: your_api_key_here"
+curl -X GET "https://api-production.fossapay.com/api/v1/wallets/crypto/55555555-5555-4555-8555-555555555555/transactions?page=1&limit=10&transactionType=deposit" \
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```javascript
 const url = new URL(
-  'https://api-production.fossapay.com/api/v1/wallets/crypto/user:u3d/transactions'
+  'https://api-production.fossapay.com/api/v1/wallets/crypto/55555555-5555-4555-8555-555555555555/transactions'
 );
 
 url.searchParams.set('page', '1');
 url.searchParams.set('limit', '10');
-url.searchParams.set('transactionType', 'DEPOSIT');
+url.searchParams.set('transactionType', 'deposit');
 url.searchParams.set('startDate', '2024-01-01T00:00:00Z');
 url.searchParams.set('endDate', '2024-12-31T23:59:59Z');
 
 const response = await fetch(url.toString(), {
   method: 'GET',
   headers: {
-    'x-api-key': 'your_api_key_here',
-    'Content-Type': 'application/json',
+    'x-api-key': process.env.FOSSAPAY_API_KEY,
   },
 });
 
@@ -89,17 +88,17 @@ console.log(transactions);
         "externalReference": "76c230a2-dcbd-4b40-a671-7db8d055d1c6",
         "transactionType": "deposit",
         "status": "failed",
-        "amountInCrypto": "10.00000000",
-        "tokenSymbol": "usdxm",
-        "tokenAddress": "z23BZbAiFRb6u5***64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenAmount": "10.00000000",
+        "tokenSymbol": "usdc",
+        "tokenAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
         "tokenDecimals": 6,
-        "senderAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "senderAddress": "7EcJ1eB6J3ggRrGkQWsT4ZP8dkqPZ4JmW4YRwR7Qp5cY",
+        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
         "transactionHash": null,
         "explorerLink": null,
         "blockchain": "solana",
-        "sourceWalletAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientWalletAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletAddress": "7EcJ1eB6J3ggRrGkQWsT4ZP8dkqPZ4JmW4YRwR7Qp5cY",
+        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
         "sourceWalletId": null,
         "recipientWalletId": null,
         "createdAt": "2026-01-08T00:43:44+01:00",
@@ -111,17 +110,17 @@ console.log(transactions);
         "externalReference": "58fdb6f8-9925-4982-a516-95aabf4a22d3",
         "transactionType": "deposit",
         "status": "failed",
-        "amountInCrypto": "10.00000000",
-        "tokenSymbol": "usdxm",
-        "tokenAddress": "z23BZbAiFRb6u5***64XjZPUud6dP6y2ZuKoYSM4LCY",
+        "tokenAmount": "10.00000000",
+        "tokenSymbol": "usdc",
+        "tokenAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
         "tokenDecimals": 6,
-        "senderAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "senderAddress": "7EcJ1eB6J3ggRrGkQWsT4ZP8dkqPZ4JmW4YRwR7Qp5cY",
+        "recipientAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
         "transactionHash": null,
         "explorerLink": null,
         "blockchain": "solana",
-        "sourceWalletAddress": "YcnysYh3Y***PxkazFyiTx76Upv12iP4sNGeHA2H4z2",
-        "recipientWalletAddress": "8aQ3Y97fxiX26P***kc3keoQEz5MtWBCVk4pEx96Sqeb",
+        "sourceWalletAddress": "7EcJ1eB6J3ggRrGkQWsT4ZP8dkqPZ4JmW4YRwR7Qp5cY",
+        "recipientWalletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
         "sourceWalletId": null,
         "recipientWalletId": null,
         "createdAt": "2026-01-08T00:38:24+01:00",
@@ -148,17 +147,9 @@ console.log(transactions);
 {
   "status": "error",
   "statusCode": 400,
-  "message": "Invalid request parameters"
-}
-```
-</ErrorResponse>
-
-<ErrorResponse code="404">
-```json Not Found
-{
-  "status": "error",
-  "statusCode": 404,
   "message": "Wallet not found"
 }
 ```
 </ErrorResponse>
+
+Missing and non-owned crypto wallets currently return HTTP `400`; invalid query fields return `422`; authentication failures return `401`.

@@ -24,7 +24,7 @@ Create customers, issue NGN virtual accounts, collect payments, send payouts, an
     title="Explore the API"
     icon="brackets-curly"
     color="#0080FF"
-    href="/api-reference/customers/index"
+    href="/api-reference/customers/create-customer"
     cta="View endpoint reference"
     arrow="true"
   >
@@ -56,13 +56,19 @@ Create the customer before provisioning their wallet. The returned customer ID c
 
 ```bash Create a customer
 curl -X POST https://api-production.fossapay.com/api/v1/customers \
-  -H "x-api-key: fk_production_xxxxxxxx" \
+  -H "x-api-key: $FOSSAPAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "firstName": "Amara",
-    "lastName": "Okafor",
-    "emailAddress": "amara@example.com",
-    "mobileNumber": "+2348012345678"
+    "firstName": "John",
+    "middleName": "Michael",
+    "lastName": "Doe",
+    "emailAddress": "john.doe@example.com",
+    "mobileNumber": "+2348012345678",
+    "dateOfBirth": "1990-08-15",
+    "address": "123 Example Street",
+    "city": "Lagos",
+    "country": "Nigeria",
+    "type": "individual"
   }'
 ```
 

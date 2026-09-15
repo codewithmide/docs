@@ -1,360 +1,307 @@
 ---
-title: 'Quickstart'
-description: 'Start building with FossaPay in 10 minutes'
+title: Quickstart
+description: 'Authenticate, create an individual customer, and provision an NGN wallet'
 ---
 
-## Get Started with FossaPay
+This Quickstart establishes the minimum working FossaPay integration: authenticate a server-side request, create an individual customer, provision the customer's NGN wallet, and retrieve the wallet for reconciliation.
 
-This quickstart guide will have you making your first API call in minutes. We'll create a customer, open an NGN wallet, use production-only credentials, and verify a real deposit webhook.
+<Info>
+  FossaPay currently supports production access only. All requests use the production API and can create or affect live financial resources.
+</Info>
+
+## What you will build
+
+By the end of this guide, your backend will be able to:
+
+1. authenticate with FossaPay;
+2. create a merchant-scoped individual customer;
+3. create that customer's dedicated NGN wallet;
+4. retrieve the wallet using its FossaPay ID; and
+5. receive and verify signed webhook events.
 
 ## Prerequisites
 
-Before you begin, make sure you have:
-- A FossaPay account ([Sign up here](https://dashboard.fossapay.com/register))
-- Your API keys from the [dashboard](https://dashboard.fossapay.com/settings?tab=api-keys)
-- Node.js installed (or your preferred programming language)
+Before making requests, you need:
 
-## Step 1: Get Your API Keys
+- a [FossaPay merchant account](https://dashboard.fossapay.com/register);
+- completed business verification;
+- two-factor authentication enabled for API-key management;
+- an active production API key from **Dashboard → Settings → API Keys**; and
+- `curl` or an equivalent HTTP client.
 
-<Steps>
-  <Step title="Sign up">
-    Create an account at [dashboard.fossapay.com](https://dashboard.fossapay.com/register)
-  </Step>
-  <Step title="Get Live Keys">
-    Navigate to **Settings** → **API Keys** and copy your production secret key (starts with `fk_production_`)
-  </Step>
-  <Step title="Store Securely">
-    Save your API key as an environment variable:
-    ```bash
-    export FOSSAPAY_SECRET_KEY="fk_production_DTKUG..."
-    ```
-  </Step>
-</Steps>
+Production API keys use the `fk_production_` prefix. Complete your integration and operational readiness checks before creating financial resources.
 
 <Warning>
-  FossaPay currently operates in production only. Any API call you make will hit production systems, so use small live amounts when you are validating your integration.
+  API keys authorize access to merchant financial resources. Keep them in a secret manager or protected server environment. Never expose them in browser code, mobile applications, public repositories, screenshots, or support messages.
 </Warning>
 
-## Step 2: Create a Customer
+## 1. Configure your environment
 
-Create the customer before creating any wallet or payment flow.
+For local development, assign the production API URL and API key to shell variables:
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/customers \
-  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
+export FOSSAPAY_API_URL="https://api-production.fossapay.com/api/v1"
+export FOSSAPAY_API_KEY="fk_production_REPLACE_WITH_YOUR_KEY"
+```
+
+The variable names are local conventions; they are not request headers. Every public request must send the key as `x-api-key`.
+
+## 2. Verify authentication
+
+List customers to confirm that the key is active and the request is authenticated for the correct merchant:
+
+```bash
+curl --request GET \
+  --url "$FOSSAPAY_API_URL/customers?page=1&limit=1" \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+A successful request returns HTTP `200` with the standard response envelope:
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "Customers retrieved successfully",
+  "data": {
+    "result": [],
+    "pagination": {
+      "page": 1,
+      "limit": 1,
+      "total": 0,
+      "totalPages": 0,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+The contents of `result` and the remaining pagination fields depend on existing data. HTTP `401` means the key is missing, invalid, inactive, or unavailable to the request.
+
+## 3. Create an individual customer
+
+Customer records represent individuals served by your business. Send exactly one name in each name field, and set `type` to `individual`.
+
+```bash
+curl --request POST \
+  --url "$FOSSAPAY_API_URL/customers" \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
     "firstName": "John",
-    "lastName": "Doe",
     "middleName": "Michael",
+    "lastName": "Doe",
     "emailAddress": "john.doe@example.com",
     "mobileNumber": "+2348012345678",
     "dateOfBirth": "1990-08-15",
-    "address": "123 Main Street",
+    "address": "123 Example Street",
     "city": "Lagos",
     "country": "Nigeria",
     "type": "individual"
   }'
 ```
 
-**Expected Response:**
+Use unique customer information. An email address already used by your merchant is rejected.
+
+An HTTP `201` response has this structure:
+
 ```json
 {
   "status": "success",
   "statusCode": 201,
   "message": "Customer created successfully",
   "data": {
-    "id": "cus_123456789",
+    "id": "11111111-1111-4111-8111-111111111111",
     "firstName": "John",
+    "middleName": "Michael",
     "lastName": "Doe",
     "emailAddress": "john.doe@example.com",
     "mobileNumber": "+2348012345678",
-    "customerType": "individual"
+    "dob": "1990-08-15",
+    "address": "123 Example Street",
+    "customerType": "individual",
+    "businessId": "22222222-2222-4222-8222-222222222222",
+    "createdAt": "2026-09-15T09:00:00+01:00"
   }
 }
 ```
 
-<Success>
-  **You created your first customer!** We'll use the returned customer ID in the next step.
-</Success>
+Store `data.id` as the FossaPay customer ID. It is a UUID and is required by customer-scoped wallet and transfer operations.
 
-## Step 3: Create Your First NGN Wallet
+<Note>
+  Response values above are illustrative. Use identifiers and account details from your actual response.
+</Note>
 
-Create an NGN wallet for the customer you just created:
+See [Customers](/concepts/customers) for name validation, required information, and ownership rules.
+
+## 4. Create the customer's NGN wallet
+
+Create one NGN wallet for the customer using the returned customer UUID:
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/wallets/fiat/create \
-  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "cus_123456789",
-    "walletName": "Main Wallet",
-    "walletReference": "wallet_ref_001"
+curl --request POST \
+  --url "$FOSSAPAY_API_URL/wallets/fiat/create" \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "customerId": "11111111-1111-4111-8111-111111111111",
+    "walletName": "John Doe",
+    "walletReference": "wallet-customer-1042"
   }'
 ```
 
-**Expected Response:**
+`walletReference` is your correlation value. Generate it in your system and retain it with the customer mapping.
+
+An HTTP `201` response has this structure:
+
 ```json
 {
-  "success": true,
-  "message": "NGN wallet created successfully",
+  "status": "success",
+  "statusCode": 201,
+  "message": "Fiat wallet created successfully",
   "data": {
-    "walletId": "wal_abc123xyz",
-    "bankName": "Wema Bank",
-    "bankCode": "035",
-    "accountNumber": "1234567890"
+    "walletId": "33333333-3333-4333-8333-333333333333",
+    "bankName": "Provider Bank",
+    "bankCode": "000000",
+    "accountName": "John Doe",
+    "accountNumber": "9710000000"
   }
 }
 ```
 
-<Success>
-  **You created your first NGN wallet!** Share the returned account number with the customer so they can make a small live deposit.
-</Success>
+Store the wallet ID, bank details, and wallet reference. Do not hard-code the bank name or bank code; provider account details are determined at provisioning time.
 
-## Step 4: Configure Your Webhook
+Only one NGN wallet can be created for the same customer. If your create request has an ambiguous outcome, retrieve the customer or reconcile your stored response before attempting another creation.
 
-Configure your webhook URL and secret in the dashboard before making a live deposit.
+## 5. Retrieve the wallet
 
-1. Go to [Settings → Webhooks](https://dashboard.fossapay.com/settings?tab=webhooks)
-2. Set your webhook URL
-3. Copy the webhook secret and store it as `FOSSAPAY_WEBHOOK_SECRET`
-4. Make sure your handler expects `deposit.completed` for incoming deposits
-
-When a deposit is received in production, FossaPay sends a webhook to your server. Here's how to handle it:
-
-<CodeGroup>
-
-```javascript Express.js
-const express = require('express');
-const crypto = require('crypto');
-const app = express();
-
-app.use(express.json());
-
-app.post('/webhooks/fossapay', (req, res) => {
-  // 1. Verify webhook signature
-  const signature = req.headers['x-fossapay-signature'];
-  const isValid = verifySignature(req.body.data, signature);
-
-  if (!isValid) {
-    return res.status(401).send('Invalid signature');
-  }
-
-  // 2. Respond immediately
-  res.status(200).send('Webhook received');
-
-  // 3. Process the webhook
-  const { eventType, data } = req.body;
-
-  if (eventType === 'deposit.completed') {
-    console.log('Deposit completed!');
-    console.log('Amount:', data.amount);
-    console.log('Transaction ID:', data.transactionId);
-
-    // Credit user wallet, update database, send notification, etc.
-    creditUserWallet(data.customerId, data.amount);
-  }
-});
-
-function verifySignature(data, signature) {
-  const secret = process.env.FOSSAPAY_WEBHOOK_SECRET;
-  const hash = crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(data))
-    .digest('hex');
-
-  return hash === signature;
-}
-
-app.listen(3000, () => {
-  console.log('Webhook server running on port 3000');
-});
-```
-
-```python Flask
-from flask import Flask, request
-import hmac
-import hashlib
-import json
-import os
-
-app = Flask(__name__)
-
-@app.route('/webhooks/fossapay', methods=['POST'])
-def handle_webhook():
-    # 1. Verify signature
-    signature = request.headers.get('X-FossaPay-Signature')
-    payload = request.json
-    is_valid = verify_signature(payload['data'], signature)
-
-    if not is_valid:
-        return 'Invalid signature', 401
-
-    # 2. Respond immediately
-    # 3. Process webhook
-    event = payload['eventType']
-    data = payload['data']
-
-    if event == 'deposit.completed':
-        print('Deposit completed!')
-        print(f'Amount: {data["amount"]}')
-        print(f'Transaction ID: {data["transactionId"]}')
-
-        # Credit user wallet, update database, etc.
-        credit_user_wallet(data['customerId'], data['amount'])
-
-    return 'Webhook received', 200
-
-def verify_signature(data, signature):
-    secret = os.environ['FOSSAPAY_WEBHOOK_SECRET']
-    serialized_data = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
-    hash = hmac.new(
-        secret.encode(),
-        serialized_data.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-
-    return hmac.compare_digest(hash, signature)
-
-if __name__ == '__main__':
-    app.run(port=3000)
-```
-
-</CodeGroup>
-
-<Tip>
-  **Local Development:** Use [ngrok](https://ngrok.com) to expose your local server while you build:
-  ```bash
-  ngrok http 3000
-  ```
-  Then set the ngrok URL in your [webhook settings](https://dashboard.fossapay.com/settings/webhooks).
-</Tip>
-
-## Step 5: Make a Small Live Deposit
-
-From a bank account you control, send a small live deposit to the wallet account number from Step 3.
-
-You should receive a `deposit.completed` webhook with the transaction details and customer ID.
-
-## Step 6: Verify the Deposit
-
-Use the transaction ID from the webhook to fetch the transaction record:
+Retrieve the wallet with `data.walletId` from the creation response:
 
 ```bash
-curl https://api-production.fossapay.com/api/v1/wallets/fiat/transactions/txn_abc123 \
-  -H "x-api-key: $FOSSAPAY_SECRET_KEY"
+curl --request GET \
+  --url "$FOSSAPAY_API_URL/wallets/fiat/33333333-3333-4333-8333-333333333333" \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
-## Step 7: Send a Small Production Payout
+Wallet retrieval is merchant-scoped. A wallet belonging to another merchant is not accessible with your API key.
 
-Now send a small amount directly from your business master NGN wallet to a bank account you control. Generate and retain one idempotency key for this logical payout:
+You can also retrieve a wallet using its account number:
 
 ```bash
-curl -X POST https://api-production.fossapay.com/api/v1/payouts \
-  -H "x-api-key: $FOSSAPAY_SECRET_KEY" \
-  -H "X-Idempotency-Key: payout-quickstart-001" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "destinationBankCode": "044",
-    "destinationAccountName": "Test Recipient",
-    "destinationAccountNumber": "0000000001",
-    "destinationBankName": "ACCESS BANK",
-    "reference": "QUICKSTART-PAYOUT-001",
-    "remarks": "Test payout",
-    "amount": 100,
-    "currency": "NGN"
-  }'
+curl --request GET \
+  --url "$FOSSAPAY_API_URL/wallets/fiat/account/9710000000" \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
-An HTTP `202` response may contain `data.status: "processing"`. Wait for `payout.completed`, `payout.failed`, or `payout.reversed`, or retrieve the payout by ID/reference. Do not repeat an uncertain payout using a new idempotency key.
+At this point, the core integration is working: the merchant can authenticate, create a customer, provision an NGN wallet, and retrieve it.
 
-## Complete Example
+## 6. Prepare webhook handling
 
-Here's a complete example that ties everything together:
+Before accepting live deposits, configure a public HTTPS URL from **Dashboard → Settings → Webhooks** and store its secret securely.
+
+FossaPay signs exactly `JSON.stringify(body.data)` with HMAC-SHA256. The lowercase hexadecimal result is sent in `x-fossapay-Signature`.
 
 ```javascript
-const express = require('express');
-const app = express();
+import crypto from 'node:crypto';
+import express from 'express';
 
+const app = express();
 app.use(express.json());
 
-// Handle incoming deposits
+function verifyWebhook(body, signature, secret) {
+  if (!body || typeof body.data !== 'object' || !secret) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(body.data))
+    .digest('hex');
+
+  const received = String(signature || '');
+  if (received.length !== expected.length) return false;
+
+  return crypto.timingSafeEqual(
+    Buffer.from(received, 'utf8'),
+    Buffer.from(expected, 'utf8')
+  );
+}
+
 app.post('/webhooks/fossapay', async (req, res) => {
-  res.status(200).send('OK');
+  const valid = verifyWebhook(
+    req.body,
+    req.get('x-fossapay-signature'),
+    process.env.FOSSAPAY_WEBHOOK_SECRET
+  );
 
-  const { eventType, data } = req.body;
+  if (!valid) return res.sendStatus(401);
 
-  if (eventType === 'deposit.completed') {
-    // Credit user's balance
-    await creditUserBalance(data.customerId, data.amount);
+  const inserted = await insertWebhookIfNew(req.body.eventId, req.body);
+  res.sendStatus(200);
 
-    // Send notification
-    await sendNotification(data.customerId, {
-      title: 'Payment Received',
-      message: `Your account was credited with ₦${data.amount}`
-    });
-  }
+  if (inserted) await queueWebhookProcessing(req.body.eventId);
 });
 
 app.listen(3000);
 ```
 
-## Next Steps
+`insertWebhookIfNew` and `queueWebhookProcessing` represent your persistence and job-queue implementation. Enforce a unique database constraint on `eventId`; do not implement deduplication only in application memory.
+
+See [Webhooks](/concepts/webhooks) for the event catalogue, retry schedule, signature rules, and reconciliation guidance.
+
+## Error handling
+
+FossaPay returns errors using an HTTP status and structured JSON body:
+
+```json
+{
+  "status": "error",
+  "statusCode": 422,
+  "message": "customerId must be a UUID"
+}
+```
+
+| Status | Meaning | Recommended action |
+|---|---|---|
+| `400` | The request conflicts with resource or provider requirements | Inspect the message; do not retry unchanged |
+| `401` | API-key authentication failed | Verify the key, header, and activation state |
+| `403` | The authenticated merchant does not own the resource | Verify the customer or wallet mapping |
+| `404` | The requested resource was not found | Check the identifier and merchant ownership |
+| `409` | A unique reference or idempotency constraint was violated | Reconcile the original operation instead of creating another |
+| `422` | Request validation failed | Correct the named field before retrying |
+| `429` | Request rate limit exceeded | Back off and retry with jitter |
+| `5xx` | FossaPay or an upstream provider was temporarily unavailable | Retry safe reads; reconcile writes before retrying |
+
+For write requests, distinguish a confirmed rejection from an ambiguous network failure. Never create a second financial operation solely because the original response was lost.
+
+## Production readiness
+
+Before processing customer funds:
+
+- confirm business verification and production API-key access;
+- use a production HTTPS webhook endpoint;
+- store API keys and webhook secrets in production secret management;
+- verify signature rejection, duplicate delivery, and queue recovery behavior;
+- persist FossaPay IDs and your references for every operation;
+- monitor API errors, webhook delivery failures, and pending transactions; and
+- begin with controlled amounts and reconcile each result.
+
+<Warning>
+  FossaPay does not currently provide a staging or sandbox environment. Requests made with your production API key operate on live resources and may initiate real financial activity.
+</Warning>
+
+## Next steps
 
 <CardGroup cols={2}>
-  <Card color="#0080FF" title="Authentication" icon="lock" href="/authentication">
-    Learn about API authentication and security
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Understand API-key security and idempotency.
   </Card>
-  <Card color="#0080FF" title="Collections Guide" icon="book" href="/guides/collections">
-    Complete guide to accepting payments
+  <Card title="NGN collections" icon="building-columns" href="/guides/collections">
+    Receive and reconcile customer deposits.
   </Card>
-  <Card color="#0080FF" title="Payouts Guide" icon="money-bill-transfer" href="/guides/payouts">
-    Send money to bank accounts
+  <Card title="Checkout Wallet" icon="cart-shopping" href="/guides/checkouts">
+    Accept exact-amount, one-time NGN payments.
   </Card>
-  <Card color="#0080FF" title="Webhooks" icon="webhook" href="/concepts/webhooks">
-    Handle real-time notifications
-  </Card>
-</CardGroup>
-
-## Testing Checklist
-
-Before using production for real volume, make sure you've tested:
-
-- [ ] Creating a customer
-- [ ] Creating NGN wallets
-- [ ] Receiving and processing webhooks
-- [ ] Handling webhook failures
-- [ ] Sending payouts
-- [ ] Error handling
-- [ ] Webhook signature verification
-
-## Going Live
-
-When you're ready for regular production use:
-
-1. **Complete business verification** in the [dashboard](https://dashboard.fossapay.com)
-2. **Use production API keys** (starts with `fk_production_`)
-3. **Update webhook URL** to your production server
-4. **Test with small amounts** before full launch
-5. **Monitor the dashboard** for any issues
-
-<Card color="#0080FF" title="Get Live API Keys" icon="rocket" href="https://dashboard.fossapay.com/settings?tab=api-keys">
-  Complete verification to get live access
-</Card>
-
-## Need Help?
-
-<CardGroup cols={2}>
-  <Card color="#0080FF" title="Join Community" icon="users" href="https://t.me/+N1-Gq6L5WStmYWM8">
-    Get help from the FossaPay community
-  </Card>
-  <Card color="#0080FF" title="Contact Support" icon="headset" href="mailto:product@fossapay.com">
-    Email our support team
-  </Card>
-  <Card color="#0080FF" title="API Reference" icon="code" href="/api-reference/">
-    Explore the full API documentation
-  </Card>
-  <Card color="#0080FF" title="Dashboard" icon="chart-line" href="https://dashboard.fossapay.com">
-    View your transactions and settings
+  <Card title="NGN transfers" icon="money-bill-transfer" href="/guides/ngn-transfers">
+    Move customer or business funds using the correct flow.
   </Card>
 </CardGroup>

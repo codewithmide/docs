@@ -1,6 +1,6 @@
 ---
 title: 'Get Payout by ID'
-api: 'GET https://api-production.fossapay.com/api/v1/payouts/{id}'
+openapi: 'GET /api/v1/payouts/{id}'
 description: 'Retrieve a master-wallet payout using its FossaPay payout ID'
 ---
 
@@ -15,7 +15,7 @@ description: 'Retrieve a master-wallet payout using its FossaPay payout ID'
 ```bash
 curl --request GET \
   --url https://api-production.fossapay.com/api/v1/payouts/a9af907d-965f-4ad8-9472-f437fc11df21 \
-  --header 'x-api-key: YOUR_LIVE_API_KEY'
+  --header "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 ```json
@@ -36,7 +36,7 @@ curl --request GET \
     "recipient": {
       "bankCode": "058",
       "bankName": "Guaranty Trust Bank",
-      "accountName": "ADA LOVELACE",
+      "accountName": "JOHN DOE",
       "accountNumber": "0123456789"
     },
     "providerReference": "PYT_K8Q4D2M7N5R3T9A_1789098000000",
@@ -55,4 +55,3 @@ The payout is accessible only to the merchant that created it.
 | `401` | Missing, invalid, or inactive API key. |
 | `403` | Merchant is not eligible. |
 | `404` | Payout does not exist for the authenticated merchant. |
-

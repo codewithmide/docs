@@ -48,7 +48,7 @@ Checkout Wallet lets your business accept a single NGN bank-transfer payment for
 
 ```bash
 curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "x-api-key: $FOSSAPAY_API_KEY" \
   -H "X-Idempotency-Key: checkout-order-10025-v1" \
   -H "Content-Type: application/json" \
   -d '{
@@ -57,8 +57,8 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
     "reference": "ORDER-10025",
     "feeBearer": "customer",
     "customer": {
-      "name": "Ada Lovelace",
-      "email": "ada@example.com",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
       "phoneNumber": "+2348012345678"
     },
     "metadata": {
@@ -131,8 +131,8 @@ Fee values may change with your configured pricing. The API response is authorit
       "expiresAt": "2026-09-11T10:30:00.000Z"
     },
     "customer": {
-      "name": "Ada Lovelace",
-      "email": "ada@example.com",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
       "phoneNumber": "+2348012345678"
     },
     "metadata": {
@@ -282,15 +282,15 @@ See [Webhook Events](/api-reference/webhooks/events) for complete payload exampl
 ```bash
 # Retrieve by FossaPay checkout ID
 curl https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6 \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 
 # Retrieve by your reference
 curl https://api-production.fossapay.com/api/v1/checkouts/reference/ORDER-10025 \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 
 # Expire a pending checkout early
 curl -X POST https://api-production.fossapay.com/api/v1/checkouts/35f5f6fb-0c8d-4e96-ba4a-c04750724ff6/expire \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
 Only a `pending` checkout can be manually expired. Trying to expire any other status returns `409 Conflict`. Retrieval is merchant-scoped, and expired sessions may be updated to `expired` when retrieved.
