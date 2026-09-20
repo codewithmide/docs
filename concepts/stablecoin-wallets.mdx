@@ -1,9 +1,9 @@
 ---
 title: Stablecoin Wallets
-description: 'Provision Solana wallets and manage customer USDC and USDT activity'
+description: 'Provision Solana wallets and manage SOL, USDC, and USDT balances'
 ---
 
-Stablecoin wallets assign a Solana address to an individual customer. FossaPay currently supports the `solana` network and the `usdc` and `usdt` stablecoins.
+Solana wallets assign an address to an individual customer. FossaPay reports balances for native SOL, USDC, and USDT. Only USDC and USDT can be sent through the current crypto transfer API; SOL transfers are not yet available through FossaPay.
 
 <Warning>
   FossaPay does not currently support an EVM wallet option. Send `network: "solana"` exactly; other values are rejected before wallet creation.
@@ -35,7 +35,7 @@ Only one Solana wallet can be created for the same customer. If a response is lo
 
 ## Addresses and ownership
 
-Solana addresses are public deposit destinations, not authentication credentials. An address can receive supported assets from external senders, but authenticated wallet details and transaction history remain merchant-scoped.
+Solana addresses are public deposit destinations, not authentication credentials. An address can receive other Solana tokens even though they are not supported for wallet operations. Authenticated wallet details and transaction history remain merchant-scoped.
 
 Validate the full address before displaying or using it. Do not truncate addresses in storage, comparison, signing, or transfer requests. Truncation is suitable only for presentation after the complete value has been retained.
 
@@ -44,14 +44,17 @@ Validate the full address before displaying or using it. Do not truncate address
 | Value | Meaning |
 |---|---|
 | `network: "solana"` | The only supported blockchain network |
+| `sol` | Native SOL deposits and balance reporting; transfer API unavailable |
 | `currency: "usdc"` | USD Coin on the supported Solana integration |
 | `currency: "usdt"` | Tether USD on the supported Solana integration |
 
-Do not infer support for a token from its symbol alone. Sending an unsupported asset or using another network can make funds unavailable to the integration.
+Only NGN, USDC, and USDT are accepted for checkouts and payment links. An incoming Solana token with another mint can appear as a successful on-chain deposit transaction with `cryptoAssetStatus: "unsupported"`, but is not added to a FossaPay spendable balance and cannot be used for transfers, checkouts, or payment links. Token symbols are not proof of identity; inspect the mint address. Contact support about recovery of an unsupported asset.
+
+An unsupported-asset receipt does not emit a `deposit.completed` merchant webhook: that event could otherwise be mistaken for spendable customer credit. Retrieve wallet transaction history to inspect these receipts.
 
 ## Retrieve wallets and balances
 
-Customer wallets can be retrieved by FossaPay wallet ID or full blockchain address. The master endpoint returns merchant-owned stablecoin addresses and their provider-reported token balances.
+Customer wallets can be retrieved by FossaPay wallet ID, customer ID, or full blockchain address. The master endpoint returns merchant-owned Solana addresses and provider-reported SOL, USDC, and USDT balances. Unsupported tokens are recorded in transaction history, not these standard balance responses.
 
 Token balances contain human-readable and raw representations where supplied by the provider. Preserve decimal precision and do not use JavaScript binary floating point for ledger calculations.
 
@@ -68,6 +71,8 @@ GET /api/v1/transfers/crypto/calculate-fee?amount=100&currency=usdc
 ```
 
 The response reports the configured fee quote. Fee configuration can change, so request a current quote instead of hard-coding pricing.
+
+Crypto deposits carry no collection fee: the credited deposit amount equals the confirmed amount received. This does not remove transfer or payout fees. NGN collection fees remain unchanged.
 
 ## Send stablecoins
 
@@ -109,6 +114,7 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 |---|---|---|
 | Create customer wallet | `POST /api/v1/wallets/crypto/create` | [Create wallet](/api-reference/crypto-wallets/create-wallet) |
 | Get master wallet | `GET /api/v1/wallets/crypto/master` | [Get master wallet](/api-reference/crypto-wallets/get-master-wallet) |
+| Get customer balance | `GET /api/v1/wallets/crypto/customer/{customerId}/balance` | [Customer balance](/api-reference/crypto-wallets/get-customer-balance) |
 | Get wallet by ID | `GET /api/v1/wallets/crypto/{walletId}` | [Get by ID](/api-reference/crypto-wallets/get-wallet-by-id) |
 | Get wallet by address | `GET /api/v1/wallets/crypto/address/{address}` | [Get by address](/api-reference/crypto-wallets/get-wallet-by-address) |
 | List wallet transactions | `GET /api/v1/wallets/crypto/{walletId}/transactions` | [Wallet transactions](/api-reference/crypto-wallets/wallet-transactions) |
@@ -118,7 +124,7 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 
 ## Production checklist
 
-- [ ] Accept only `solana`, `usdc`, and `usdt` where applicable.
+- [ ] Use `solana` for the wallet network; use USDC or USDT for checkout, payment links, and transfers.
 - [ ] Persist complete addresses and identifiers without truncation.
 - [ ] Use decimal-safe token handling.
 - [ ] Quote fees before presenting the recipient amount.

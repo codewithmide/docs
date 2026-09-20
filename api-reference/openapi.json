@@ -946,6 +946,40 @@
         }
       }
     },
+    "/api/v1/wallets/crypto/customer/{customerId}/balance": {
+      "get": {
+        "operationId": "CryptoWalletsController_getCustomerBalance",
+        "tags": ["Crypto Wallets"],
+        "summary": "Get a customer Solana wallet balance",
+        "description": "Returns provider-reported SOL, USDC, and USDT balances for a customer owned by the authenticated merchant. Unsupported Solana token deposits appear in transaction history, not this balance response.",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer Solana wallet balance retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CryptoCustomerBalanceResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Customer or wallet not found for this merchant",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/wallets/crypto/{walletId}": {
       "get": {
         "operationId": "CryptoWalletsController_findOne",
@@ -2637,9 +2671,28 @@
           },
           "tokens": {
             "type": "object",
+            "description": "Provider-reported supported balances. SOL is the native network token; unsupported token deposits are recorded as transactions but omitted here.",
+            "properties": {
+              "sol": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" },
+              "usdc": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" },
+              "usdt": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" }
+            },
             "additionalProperties": {
               "$ref": "#/components/schemas/CryptoWalletTokenBalance"
             }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoCustomerBalanceResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean", "const": true },
+          "message": { "type": "string" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CryptoWalletAddress" }
           }
         },
         "additionalProperties": true
@@ -2714,6 +2767,11 @@
           },
           "tokenSymbol": {
             "type": "string"
+          },
+          "cryptoAssetStatus": {
+            "type": ["string", "null"],
+            "enum": ["supported", "unsupported", null],
+            "description": "Unsupported means the token was received on-chain but is not spendable through FossaPay."
           },
           "tokenAddress": {
             "type": "string"

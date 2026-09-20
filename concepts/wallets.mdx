@@ -11,8 +11,8 @@ Wallets are the accounts through which FossaPay attributes balances and money mo
 |---|---|---|---|
 | Customer NGN wallet | Individual customer | NGN bank account | Persistent collections and customer-funded transfers |
 | Master NGN wallet | Merchant | NGN bank account | Business-owned funds and master-wallet payouts |
-| Customer stablecoin wallet | Individual customer | Solana | Customer USDC and USDT deposits and transfers |
-| Master stablecoin wallet | Merchant | Solana | Merchant-owned stablecoin balances and addresses |
+| Customer Solana wallet | Individual customer | Solana | SOL, USDC, and USDT deposits and balances; USDC/USDT transfers |
+| Master Solana wallet | Merchant | Solana | Merchant-owned SOL, USDC, and USDT balances and address |
 
 <Warning>
   Choose the source wallet according to economic ownership. Customer funds must use customer-wallet operations; business funds must use the merchant master wallet and Payouts API.
@@ -36,7 +36,7 @@ FossaPay currently supports production access only. All wallet operations can af
 |---|---|
 | Available balance | Funds currently available for a new operation |
 | Ledger balance | Funds recorded on the provider ledger, including amounts that may not yet be available |
-| Token balance | Provider-reported balance for a supported stablecoin on a Solana address |
+| Token balance | Provider-reported SOL, USDC, or USDT balance on a Solana address |
 
 Use the current authenticated wallet response as the balance authority before initiating an operation. Do not derive a balance solely by adding webhook amounts in your application.
 
@@ -77,7 +77,7 @@ Use:
     Provision bank accounts, collect NGN, inspect balances, and move customer funds.
   </Card>
   <Card title="Stablecoin wallets" icon="coins" href="/concepts/stablecoin-wallets">
-    Provision Solana wallets and manage supported USDC and USDT activity.
+    Provision Solana wallets, view SOL and stablecoin balances, and manage supported USDC/USDT transfers.
   </Card>
 </CardGroup>
 
