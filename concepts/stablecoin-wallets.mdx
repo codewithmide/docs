@@ -29,7 +29,7 @@ curl --request POST \
   }'
 ```
 
-Wallet creation returns a provider wallet identifier, Solana address, and network. Persist the complete response with the customer UUID.
+Wallet creation returns `data.id` (FossaPay's wallet UUID), `data.walletId` (Crossmint's owner locator), the Solana `data.address`, and the network. Persist the complete response with the customer UUID. Use `data.id` for the wallet-by-ID and wallet-transactions endpoints; use `data.address` for the wallet-by-address endpoint. Neither the Solana address nor Crossmint's `walletId` works as the `{walletId}` path parameter.
 
 Only one Solana wallet can be created for the same customer. If a response is lost, reconcile the existing wallet before retrying; wallet creation does not provide idempotency semantics.
 
@@ -54,7 +54,7 @@ An unsupported-asset receipt does not emit a `deposit.completed` merchant webhoo
 
 ## Retrieve wallets and balances
 
-Customer wallets can be retrieved by FossaPay wallet ID, customer ID, or full blockchain address. The master endpoint returns merchant-owned Solana addresses and provider-reported SOL, USDC, and USDT balances. Unsupported tokens are recorded in transaction history, not these standard balance responses.
+Customer wallets can be retrieved by FossaPay wallet `id`, customer ID, or full blockchain address. Wallet lookup responses also include the FossaPay `id`, so an existing wallet can be looked up by address before requesting its transaction history. The master endpoint returns merchant-owned Solana addresses and provider-reported SOL, USDC, and USDT balances. Unsupported tokens are recorded in transaction history, not these standard balance responses.
 
 Token balances contain human-readable and raw representations where supplied by the provider. Preserve decimal precision and do not use JavaScript binary floating point for ledger calculations.
 

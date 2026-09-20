@@ -990,8 +990,10 @@
             "name": "walletId",
             "in": "path",
             "required": true,
+            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or Crossmint data.walletId here.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1108,8 +1110,10 @@
             "name": "walletId",
             "in": "path",
             "required": true,
+            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or Crossmint data.walletId here.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2609,10 +2613,16 @@
       },
       "CryptoWalletCreated": {
         "type": "object",
-        "required": ["walletId", "address", "network"],
+        "required": ["id", "walletId", "address", "network"],
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "FossaPay crypto wallet id. Use this UUID for wallet-by-id and wallet-transactions endpoints."
+          },
           "walletId": {
-            "type": "string"
+            "type": "string",
+            "description": "Crossmint owner locator retained for backward compatibility; not the id expected by FossaPay wallet endpoints."
           },
           "address": {
             "type": "string"
@@ -2660,8 +2670,13 @@
       },
       "CryptoWalletAddress": {
         "type": "object",
-        "required": ["address", "network", "tokens"],
+        "required": ["id", "address", "network", "tokens"],
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "FossaPay crypto wallet id used by wallet-by-id and wallet-transactions endpoints."
+          },
           "address": {
             "type": "string"
           },
