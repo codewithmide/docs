@@ -1334,7 +1334,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["usdc", "usdt"]
+              "enum": ["usdc", "usdt", "sol"]
             }
           }
         ],
@@ -2908,12 +2908,12 @@
           },
           "currency": {
             "type": "string",
-            "enum": ["usdc", "usdt"]
+            "enum": ["usdc", "usdt", "sol"]
           },
           "amount": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "description": "Gross token amount. FossaPay deducts the quoted fee and sends the remainder to the recipient."
+            "description": "Gross token amount. FossaPay deducts the quoted transfer fee, if any, and sends the remainder to the recipient. SOL amounts support up to 9 decimal places."
           }
         },
         "additionalProperties": false

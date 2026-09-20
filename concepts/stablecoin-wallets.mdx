@@ -3,7 +3,7 @@ title: Stablecoin Wallets
 description: 'Provision Solana wallets and manage SOL, USDC, and USDT balances'
 ---
 
-Solana wallets assign an address to an individual customer. FossaPay reports balances for native SOL, USDC, and USDT. Only USDC and USDT can be sent through the current crypto transfer API; SOL transfers are not yet available through FossaPay.
+Solana wallets assign an address to an individual customer. FossaPay reports balances and supports transfers for native SOL, USDC, and USDT.
 
 <Warning>
   FossaPay does not currently support an EVM wallet option. Send `network: "solana"` exactly; other values are rejected before wallet creation.
@@ -44,7 +44,7 @@ Validate the full address before displaying or using it. Do not truncate address
 | Value | Meaning |
 |---|---|
 | `network: "solana"` | The only supported blockchain network |
-| `sol` | Native SOL deposits and balance reporting; transfer API unavailable |
+| `currency: "sol"` | Native SOL deposits, balance reporting, and transfers |
 | `currency: "usdc"` | USD Coin on the supported Solana integration |
 | `currency: "usdt"` | Tether USD on the supported Solana integration |
 
@@ -72,9 +72,11 @@ GET /api/v1/transfers/crypto/calculate-fee?amount=100&currency=usdc
 
 The response reports the configured fee quote. Fee configuration can change, so request a current quote instead of hard-coding pricing.
 
+For SOL, use `currency=sol`. The SOL transfer fee is 0.001 SOL for amounts below 1 SOL, 0.01 SOL for amounts from 1 through 10 SOL, and 0.1 SOL for amounts above 10 SOL. The merchant dashboard quotes the same tiers. The external customer-transfer API subtracts this fee from the submitted gross amount; the merchant dashboard payout adds it to the requested recipient amount.
+
 Crypto deposits carry no collection fee: the credited deposit amount equals the confirmed amount received. This does not remove transfer or payout fees. NGN collection fees remain unchanged.
 
-## Send stablecoins
+## Send SOL and stablecoins
 
 `POST /api/v1/transfers/crypto` sends from the customer's wallet to a Solana recipient.
 
@@ -83,10 +85,10 @@ Crypto deposits carry no collection fee: the credited deposit amount equals the 
 | `customerId` | UUID of the customer funding the transfer |
 | `recipient` | Complete destination Solana address |
 | `network` | Must be exactly `solana` |
-| `currency` | `usdc` or `usdt` |
+| `currency` | `sol`, `usdc`, or `usdt` |
 | `amount` | Numeric submitted amount |
 
-The current transfer flow treats the submitted amount as the gross token amount. The configured fee is deducted and the recipient transfer uses the net amount (`amount - fee`). Confirm the current fee before presenting the expected recipient amount.
+The current transfer flow treats the submitted amount as the gross token amount. Any quoted transfer fee is deducted and the recipient transfer uses the net amount (`amount - fee`). SOL amounts support up to nine decimal places. Confirm the current fee and that the wallet has enough native SOL for network execution before presenting the expected recipient amount.
 
 The initial response reports provider processing; it is not final settlement. Persist the returned data and wait for the corresponding verified terminal event or reconcile the transaction through wallet history.
 
@@ -120,11 +122,11 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 | List wallet transactions | `GET /api/v1/wallets/crypto/{walletId}/transactions` | [Wallet transactions](/api-reference/crypto-wallets/wallet-transactions) |
 | Get a transaction | `GET /api/v1/wallets/crypto/transactions/{transactionId}` | [Wallet transaction](/api-reference/crypto-wallets/wallet-transaction) |
 | Calculate transfer fee | `GET /api/v1/transfers/crypto/calculate-fee` | [Calculate fee](/api-reference/crypto-transfers/calculate-fee) |
-| Send stablecoins | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
+| Send SOL or stablecoins | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
 
 ## Production checklist
 
-- [ ] Use `solana` for the wallet network; use USDC or USDT for checkout, payment links, and transfers.
+- [ ] Use `solana` for the wallet network; use SOL, USDC, or USDT for transfers, but only USDC or USDT for crypto checkout and payment links.
 - [ ] Persist complete addresses and identifiers without truncation.
 - [ ] Use decimal-safe token handling.
 - [ ] Quote fees before presenting the recipient amount.
