@@ -29,7 +29,7 @@ curl --request POST \
   }'
 ```
 
-Wallet creation returns `data.id` (FossaPay's wallet UUID), `data.walletId` (Crossmint's owner locator), the Solana `data.address`, and the network. Persist the complete response with the customer UUID. Use `data.id` for the wallet-by-ID and wallet-transactions endpoints; use `data.address` for the wallet-by-address endpoint. Neither the Solana address nor Crossmint's `walletId` works as the `{walletId}` path parameter.
+Wallet creation returns `data.id` (FossaPay's wallet UUID), `data.walletId` (the underlying provider wallet identifier), the Solana `data.address`, and the network. Persist the complete response with the customer UUID. Use `data.id` for the wallet-by-ID and wallet-transactions endpoints; use `data.address` for the wallet-by-address endpoint. Neither the Solana address nor the provider `walletId` works as the `{walletId}` path parameter.
 
 Only one Solana wallet can be created for the same customer. If a response is lost, reconcile the existing wallet before retrying; wallet creation does not provide idempotency semantics.
 
@@ -116,6 +116,8 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 |---|---|---|
 | Create customer wallet | `POST /api/v1/wallets/crypto/create` | [Create wallet](/api-reference/crypto-wallets/create-wallet) |
 | Get master wallet | `GET /api/v1/wallets/crypto/master` | [Get master wallet](/api-reference/crypto-wallets/get-master-wallet) |
+| Sign with master wallet | `POST /api/v1/wallets/crypto/master/transactions/sign-and-broadcast` | [Master wallet signing](/api-reference/crypto-wallets/sign-master-transaction) |
+| Sign with customer wallet | `POST /api/v1/wallets/crypto/customer/{customerId}/transactions/sign-and-broadcast` | [Customer wallet signing](/api-reference/crypto-wallets/sign-customer-transaction) |
 | Get customer balance | `GET /api/v1/wallets/crypto/customer/{customerId}/balance` | [Customer balance](/api-reference/crypto-wallets/get-customer-balance) |
 | Get wallet by ID | `GET /api/v1/wallets/crypto/{walletId}` | [Get by ID](/api-reference/crypto-wallets/get-wallet-by-id) |
 | Get wallet by address | `GET /api/v1/wallets/crypto/address/{address}` | [Get by address](/api-reference/crypto-wallets/get-wallet-by-address) |
@@ -123,6 +125,8 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 | Get a transaction | `GET /api/v1/wallets/crypto/transactions/{transactionId}` | [Wallet transaction](/api-reference/crypto-wallets/wallet-transaction) |
 | Calculate transfer fee | `GET /api/v1/transfers/crypto/calculate-fee` | [Calculate fee](/api-reference/crypto-transfers/calculate-fee) |
 | Send SOL or stablecoins | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
+
+For custom Solana program interactions, follow the [Solana Transaction Signing guide](/guides/solana-transaction-signing). Signing supports arbitrary validated Solana versioned transactions; it does not expand the assets supported by FossaPay transfers, checkouts, or payment links.
 
 ## Production checklist
 

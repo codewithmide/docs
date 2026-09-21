@@ -1,0 +1,80 @@
+---
+title: 'Sign a Customer Wallet Transaction'
+openapi: 'POST /api/v1/wallets/crypto/customer/{customerId}/transactions/sign-and-broadcast'
+description: 'Validate, simulate, sign, and broadcast a Solana transaction with a customer wallet'
+---
+
+The customer and active Solana wallet must belong to the merchant resolved from the API key. The customer wallet must be both a required signer and the fee payer. A successful `202` response means the transaction was submitted, not finalized.
+
+## Path parameter
+
+<ParamField path="customerId" type="string" required>
+  FossaPay UUID of the individual customer whose wallet will sign and fund the transaction.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Active production API key belonging to the customer's merchant.
+</ParamField>
+
+<ParamField header="X-Idempotency-Key" type="string" required>
+  Unique key for this logical signing request, up to 255 characters. Retain it with the exact serialized transaction.
+</ParamField>
+
+## Request body
+
+<ParamField body="serializedTransaction" type="string" required>
+  Base64-encoded serialized Solana `VersionedTransaction`, up to 4,096 characters. The selected customer wallet must be the fee payer and a required signer. Other required signers must sign before serialization.
+</ParamField>
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/crypto/customer/11111111-1111-4111-8111-111111111111/transactions/sign-and-broadcast \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "X-Idempotency-Key: $IDEMPOTENCY_KEY" \
+  --header 'Content-Type: application/json' \
+  --data "{\"serializedTransaction\":\"$SERIALIZED_TRANSACTION\"}"
+```
+
+## Response
+
+<ResponseExample>
+```json Submitted
+{
+  "status": "success",
+  "statusCode": 202,
+  "message": "Solana transaction signed and submitted successfully",
+  "data": {
+    "requestId": "07836944-c8fd-444b-b080-776077fc70c9",
+    "walletType": "customer",
+    "customerId": "11111111-1111-4111-8111-111111111111",
+    "walletId": "61237ceb-bde6-4052-9294-38470806f672",
+    "walletAddress": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+    "network": "solana",
+    "cluster": "mainnet-beta",
+    "feePayer": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
+    "status": "submitted",
+    "providerTransactionId": "8f9e6478-6ba7-462d-b53a-ec09d9f3a8c9",
+    "transactionHash": "3cQYpNzFfDm6BkLwgGz4JPQCYGmS7SxTpKRtvBPWVPSLDjpGJBrUojwt7FA97Cn4vdHXgyxL4G2LQ1HsBYVkKb9U",
+    "explorerLink": "https://explorer.solana.com/tx/3cQYpNzFfDm6BkLwgGz4JPQCYGmS7SxTpKRtvBPWVPSLDjpGJBrUojwt7FA97Cn4vdHXgyxL4G2LQ1HsBYVkKb9U",
+    "simulation": {
+      "unitsConsumed": 21192,
+      "logs": ["Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr success"]
+    }
+  }
+}
+```
+</ResponseExample>
+
+## Important behavior
+
+- FossaPay verifies customer ownership before accessing the wallet.
+- FossaPay simulates before signing and broadcasting.
+- The selected customer wallet pays the Solana network fee.
+- Requests are limited to 10 per minute.
+- Repeating the identical submitted request with the same idempotency key returns the stored result.
+- A failed or expired transaction must be rebuilt with a fresh blockhash and submitted with a new key.
+- Finality is reconciled through Solana RPC; this flow does not emit a merchant webhook.
+
+See [Solana Transaction Signing](/guides/solana-transaction-signing) for transaction construction, statuses, retries, and security controls.

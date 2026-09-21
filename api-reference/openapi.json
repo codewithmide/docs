@@ -946,6 +946,198 @@
         }
       }
     },
+    "/api/v1/wallets/crypto/master/transactions/sign-and-broadcast": {
+      "post": {
+        "operationId": "CryptoWalletsController_signAndBroadcastMasterTransaction",
+        "tags": ["Crypto Wallets"],
+        "summary": "Sign and broadcast with the master Solana wallet",
+        "description": "Validates and simulates a serialized Solana versioned transaction, then signs and broadcasts it with the authenticated merchant's active master wallet. The selected wallet must be a required signer and the fee payer. A 202 response represents submission, not on-chain finality.",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique merchant-scoped key for this exact signing request. Maximum 255 characters.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolanaSigningRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transaction simulated, signed, and submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolanaSigningResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or unsupported transaction, wrong fee payer, missing co-signer, or invalid idempotency header",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Active master Solana wallet not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key conflict or request already processing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "422": {
+            "description": "Solana transaction simulation failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "429": {
+            "description": "Signing rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallets/crypto/customer/{customerId}/transactions/sign-and-broadcast": {
+      "post": {
+        "operationId": "CryptoWalletsController_signAndBroadcastCustomerTransaction",
+        "tags": ["Crypto Wallets"],
+        "summary": "Sign and broadcast with a customer Solana wallet",
+        "description": "Verifies that the customer belongs to the authenticated merchant, validates and simulates a serialized Solana versioned transaction, then signs and broadcasts it with the customer's active wallet. The selected wallet must be a required signer and the fee payer. A 202 response represents submission, not on-chain finality.",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "FossaPay customer UUID owned by the authenticated merchant.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Unique merchant-scoped key for this exact signing request. Maximum 255 characters.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolanaSigningRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transaction simulated, signed, and submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolanaSigningResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or unsupported transaction, wrong fee payer, missing co-signer, or invalid idempotency header",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer or active customer Solana wallet not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key conflict or request already processing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "422": {
+            "description": "Solana transaction simulation failed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "429": {
+            "description": "Signing rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/wallets/crypto/customer/{customerId}/balance": {
       "get": {
         "operationId": "CryptoWalletsController_getCustomerBalance",
@@ -990,7 +1182,7 @@
             "name": "walletId",
             "in": "path",
             "required": true,
-            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or Crossmint data.walletId here.",
+            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or provider data.walletId here.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -1110,7 +1302,7 @@
             "name": "walletId",
             "in": "path",
             "required": true,
-            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or Crossmint data.walletId here.",
+            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or provider data.walletId here.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -2611,6 +2803,78 @@
         },
         "additionalProperties": false
       },
+      "SolanaSigningRequest": {
+        "type": "object",
+        "required": ["serializedTransaction"],
+        "properties": {
+          "serializedTransaction": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Base64-encoded serialized Solana VersionedTransaction. The selected FossaPay wallet must be a required signer and the fee payer; all other required signers must already have signed.",
+            "example": "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAB..."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SolanaSigningSimulation": {
+        "type": "object",
+        "properties": {
+          "unitsConsumed": {
+            "type": ["integer", "null"]
+          },
+          "logs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      },
+      "SolanaSigningSubmission": {
+        "type": "object",
+        "required": [
+          "requestId",
+          "walletType",
+          "walletId",
+          "walletAddress",
+          "network",
+          "cluster",
+          "feePayer",
+          "status",
+          "providerTransactionId",
+          "transactionHash",
+          "explorerLink",
+          "simulation"
+        ],
+        "properties": {
+          "requestId": { "type": "string", "format": "uuid" },
+          "walletType": { "type": "string", "enum": ["master", "customer"] },
+          "customerId": { "type": ["string", "null"], "format": "uuid" },
+          "walletId": { "type": "string", "format": "uuid" },
+          "walletAddress": { "type": "string" },
+          "network": { "type": "string", "const": "solana" },
+          "cluster": { "type": "string", "const": "mainnet-beta" },
+          "feePayer": { "type": "string" },
+          "status": { "type": "string", "const": "submitted" },
+          "providerTransactionId": { "type": "string" },
+          "transactionHash": { "type": "string" },
+          "recentBlockhash": { "type": "string" },
+          "explorerLink": { "type": "string", "format": "uri" },
+          "simulation": { "$ref": "#/components/schemas/SolanaSigningSimulation" }
+        },
+        "additionalProperties": true
+      },
+      "SolanaSigningResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "const": 202 },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/SolanaSigningSubmission" }
+        },
+        "additionalProperties": true
+      },
       "CryptoWalletCreated": {
         "type": "object",
         "required": ["id", "walletId", "address", "network"],
@@ -2622,7 +2886,7 @@
           },
           "walletId": {
             "type": "string",
-            "description": "Crossmint owner locator retained for backward compatibility; not the id expected by FossaPay wallet endpoints."
+            "description": "Provider wallet identifier retained for backward compatibility; not the id expected by FossaPay wallet endpoints."
           },
           "address": {
             "type": "string"

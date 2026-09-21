@@ -1,0 +1,172 @@
+---
+title: Solana Transaction Signing
+description: 'Build, authorize, submit, and reconcile Solana transactions with FossaPay-managed wallets'
+---
+
+FossaPay can sign and broadcast an arbitrary Solana `VersionedTransaction` from either a merchant master wallet or an individual customer's wallet. Your application builds the transaction; FossaPay verifies ownership, validates and simulates the payload, obtains the managed-wallet signature, and submits it to Solana.
+
+This capability is intended for integrations that need to interact with Solana programs beyond FossaPay's standard SOL, USDC, and USDT transfer APIs. It does not expose private keys.
+
+<Warning>
+  FossaPay currently operates in production only. A successfully submitted transaction can move real assets or invoke programs on Solana mainnet. Validate instructions, accounts, amounts, and program IDs before requesting a signature.
+</Warning>
+
+## Choose the signing endpoint
+
+| Funding wallet | Endpoint | Use when |
+|---|---|---|
+| Merchant master wallet | `POST /api/v1/wallets/crypto/master/transactions/sign-and-broadcast` | The transaction is authorized and funded by the business wallet |
+| Customer wallet | `POST /api/v1/wallets/crypto/customer/{customerId}/transactions/sign-and-broadcast` | The transaction is authorized and funded by a customer wallet owned by the authenticated merchant |
+
+The authenticated API key determines the merchant boundary. A merchant cannot sign with another merchant's master wallet or customer wallet.
+
+## Transaction requirements
+
+Before submission, build a Solana versioned transaction that satisfies all of the following:
+
+- The selected FossaPay wallet is a required signer.
+- The selected FossaPay wallet is the transaction fee payer.
+- The transaction contains a recent mainnet blockhash.
+- Every required signer other than the selected FossaPay wallet has already signed.
+- The serialized transaction does not exceed Solana's 1,232-byte transaction limit.
+- The Base64 payload contains the complete serialized `VersionedTransaction`.
+- The fee-payer wallet has enough SOL for network fees and any account rent required by the instructions.
+
+FossaPay rejects legacy transactions, malformed Base64, unexpected missing signatures, a different fee payer, oversized transactions, and transactions that fail simulation.
+
+## End-to-end flow
+
+### 1. Retrieve the wallet address
+
+Retrieve the merchant master wallet or the customer's Solana wallet and use its full address as `payerKey`. Never use a truncated display address.
+
+### 2. Build the transaction
+
+The following example creates a harmless Memo instruction. Replace it with the instructions required by your application.
+
+```javascript
+const {
+  Connection,
+  PublicKey,
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
+} = require('@solana/web3.js');
+
+const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
+const feePayer = new PublicKey(process.env.FOSSAPAY_WALLET_ADDRESS);
+const { blockhash } = await connection.getLatestBlockhash('confirmed');
+
+const memo = new TransactionInstruction({
+  programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+  keys: [],
+  data: Buffer.from('FossaPay signing integration test'),
+});
+
+const message = new TransactionMessage({
+  payerKey: feePayer,
+  recentBlockhash: blockhash,
+  instructions: [memo],
+}).compileToV0Message();
+
+const transaction = new VersionedTransaction(message);
+const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
+```
+
+If the transaction has additional signers, sign with them before serialization. Leave the FossaPay-managed wallet's signature empty; FossaPay supplies it after validation.
+
+### 3. Submit with an idempotency key
+
+Use a unique `X-Idempotency-Key` for each logical transaction and retain it with the exact serialized payload.
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/crypto/master/transactions/sign-and-broadcast \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "X-Idempotency-Key: $IDEMPOTENCY_KEY" \
+  --header 'Content-Type: application/json' \
+  --data "{\"serializedTransaction\":\"$SERIALIZED_TRANSACTION\"}"
+```
+
+For a customer wallet, use the customer endpoint and put the FossaPay customer UUID in the path. The body is unchanged.
+
+### 4. Persist the submission result
+
+A successful request returns HTTP `202` with a FossaPay `requestId`, the wallet identity, provider transaction ID, transaction hash, explorer link, and simulation result. Persist at least:
+
+- `requestId`
+- `X-Idempotency-Key`
+- wallet type, wallet ID, and wallet address
+- customer ID when applicable
+- transaction hash and explorer link
+- submission status and timestamps
+
+<Note>
+  HTTP `202` and status `submitted` mean the transaction was accepted and broadcast. They do not mean it is confirmed or finalized on-chain.
+</Note>
+
+## Status and finality
+
+FossaPay reconciles submitted signatures through its configured Solana RPC connection. This signing flow does not emit a merchant webhook, so your integration must use the recorded signing status and transaction hash to establish finality.
+
+| Status | Meaning | Recommended action |
+|---|---|---|
+| `processing` | FossaPay has reserved the idempotency key and is processing the request | Do not submit another transaction |
+| `submitted` | A signature was returned and the transaction was broadcast | Show pending and continue reconciliation |
+| `confirmed` | Solana reports the transaction as confirmed | Treat as strongly committed, but not yet finalized |
+| `finalized` | Solana reports finality | Mark the operation final |
+| `failed` | Validation, simulation, expiry, or on-chain execution failed | Inspect the failure before building a replacement |
+
+FossaPay automatically checks non-terminal records approximately every 30 seconds. The merchant dashboard can also request an immediate refresh. Refreshing checks the existing transaction signature; it does not sign or broadcast another transaction.
+
+## Idempotency and retries
+
+Idempotency is scoped to the authenticated merchant.
+
+- Reusing a key with the identical wallet and serialized transaction returns the existing submitted result.
+- Reusing a key with different input returns HTTP `409`.
+- A request still marked `processing` returns HTTP `409`.
+- A failed signing request cannot be retried with the same key.
+- After failure or blockhash expiry, fetch a fresh blockhash, rebuild the transaction, and use a new idempotency key.
+
+If the HTTP connection closes after submission, retry the exact payload with the same key. Do not immediately build and send a second transaction.
+
+## Error handling
+
+| Status | Typical cause | Action |
+|---|---|---|
+| `400` | Invalid Base64, unsupported transaction format, wrong fee payer, missing co-signer, oversized transaction, or invalid idempotency header | Correct the transaction construction |
+| `401` | Missing, invalid, or inactive API key | Correct authentication |
+| `404` | Active master wallet, customer, or customer wallet was not found | Verify wallet provisioning and merchant ownership |
+| `409` | Idempotency conflict or request already processing | Retrieve or retain the original operation; do not create a duplicate |
+| `422` | Solana simulation failed | Inspect the program error and simulation logs, then rebuild if appropriate |
+| `429` | More than 10 signing requests were made in one minute | Apply bounded backoff |
+| `5xx` | Temporary provider, RPC, or platform error | Treat the outcome as ambiguous and retry the exact request safely |
+
+## Security controls
+
+- Generate and inspect instructions on a trusted server; do not accept opaque client-built transactions without policy checks.
+- Allowlist program IDs and validate writable accounts, token mints, recipients, and amounts.
+- Keep API keys server-side and rotate exposed keys immediately.
+- Bind your own business operation ID to the FossaPay request ID and transaction hash.
+- Never infer transaction intent from a memo or UI label alone.
+- Use decimal-safe amount conversion and verify token mint addresses.
+- Record authorization decisions before requesting a managed-wallet signature.
+
+## API reference
+
+| Operation | Reference |
+|---|---|
+| Sign and broadcast with the master wallet | [Master wallet signing](/api-reference/crypto-wallets/sign-master-transaction) |
+| Sign and broadcast with a customer wallet | [Customer wallet signing](/api-reference/crypto-wallets/sign-customer-transaction) |
+
+## Production checklist
+
+- [ ] The API key and wallet belong to the intended merchant.
+- [ ] The selected wallet is both a required signer and fee payer.
+- [ ] All instructions, accounts, amounts, mints, and program IDs passed application policy checks.
+- [ ] Other required signers signed before serialization.
+- [ ] The blockhash is recent and the wallet has enough SOL for execution.
+- [ ] A unique idempotency key is stored with the exact payload.
+- [ ] `submitted` is displayed as pending until reconciliation reaches a terminal state.
+- [ ] Ambiguous responses are retried only with the same payload and key.

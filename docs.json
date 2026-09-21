@@ -38,7 +38,8 @@
               "guides/checkouts",
               "guides/collections",
               "guides/ngn-transfers",
-              "guides/payouts"
+              "guides/payouts",
+              "guides/solana-transaction-signing"
             ]
           },
           {
@@ -103,6 +104,9 @@
             "pages": [
               "api-reference/crypto-wallets/create-wallet",
               "api-reference/crypto-wallets/get-master-wallet",
+              "api-reference/crypto-wallets/get-customer-balance",
+              "api-reference/crypto-wallets/sign-master-transaction",
+              "api-reference/crypto-wallets/sign-customer-transaction",
               "api-reference/crypto-wallets/get-wallet-by-id",
               "api-reference/crypto-wallets/get-wallet-by-address",
               "api-reference/crypto-wallets/wallet-transactions",
