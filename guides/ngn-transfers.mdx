@@ -94,7 +94,7 @@ curl --request POST \
   }'
 ```
 
-All request fields are required. `customerId` selects the customer wallet to debit; do not send a source account number.
+All request fields are required. `customerId` selects the customer wallet to debit; do not send a source account number. The customer inter-bank `reference` must be unique and no more than 36 characters; an invalid length is rejected before any funds move.
 
 An HTTP `200` response confirms that FossaPay accepted the request flow:
 

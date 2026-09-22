@@ -2715,7 +2715,10 @@
             "type": "string"
           },
           "reference": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 36,
+            "description": "Unique customer inter-bank transfer reference. Must be 36 characters or fewer."
           },
           "remarks": {
             "type": "string"

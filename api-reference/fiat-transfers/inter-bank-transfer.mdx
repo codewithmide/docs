@@ -41,7 +41,7 @@ Send NGN to a recipient whose account is at a bank outside the bank used for Fos
 </ParamField>
 
 <ParamField body="reference" type="string" required>
-  Unique logical transfer reference generated and persisted by your system.
+  Unique logical transfer reference generated and persisted by your system. Maximum 36 characters. Use a concise, provider-safe value; requests with a longer reference are rejected before any funds move.
 </ParamField>
 
 <ParamField body="remarks" type="string" required>
@@ -137,7 +137,7 @@ const data = await response.json();
 ```
 </ResponseExample>
 
-The request `reference` is the replay and reconciliation identifier. This endpoint does not use `X-Idempotency-Key`. After a timeout, reconcile by reference and wallet history before creating another transfer.
+The request `reference` is the replay and reconciliation identifier. It must be 36 characters or fewer. This endpoint does not use `X-Idempotency-Key`. After a timeout, reconcile by reference and wallet history before creating another transfer.
 
 ## Errors
 
@@ -146,5 +146,5 @@ The request `reference` is the replay and reconciliation identifier. This endpoi
 | `400` | Customer/wallet missing, insufficient funds, duplicate processing, provider failure, or unresolved outcome |
 | `401` | Missing or invalid API key |
 | `404` | Customer wallet balance or related resource not found |
-| `422` | Missing or invalid request field |
+| `422` | Missing or invalid request field, including a `reference` longer than 36 characters |
 | `5xx` | Temporary platform or provider failure; reconcile before retrying |
