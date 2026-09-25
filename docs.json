@@ -52,7 +52,6 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "/api-reference/openapi.json",
         "groups": [
           {
             "group": "Customers",
@@ -91,16 +90,6 @@
             ]
           },
           {
-            "group": "Bulk Payouts",
-            "pages": [
-              "api-reference/bulk-payouts/create-batch",
-              "api-reference/bulk-payouts/list-batches",
-              "api-reference/bulk-payouts/get-batch",
-              "api-reference/bulk-payouts/get-batch-recipients",
-              "api-reference/bulk-payouts/get-batch-status"
-            ]
-          },
-          {
             "group": "NGN Transfers",
             "pages": [
               "api-reference/fiat-transfers/get-supported-banks",
@@ -108,6 +97,16 @@
               "api-reference/virtual-account/wallet-transfer",
               "api-reference/fiat-transfers/inter-bank-transfer",
               "api-reference/fiat-transfers/calculate-fee"
+            ]
+          },
+          {
+            "group": "Bulk Payouts",
+            "pages": [
+              "api-reference/bulk-payouts/create-batch",
+              "api-reference/bulk-payouts/list-batches",
+              "api-reference/bulk-payouts/get-batch",
+              "api-reference/bulk-payouts/get-batch-recipients",
+              "api-reference/bulk-payouts/get-batch-status"
             ]
           },
           {
