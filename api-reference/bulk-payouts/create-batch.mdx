@@ -1,0 +1,40 @@
+---
+title: 'Create Bulk Payout Batch'
+openapi: '/api-reference/openapi.json POST /api/v1/payouts/batches'
+playground: 'interactive'
+description: 'Validate, fund, and submit an immediate NGN payout batch from a CSV file'
+---
+
+Creates an immediate, all-or-nothing payout batch funded by the authenticated merchant's master wallet or one of its subaccounts. The configured single-payout fee is charged for every CSV row.
+
+## CSV columns
+
+| Column | Rules |
+|---|---|
+| `Account Number` | Exactly 10 digits |
+| `Bank Name` | A name from the supported-bank directory |
+| `Amount` | Positive NGN amount with at most two decimal places |
+| `Narration` | Required; maximum 255 characters |
+
+The required header must be the first non-empty row and fields must be separated with commas. Remove spreadsheet column-label rows such as `A,B,C,D`; semicolon- and tab-delimited exports are not accepted.
+
+## Request
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/payouts/batches \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'X-Idempotency-Key: payroll-2026-09-v1' \
+  --form 'accountNumber=9710000000' \
+  --form 'batchReference=PAYROLL-2026-09' \
+  --form 'executionMode=IMMEDIATE' \
+  --form 'csvFile=@./payroll-2026-09.csv;type=text/csv'
+```
+
+Do not set `Content-Type` manually; your client must include the generated multipart boundary. A successful `202` response means the batch was accepted for processing, not that recipients have been paid.
+
+## Idempotency
+
+The same key, form fields, and exact CSV bytes return the original batch. Changed fields or file bytes with the same key return `409`. The `batchReference` must be globally unique.
+
+See the [Bulk Payouts guide](/guides/bulk-payouts) for the CSV format, processing lifecycle, retries, webhooks, and scheduling guidance.

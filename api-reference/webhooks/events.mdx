@@ -257,6 +257,60 @@ Fired when the payout does not complete and FossaPay confirms that the reserved 
 
 The `route` value is one of `same_business`, `fossapay_cross_business`, or `external_bank`. Same-business payouts have a zero fee.
 
+## Bulk Payout Events
+
+Bulk payout events are terminal and refer to the FossaPay batch with `data.batchId`. Verify the webhook signature and deduplicate deliveries using the envelope `eventId`.
+
+### payout.batch.completed
+
+Fired when every item in an immediate batch completes successfully.
+
+```json
+{
+  "eventId": "evt_bulk_completed_001",
+  "eventType": "payout.batch.completed",
+  "data": {
+    "batchId": "2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851",
+    "batchReference": "PAYROLL-2026-09",
+    "status": "completed",
+    "accountNumber": "9710000000",
+    "totalRecipients": 2,
+    "totalAmount": "12500.00",
+    "totalFee": "60.00",
+    "totalDebit": "12560.00",
+    "failureReason": null,
+    "completedAt": "2026-09-24T09:02:15.000Z",
+    "failedAt": null
+  },
+  "timestamp": "2026-09-24T09:02:15.100Z"
+}
+```
+
+### payout.batch.failed
+
+Fired when the batch reaches a failed terminal state. Do not automatically submit a replacement batch; retrieve the latest batch status first.
+
+```json
+{
+  "eventId": "evt_bulk_failed_001",
+  "eventType": "payout.batch.failed",
+  "data": {
+    "batchId": "2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851",
+    "batchReference": "PAYROLL-2026-09",
+    "status": "failed",
+    "accountNumber": "9710000000",
+    "totalRecipients": 2,
+    "totalAmount": "12500.00",
+    "totalFee": "60.00",
+    "totalDebit": "12560.00",
+    "failureReason": "Provider reported batch failure",
+    "completedAt": null,
+    "failedAt": "2026-09-24T09:02:15.000Z"
+  },
+  "timestamp": "2026-09-24T09:02:15.100Z"
+}
+```
+
 ## Deposit Events
 
 ### deposit.completed

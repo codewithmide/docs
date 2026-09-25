@@ -1,0 +1,16 @@
+---
+title: 'Get Bulk Payout Recipients'
+openapi: '/api-reference/openapi.json GET /api/v1/payouts/batches/{batchId}/recipients'
+playground: 'interactive'
+description: 'Retrieve row-level recipients and validation results for a bulk payout batch'
+---
+
+Returns recipients ordered by their original CSV row number. Each record includes the resolved bank details, payout amount, row fee, transaction ID, validation result, and local status.
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/payouts/batches/2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851/recipients \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+`validationStatus` and `validationMessage` can be `null` until validation is available. Row correction and deletion after submission are not currently exposed through FossaPay.

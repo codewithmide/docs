@@ -105,6 +105,7 @@ Place a unique constraint on `eventId`. Within your worker, make each financial 
 | Wallet movement | `wallet.balance.updated` | Refresh or reconcile the affected wallet |
 | Checkouts | `checkout.completed`, `checkout.failed`, `checkout.expired`, `checkout.reversed` | Fulfill only completed checkouts; stop or reverse fulfillment for other terminal states as appropriate |
 | Master payouts | `payout.completed`, `payout.failed`, `payout.reversed` | Finalize the business-funded payout |
+| Bulk payouts | `payout.batch.completed`, `payout.batch.failed` | Finalize the complete batch and reconcile every recipient row |
 
 See [Webhook Events](/api-reference/webhooks/events) for event-specific examples.
 
@@ -126,6 +127,7 @@ Use the dashboard webhook event log to inspect response status, error messages, 
 | Stablecoin wallet activity | [Crypto wallet transactions](/api-reference/crypto-wallets/wallet-transactions) or [transaction by ID](/api-reference/crypto-wallets/wallet-transaction) |
 | Checkout | [Get checkout by ID](/api-reference/checkouts/get-checkout) or [by reference](/api-reference/checkouts/get-checkout-by-reference) |
 | Master payout | [Get payout by ID](/api-reference/payouts/get-payout) or [by reference](/api-reference/payouts/get-payout-by-reference) |
+| Bulk payout | [Get batch status](/api-reference/bulk-payouts/get-batch-status) or [batch recipients](/api-reference/bulk-payouts/get-batch-recipients) |
 
 ## Security and operations
 

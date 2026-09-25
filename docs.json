@@ -1,6 +1,5 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "openapi": "/api-reference/openapi.json",
   "theme": "mint",
   "name": "FossaPay",
   "colors": {
@@ -39,6 +38,7 @@
               "guides/collections",
               "guides/ngn-transfers",
               "guides/payouts",
+              "guides/bulk-payouts",
               "guides/solana-transaction-signing"
             ]
           },
@@ -52,6 +52,7 @@
       },
       {
         "tab": "API Reference",
+        "openapi": "/api-reference/openapi.json",
         "groups": [
           {
             "group": "Customers",
@@ -87,6 +88,16 @@
               "api-reference/payouts/create-payout",
               "api-reference/payouts/get-payout",
               "api-reference/payouts/get-payout-by-reference"
+            ]
+          },
+          {
+            "group": "Bulk Payouts",
+            "pages": [
+              "api-reference/bulk-payouts/create-batch",
+              "api-reference/bulk-payouts/list-batches",
+              "api-reference/bulk-payouts/get-batch",
+              "api-reference/bulk-payouts/get-batch-recipients",
+              "api-reference/bulk-payouts/get-batch-status"
             ]
           },
           {

@@ -1,0 +1,16 @@
+---
+title: 'Get Bulk Payout Status'
+openapi: '/api-reference/openapi.json GET /api/v1/payouts/batches/{batchId}/status'
+playground: 'interactive'
+description: 'Retrieve and reconcile the processing summary for a bulk payout batch'
+---
+
+Use this endpoint when a terminal webhook is delayed or when reconciling a `processing` batch. It returns the latest available processing summary.
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/payouts/batches/2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851/status \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+This request can reconcile a terminal batch state when newer processing information is available. Repeated requests are safe; terminal processing is idempotent.

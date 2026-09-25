@@ -84,7 +84,7 @@ The returned customer data depends on the resources already owned by your mercha
 |---|---|---|
 | `x-api-key` | Every protected request | Authenticates the merchant |
 | `Content-Type: application/json` | Requests with a JSON body | Declares the request-body format |
-| `X-Idempotency-Key` | Creating a checkout or master-wallet payout | Prevents duplicate logical operations |
+| `X-Idempotency-Key` | Creating a checkout, master-wallet payout, or bulk payout batch | Prevents duplicate logical operations |
 | `x-timezone` | Optional | Requests supported timestamps in the supplied timezone; the default is `Africa/Lagos` |
 
 Authentication and idempotency solve different problems. An API key establishes who is calling; an idempotency key identifies one logical write operation. Never use an API key as an idempotency key.
@@ -123,14 +123,15 @@ An API key is associated with one merchant. FossaPay uses that merchant associat
 
 - customers created with the key belong to that merchant;
 - customer and wallet lookups are restricted to that merchant's records;
-- checkout and payout references are evaluated within that merchant; and
+- checkout and single-payout references are evaluated within that merchant;
+- bulk payout batch references are globally unique, while batch retrieval remains merchant-scoped; and
 - a valid key does not grant access to another merchant's resources.
 
 Persist the FossaPay resource IDs returned to your merchant. A `403` or `404` during retrieval can indicate an incorrect ID or a resource that is not owned by the authenticated merchant.
 
 ## Idempotency for financial writes
 
-`POST /checkouts` and `POST /payouts` require an idempotency header. Use `X-Idempotency-Key` for new integrations. The legacy `Idempotency-Key` header is also accepted for compatibility.
+`POST /checkouts`, `POST /payouts`, and `POST /payouts/batches` require an idempotency header. Use `X-Idempotency-Key` for new integrations. The legacy `Idempotency-Key` header is also accepted for compatibility.
 
 ```bash
 curl --request POST \
@@ -148,14 +149,14 @@ curl --request POST \
 
 Apply these rules:
 
-- generate one stable key for each logical checkout or payout;
+- generate one stable key for each logical checkout, payout, or payout batch;
 - store it with your internal operation record before sending the request;
 - retry an uncertain request with the same key and identical body;
 - never reuse the key for a different request body;
 - limit the value to 255 characters; and
 - if both supported idempotency headers are sent, give them exactly the same value.
 
-The same key and body return the original resource without creating another operation. Reusing the key with a different body returns HTTP `409`. Missing, oversized, or conflicting idempotency headers return HTTP `400`.
+The same key and request return the original resource without creating another operation. Reusing the key with a different request returns HTTP `409`. For multipart bulk payouts, the CSV bytes are part of the idempotency comparison. Missing, oversized, or conflicting idempotency headers return HTTP `400`.
 
 <Note>
   Idempotency requirements are endpoint-specific. Do not add `X-Idempotency-Key` to wallet creation merely because it is a write request.

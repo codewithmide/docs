@@ -1,0 +1,201 @@
+---
+title: Bulk Payouts
+description: 'Submit, track, and reconcile immediate NGN payout batches from a merchant-owned wallet'
+---
+
+## Overview
+
+The Bulk Payout API sends NGN to multiple Nigerian bank accounts from one CSV file. A batch can be funded by your permanent master NGN wallet or by a subaccount wallet owned by your business.
+
+FossaPay validates the complete request, confirms that the selected wallet can cover the recipient amounts and fees, and submits the batch for immediate processing.
+
+<Info>
+  Bulk payouts currently support `IMMEDIATE` execution only. To run payouts on a schedule, call the create endpoint from your own scheduler or cron job at the required time.
+</Info>
+
+## Processing model
+
+1. FossaPay authenticates the production API key and verifies the business.
+2. The source `accountNumber` is checked against the merchant's master wallet and subaccounts.
+3. Every CSV row and bank name is validated.
+4. The configured NGN payout fee is calculated independently for every row.
+5. FossaPay verifies that the source available balance covers `totalAmount + totalFee`.
+6. The batch is submitted for immediate processing and returned as `processing`.
+7. A signed terminal webhook, or a later status reconciliation, changes the batch to `completed` or `failed`.
+
+Batch execution is all-or-nothing. Do not treat an HTTP `202` response or an `approvalStatus` as proof that recipients were paid.
+
+## Prerequisites
+
+- A verified FossaPay business
+- An active production API key with full permission
+- A permanent master NGN wallet or an active subaccount owned by the authenticated business
+- Enough available balance for all recipient amounts and all per-item fees
+- A webhook endpoint configured with your webhook secret
+- A UTF-8 `.csv` file containing at least one recipient
+
+## Prepare the CSV
+
+The first row must contain these four headers. Header matching is case-insensitive, but using the names exactly as shown is recommended.
+
+| Header | Required | Rules |
+|---|---|---|
+| `Account Number` | Yes | Exactly 10 digits |
+| `Bank Name` | Yes | Must match a bank returned by the supported-banks endpoint; matching ignores case, punctuation, and the words `Bank` and `PLC` |
+| `Amount` | Yes | Positive NGN amount with no more than two decimal places |
+| `Narration` | Yes | 1–255 characters |
+
+```csv
+Account Number,Bank Name,Amount,Narration
+0123456789,Guaranty Trust Bank,5000.00,September allowance
+0987654321,OPAY,7500.00,September allowance
+```
+
+The required header must be the first non-empty row. Files with spreadsheet column labels such as `A,B,C,D` above the header are invalid. Fields must be comma-separated; semicolon- and tab-delimited exports are not accepted.
+
+Quoted CSV fields and both LF and CRLF line endings are supported. Do not upload an Excel workbook, JSON file, or renamed non-CSV file. FossaPay does not impose an explicit recipient-count limit, but the HTTP request-size limit still applies.
+
+<Tip>
+  Retrieve the current bank directory from `GET /api/v1/transfers/fiat/supported-banks` before generating the file.
+</Tip>
+
+## Create a batch
+
+Create one globally unique `batchReference` and one `X-Idempotency-Key` for the logical batch. Send the request as `multipart/form-data`; let your HTTP client generate the multipart boundary.
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/payouts/batches \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'X-Idempotency-Key: payroll-2026-09-v1' \
+  --form 'accountNumber=9710000000' \
+  --form 'batchReference=PAYROLL-2026-09' \
+  --form 'executionMode=IMMEDIATE' \
+  --form 'csvFile=@./payroll-2026-09.csv;type=text/csv'
+```
+
+The source account must belong to the business identified by the API key. A wallet belonging to another business is rejected before any funds move.
+
+The endpoint returns HTTP `202` after submission:
+
+```json
+{
+  "status": "success",
+  "statusCode": 202,
+  "message": "Bulk payout batch submitted successfully",
+  "data": {
+    "id": "2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851",
+    "reference": "PAYROLL-2026-09",
+    "accountNumber": "9710000000",
+    "status": "processing",
+    "executionMode": "IMMEDIATE",
+    "totalRecipients": 2,
+    "totalAmount": "12500.00",
+    "totalFee": "60.00",
+    "totalDebit": "12560.00",
+    "failureReason": null,
+    "completedAt": null,
+    "failedAt": null,
+    "createdAt": "2026-09-24T09:00:00.000Z",
+    "updatedAt": "2026-09-24T09:00:04.000Z"
+  }
+}
+```
+
+Persist `id`, `reference`, and the idempotency key. `totalDebit` is the aggregate recipient amount plus the fee calculated for each row.
+
+## Idempotency and retries
+
+- Retrying the identical fields and identical CSV bytes with the same idempotency key returns the existing batch without funding it again.
+- Reusing that key with different fields or file contents returns HTTP `409`.
+- `batchReference` is globally unique across FossaPay batches, not only within one merchant.
+- If the create request times out, retry the exact multipart request with the original key and original file. Do not generate a new key or reference.
+- Keep the original CSV bytes available until the request is resolved; even a harmless file edit changes the request hash.
+
+## Retrieve and reconcile
+
+Use the FossaPay batch `id` returned by the create endpoint:
+
+```bash
+curl https://api-production.fossapay.com/api/v1/payouts/batches/2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851/status \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+| Operation | Endpoint | Purpose |
+|---|---|---|
+| Create batch | `POST /api/v1/payouts/batches` | Validate, fund, and submit a CSV batch |
+| List batches | `GET /api/v1/payouts/batches` | Paginate the authenticated merchant's batches |
+| Get batch | `GET /api/v1/payouts/batches/{batchId}` | Retrieve the latest batch details |
+| Get recipients | `GET /api/v1/payouts/batches/{batchId}/recipients` | Retrieve row-level validation and transaction identifiers |
+| Get status | `GET /api/v1/payouts/batches/{batchId}/status` | Retrieve the processing summary and reconcile a completed provider batch |
+
+The recipients endpoint reports row-level validation results when they are available. Updating or deleting submitted rows is not currently exposed by the FossaPay API; correct the source data and contact support before attempting a replacement batch.
+
+## Status fields
+
+| Status | Meaning |
+|---|---|
+| `processing` | The batch was accepted and does not yet have a final outcome. Do not retry it as a new batch. |
+| `completed` | Every payout in the batch completed successfully. |
+| `failed` | The batch did not complete. Retrieve its latest details before deciding whether to create a replacement. |
+
+Only `completed` is a successful terminal state. An uncertain processing result remains non-terminal while FossaPay reconciles it, preventing duplicate payouts.
+
+## Webhooks
+
+FossaPay sends one of these terminal events:
+
+- `payout.batch.completed`
+- `payout.batch.failed`
+
+Verify the `x-fossapay-signature`, deduplicate by `eventId`, acknowledge with HTTP `2xx`, and update your batch using `data.batchId` or `data.batchReference`. See [Webhook Events](/api-reference/webhooks/events#bulk-payout-events).
+
+## Schedule batches from your system
+
+The API does not store future schedules. Your application can provide scheduled or recurring payouts by invoking the immediate endpoint from a durable job scheduler.
+
+For every intended run:
+
+1. Build and validate the CSV.
+2. Generate a new globally unique batch reference.
+3. Generate and persist one idempotency key.
+4. Submit the immediate batch once.
+5. After a timeout, retry the exact request with the same file, reference, and key.
+6. Track the terminal webhook and poll the status endpoint as a reconciliation fallback.
+
+Protect the job with a database uniqueness constraint or distributed lock so two workers cannot create separate logical batches for the same schedule occurrence.
+
+## Error handling
+
+| HTTP status | Typical cause | Action |
+|---|---|---|
+| `400` | Invalid multipart fields, non-CSV file, invalid row, unsupported bank, foreign source wallet, or insufficient balance | Correct the request; do not blindly retry |
+| `401` | Missing, invalid, inactive, revoked, non-live, or non-full-permission API key | Replace or activate the production key |
+| `403` | Business verification is incomplete | Complete merchant verification |
+| `404` | Batch does not exist or belongs to another merchant | Verify the FossaPay batch ID and API key |
+| `409` | Duplicate global batch reference or incompatible idempotency-key reuse | Retrieve the original operation or use new identifiers for a genuinely new batch |
+| `503` | The batch service is temporarily unavailable or the outcome requires reconciliation | Retain identifiers and reconcile; do not create a duplicate batch |
+
+## Go-live checklist
+
+- [ ] Use only an active full-permission production API key.
+- [ ] Confirm the source account belongs to the authenticated business.
+- [ ] Generate bank names from the supported-bank directory.
+- [ ] Validate every account number, amount, and narration before upload.
+- [ ] Store the exact CSV bytes, globally unique reference, and idempotency key.
+- [ ] Ensure the available balance covers `totalAmount + totalFee`.
+- [ ] Treat HTTP `202` and `processing` as non-terminal.
+- [ ] Verify webhook signatures and deduplicate `eventId` values.
+- [ ] Reconcile delayed webhooks through the status endpoint.
+- [ ] Prevent overlapping scheduler executions for the same logical run.
+
+## API reference
+
+<CardGroup cols={2}>
+  <Card title="Create Batch" icon="file-arrow-up" href="/api-reference/bulk-payouts/create-batch">Upload and submit an immediate CSV batch</Card>
+  <Card title="List Batches" icon="list" href="/api-reference/bulk-payouts/list-batches">Review previous bulk payouts</Card>
+  <Card title="Get Batch" icon="magnifying-glass" href="/api-reference/bulk-payouts/get-batch">Retrieve one batch</Card>
+  <Card title="Get Recipients" icon="users" href="/api-reference/bulk-payouts/get-batch-recipients">Inspect every recipient row</Card>
+  <Card title="Get Status" icon="rotate" href="/api-reference/bulk-payouts/get-batch-status">Reconcile processing state</Card>
+  <Card title="Webhook Events" icon="webhook" href="/api-reference/webhooks/events#bulk-payout-events">Handle terminal batch events</Card>
+</CardGroup>

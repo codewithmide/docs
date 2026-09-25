@@ -1,0 +1,16 @@
+---
+title: 'List Bulk Payout Batches'
+openapi: '/api-reference/openapi.json GET /api/v1/payouts/batches'
+playground: 'interactive'
+description: 'List bulk payout batches belonging to the authenticated merchant'
+---
+
+Returns batches in reverse creation order. `page` defaults to `1`; `size` defaults to `50` and is capped at `100`.
+
+```bash
+curl --request GET \
+  --url 'https://api-production.fossapay.com/api/v1/payouts/batches?page=1&size=50' \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+The response contains a `data` array and pagination `meta` with `page`, `size`, and `total`.

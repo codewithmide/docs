@@ -1625,6 +1625,89 @@
         }
       }
     },
+    "/api/v1/payouts/batches": {
+      "post": {
+        "operationId": "ExternalPayoutController_createBatch",
+        "tags": ["Bulk Payouts"],
+        "summary": "Create an immediate bulk payout batch",
+        "description": "Validates a CSV, charges the configured payout fee per recipient, and submits an immediate all-or-nothing batch from a merchant-owned master or subaccount wallet.",
+        "parameters": [{
+          "name": "X-Idempotency-Key",
+          "in": "header",
+          "required": true,
+          "description": "Unique key for this logical batch. Idempotency-Key is also accepted; if both headers are sent, they must match.",
+          "schema": { "type": "string", "maxLength": 255 }
+        }],
+        "requestBody": {
+          "required": true,
+          "content": { "multipart/form-data": { "schema": { "$ref": "#/components/schemas/BulkPayoutCreateRequest" } } }
+        },
+        "responses": {
+          "202": { "description": "Batch accepted for processing or idempotently replayed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkPayoutResponse" } } } },
+          "400": { "description": "Invalid multipart request, CSV row, bank, source wallet, balance, configuration, or provider request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "401": { "description": "Missing, invalid, inactive, revoked, non-live, or non-full-permission API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "403": { "description": "Merchant KYC approval is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Duplicate global batch reference or incompatible idempotency-key reuse", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "503": { "description": "Batch service is temporarily unavailable or the outcome requires reconciliation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      },
+      "get": {
+        "operationId": "ExternalPayoutController_listBatches",
+        "tags": ["Bulk Payouts"],
+        "summary": "List bulk payout batches",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 } }
+        ],
+        "responses": {
+          "200": { "description": "Merchant batches retrieved in reverse creation order", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkPayoutListResponse" } } } },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "403": { "description": "Merchant is not eligible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/payouts/batches/{batchId}": {
+      "get": {
+        "operationId": "ExternalPayoutController_getBatch",
+        "tags": ["Bulk Payouts"],
+        "summary": "Get a bulk payout batch",
+        "parameters": [{ "name": "batchId", "in": "path", "required": true, "description": "FossaPay batch ID returned by the create endpoint.", "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Batch retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkPayoutResponse" } } } },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "403": { "description": "Merchant is not eligible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Batch not found for this merchant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/payouts/batches/{batchId}/recipients": {
+      "get": {
+        "operationId": "ExternalPayoutController_getBatchRecipients",
+        "tags": ["Bulk Payouts"],
+        "summary": "Get recipients in a bulk payout batch",
+        "parameters": [{ "name": "batchId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Recipients and validation results retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkPayoutRecipientsResponse" } } } },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "403": { "description": "Merchant is not eligible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Batch not found for this merchant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/payouts/batches/{batchId}/status": {
+      "get": {
+        "operationId": "ExternalPayoutController_getBatchStatus",
+        "tags": ["Bulk Payouts"],
+        "summary": "Get and reconcile bulk payout processing status",
+        "parameters": [{ "name": "batchId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Latest batch status retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkPayoutStatusResponse" } } } },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "403": { "description": "Merchant is not eligible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Batch not found for this merchant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
     "/api/v1/payouts/reference/{reference}": {
       "get": {
         "operationId": "ExternalPayoutController_findByReference",
@@ -3391,6 +3474,112 @@
           "statusCode": { "type": "integer", "enum": [200, 202] },
           "message": { "type": "string" },
           "data": { "$ref": "#/components/schemas/Payout" }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayoutCreateRequest": {
+        "type": "object",
+        "required": ["accountNumber", "batchReference", "executionMode", "csvFile"],
+        "properties": {
+          "accountNumber": { "type": "string", "description": "Merchant-owned master wallet or subaccount number funding the batch." },
+          "batchReference": { "type": "string", "maxLength": 255, "description": "Globally unique merchant-defined batch reference." },
+          "executionMode": { "type": "string", "enum": ["IMMEDIATE"] },
+          "csvFile": { "type": "string", "format": "binary", "description": "UTF-8 CSV containing Account Number, Bank Name, Amount, and Narration columns." }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayout": {
+        "type": "object",
+        "required": ["id", "reference", "accountNumber", "status", "executionMode", "totalRecipients", "totalAmount", "totalFee", "totalDebit", "failureReason", "completedAt", "failedAt", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "reference": { "type": "string" },
+          "accountNumber": { "type": "string" },
+          "status": { "type": "string", "enum": ["processing", "completed", "failed"] },
+          "executionMode": { "type": "string", "enum": ["IMMEDIATE"] },
+          "totalRecipients": { "type": "integer" },
+          "totalAmount": { "type": "string" },
+          "totalFee": { "type": "string" },
+          "totalDebit": { "type": "string" },
+          "failureReason": { "type": ["string", "null"] },
+          "completedAt": { "type": ["string", "null"], "format": "date-time" },
+          "failedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": true
+      },
+      "BulkPayoutResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "enum": [200, 202] },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/BulkPayout" }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayoutListResponse": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/BulkPayout" } },
+          "meta": {
+            "type": "object",
+            "required": ["page", "size", "total"],
+            "properties": {
+              "page": { "type": "integer" },
+              "size": { "type": "integer" },
+              "total": { "type": "integer" }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayoutRecipient": {
+        "type": "object",
+        "required": ["id", "batchId", "rowNumber", "accountNumber", "bankName", "amount", "feeAmount", "status", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "batchId": { "type": "string", "format": "uuid" },
+          "rowNumber": { "type": "integer" },
+          "recipientName": { "type": ["string", "null"] },
+          "accountNumber": { "type": "string" },
+          "bankName": { "type": "string" },
+          "bankCode": { "type": ["string", "null"] },
+          "amount": { "type": "string" },
+          "feeAmount": { "type": "string" },
+          "narration": { "type": ["string", "null"] },
+          "transactionId": { "type": ["string", "null"], "format": "uuid" },
+          "providerRecipientId": { "type": ["string", "null"] },
+          "validationStatus": { "type": ["string", "null"] },
+          "validationMessage": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayoutRecipientsResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "const": 200 },
+          "message": { "type": "string" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/BulkPayoutRecipient" } }
+        },
+        "additionalProperties": false
+      },
+      "BulkPayoutStatusResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "const": 200 },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/BulkPayout" }
         },
         "additionalProperties": false
       },

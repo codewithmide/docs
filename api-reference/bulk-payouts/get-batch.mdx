@@ -1,0 +1,16 @@
+---
+title: 'Get Bulk Payout Batch'
+openapi: '/api-reference/openapi.json GET /api/v1/payouts/batches/{batchId}'
+playground: 'interactive'
+description: 'Retrieve one merchant-owned bulk payout batch'
+---
+
+Use the FossaPay batch `id` returned by the create endpoint—not the `providerBatchId` or `batchReference`.
+
+```bash
+curl --request GET \
+  --url https://api-production.fossapay.com/api/v1/payouts/batches/2ebee4e9-e4d7-4cbe-b6ee-eaf75369b851 \
+  --header "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+The endpoint returns the latest available batch details. It does not expose a batch belonging to another merchant.

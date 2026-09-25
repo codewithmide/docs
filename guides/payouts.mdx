@@ -10,6 +10,7 @@ FossaPay supports business-funded payouts directly from your permanent NGN maste
 | Flow | Source | Destination | Fee behavior |
 |---|---|---|---|
 | [Master Wallet Payout](/api-reference/payouts/create-payout) | Your business master NGN wallet | Same-business customer, another FossaPay business, or an external bank | Free within the same business; payout fee otherwise |
+| [Bulk Payout](/guides/bulk-payouts) | Your business master NGN wallet or a subaccount owned by your business | Multiple Nigerian bank accounts supplied in a CSV file | Existing payout fee applied to every recipient row |
 | [Wallet-to-Wallet Transfer](/api-reference/virtual-account/wallet-transfer) | A customer wallet | Another customer wallet under the same business | Free |
 | [Customer Inter-Bank Transfer](/api-reference/fiat-transfers/inter-bank-transfer) | A customer wallet selected with `customerId` | External Nigerian bank account | Applicable transfer fee |
 
@@ -241,5 +242,8 @@ Do not deliberately retry a terminal payout under a new reference without making
   </Card>
   <Card color="#0080FF" title="Webhook Events" icon="webhook" href="/api-reference/webhooks/events">
     See complete payout event payloads
+  </Card>
+  <Card color="#0080FF" title="Bulk Payouts" icon="file-csv" href="/guides/bulk-payouts">
+    Submit and reconcile immediate CSV payout batches
   </Card>
 </CardGroup>
