@@ -4,7 +4,7 @@ openapi: '/api-reference/openapi.json GET /api/v1/wallets/crypto/master'
 description: "Retrieve all of the merchant's crypto addresses and their token balances"
 ---
 
-The master crypto wallet returns every crypto address belonging to the merchant (resolved from the authenticated API key), each with its live token balances. No wallet ID is required.
+The master crypto wallet returns every crypto address belonging to the merchant (resolved from the authenticated API key), each with its supported token balances. Results can include both Solana and Stellar wallets. No wallet ID is required.
 
 ## Headers
 
@@ -91,9 +91,14 @@ addresses = data["data"]
   "message": "Master crypto wallet retrieved successfully",
   "data": [
     {
+      "id": "55555555-5555-4555-8555-555555555555",
       "address": "7EcJ1eB6J3ggRrGkQWsT4ZP8dkqPZ4JmW4YRwR7Qp5cY",
       "network": "solana",
       "tokens": {
+        "sol": {
+          "amount": "0",
+          "rawAmount": "0"
+        },
         "usdc": {
           "amount": "0",
           "rawAmount": "0"
@@ -102,6 +107,15 @@ addresses = data["data"]
           "amount": "0",
           "rawAmount": "0"
         }
+      }
+    },
+    {
+      "id": "66666666-6666-4666-8666-666666666666",
+      "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      "network": "stellar",
+      "tokens": {
+        "xlm": { "amount": "0", "rawAmount": "0" },
+        "usdc": { "amount": "0", "rawAmount": "0" }
       }
     }
   ]

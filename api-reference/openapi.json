@@ -946,6 +946,52 @@
         }
       }
     },
+    "/api/v1/wallets/crypto/master/create": {
+      "post": {
+        "operationId": "CryptoWalletsController_createMasterWallet",
+        "tags": ["Crypto Wallets"],
+        "summary": "Create a merchant master crypto wallet",
+        "description": "Creates one active merchant-owned wallet per supported network. Requires a production merchant API key and does not take a customer ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CryptoMasterWalletCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Master crypto wallet created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptoMasterWalletCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Wallet creation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          },
+          "409": {
+            "description": "An active master wallet already exists on the network",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          },
+          "422": {
+            "description": "Invalid network",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } }
+          }
+        }
+      }
+    },
     "/api/v1/wallets/crypto/master/transactions/sign-and-broadcast": {
       "post": {
         "operationId": "CryptoWalletsController_signAndBroadcastMasterTransaction",
@@ -1142,19 +1188,25 @@
       "get": {
         "operationId": "CryptoWalletsController_getCustomerBalance",
         "tags": ["Crypto Wallets"],
-        "summary": "Get a customer Solana wallet balance",
-        "description": "Returns provider-reported SOL, USDC, and USDT balances for a customer owned by the authenticated merchant. Unsupported Solana token deposits appear in transaction history, not this balance response.",
+        "summary": "Get a customer crypto wallet balance",
+        "description": "Returns supported balances for the selected customer wallet. Solana supports SOL, USDC, and USDT; Stellar supports XLM and USDC. Unsupported deposits appear in transaction history, not this balance response.",
         "parameters": [
           {
             "name": "customerId",
             "in": "path",
             "required": true,
             "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["solana", "stellar"], "default": "solana" }
           }
         ],
         "responses": {
           "200": {
-            "description": "Customer Solana wallet balance retrieved",
+            "description": "Customer crypto wallet balance retrieved",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/CryptoCustomerBalanceResponse" }
@@ -1182,7 +1234,7 @@
             "name": "walletId",
             "in": "path",
             "required": true,
-            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or provider data.walletId here.",
+            "description": "The data.id returned when the wallet is created. A wallet address cannot be used here.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -1302,7 +1354,7 @@
             "name": "walletId",
             "in": "path",
             "required": true,
-            "description": "FossaPay crypto wallet id (the UUID returned as data.id when the wallet is created). Do not use the Solana address or provider data.walletId here.",
+            "description": "The data.id returned when the wallet is created. A wallet address cannot be used here.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -1465,6 +1517,7 @@
         "operationId": "CryptoTransfersController_create",
         "tags": ["Crypto Transfers"],
         "summary": "Create a crypto transfer",
+        "description": "Customer wallet transfer. Solana supports SOL, USDC, and USDT; Stellar supports XLM and USDC. The selected network must match the source wallet and destination address.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1530,8 +1583,15 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["usdc", "usdt", "sol"]
+              "enum": ["usdc", "usdt", "sol", "xlm"]
             }
+          },
+          {
+            "name": "network",
+            "in": "query",
+            "required": false,
+            "description": "Specify stellar for Stellar USDC. Defaults to stellar for XLM and solana for other assets.",
+            "schema": { "type": "string", "enum": ["solana", "stellar"] }
           }
         ],
         "responses": {
@@ -2530,7 +2590,7 @@
           },
           "walletId": {
             "type": "string",
-            "description": "Wallet identifier returned by the custody provider. It is distinct from the internal crypto-address UUID used by some retrieval endpoints."
+            "description": "Additional wallet reference returned in transaction data. Use the wallet id for FossaPay wallet endpoints."
           },
           "accountNumber": {
             "type": "string"
@@ -2880,11 +2940,22 @@
         "properties": {
           "network": {
             "type": "string",
-            "enum": ["solana"]
+            "enum": ["solana", "stellar"]
           },
           "customerId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CryptoMasterWalletCreateRequest": {
+        "type": "object",
+        "required": ["network"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": ["solana", "stellar"]
           }
         },
         "additionalProperties": false
@@ -2972,14 +3043,14 @@
           },
           "walletId": {
             "type": "string",
-            "description": "Provider wallet identifier retained for backward compatibility; not the id expected by FossaPay wallet endpoints."
+            "description": "Additional wallet reference. Use id for FossaPay wallet-by-ID and wallet-transactions endpoints."
           },
           "address": {
             "type": "string"
           },
           "network": {
             "type": "string",
-            "enum": ["solana"]
+            "enum": ["solana", "stellar"]
           }
         },
         "additionalProperties": true
@@ -3032,15 +3103,16 @@
           },
           "network": {
             "type": "string",
-            "enum": ["solana"]
+            "enum": ["solana", "stellar"]
           },
           "tokens": {
             "type": "object",
-            "description": "Provider-reported supported balances. SOL is the native network token; unsupported token deposits are recorded as transactions but omitted here.",
+            "description": "Supported balances. Solana wallets can contain SOL, USDC, and USDT; Stellar wallets can contain XLM and USDC. Unsupported deposits remain in transaction history and are omitted here.",
             "properties": {
               "sol": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" },
               "usdc": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" },
-              "usdt": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" }
+              "usdt": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" },
+              "xlm": { "$ref": "#/components/schemas/CryptoWalletTokenBalance" }
             },
             "additionalProperties": {
               "$ref": "#/components/schemas/CryptoWalletTokenBalance"
@@ -3082,6 +3154,20 @@
             "items": {
               "$ref": "#/components/schemas/CryptoWalletAddress"
             }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CryptoMasterWalletCreateResponse": {
+        "type": "object",
+        "required": ["status", "statusCode", "message", "data"],
+        "properties": {
+          "status": { "type": "string", "const": "success" },
+          "statusCode": { "type": "integer", "const": 201 },
+          "message": { "type": "string" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CryptoWalletAddress" }
           }
         },
         "additionalProperties": true
@@ -3269,16 +3355,22 @@
           },
           "network": {
             "type": "string",
-            "enum": ["solana"]
+            "enum": ["solana", "stellar"]
           },
           "currency": {
             "type": "string",
-            "enum": ["usdc", "usdt", "sol"]
+            "enum": ["usdc", "usdt", "sol", "xlm"],
+            "description": "Solana: sol, usdc, usdt. Stellar: xlm, usdc."
           },
           "amount": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "description": "Gross token amount. FossaPay deducts the quoted transfer fee, if any, and sends the remainder to the recipient. SOL amounts support up to 9 decimal places."
+            "description": "Gross token amount. FossaPay deducts the quoted transfer fee, if any, and sends the remainder to the recipient. SOL supports up to 9 decimal places; XLM up to 7."
+          },
+          "memo": {
+            "type": "string",
+            "maxLength": 28,
+            "description": "Optional text memo for Stellar transfers. FossaPay generates one when omitted."
           }
         },
         "additionalProperties": false
@@ -3312,7 +3404,7 @@
               },
               "network": {
                 "type": "string",
-                "enum": ["SOLANA"]
+                "enum": ["SOLANA", "STELLAR"]
               },
               "recipientAddress": {
                 "type": "string"

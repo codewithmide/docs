@@ -1,0 +1,61 @@
+---
+title: 'Create Master Crypto Wallet'
+openapi: '/api-reference/openapi.json POST /api/v1/wallets/crypto/master/create'
+description: 'Create a Solana or Stellar wallet owned by the merchant'
+---
+
+This endpoint creates a merchant-owned wallet on the selected network. It does not require a customer ID. An active master wallet on the same network cannot be created twice.
+
+## Request
+
+<ParamField header="x-api-key" type="string" required>
+  Active production API key belonging to the merchant.
+</ParamField>
+
+<ParamField body="network" type="string" required>
+  Blockchain network: `solana` or `stellar`.
+</ParamField>
+
+### Request example
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/crypto/master/create \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{"network":"stellar"}'
+```
+
+## Response
+
+<ResponseExample>
+```json Success
+{
+  "status": "success",
+  "statusCode": 201,
+  "message": "Master crypto wallet created successfully",
+  "data": [
+    {
+      "id": "55555555-5555-4555-8555-555555555555",
+      "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      "network": "stellar",
+      "tokens": {
+        "xlm": { "amount": "0", "rawAmount": "0" },
+        "usdc": { "amount": "0", "rawAmount": "0" }
+      }
+    }
+  ]
+}
+```
+</ResponseExample>
+
+`data` is an array of the newly created wallet's addresses and supported balances. Available token entries may vary. Save the full address and wallet `id`; retrieve existing master wallets with [Get Master Crypto Wallet](/api-reference/crypto-wallets/get-master-wallet).
+
+## Errors
+
+| Status | Typical cause |
+|---|---|
+| `400` | Wallet could not be created |
+| `401` | Missing or invalid API key |
+| `409` | An active master wallet already exists for this network |
+| `422` | `network` is not `solana` or `stellar` |

@@ -1,7 +1,7 @@
 ---
 title: 'Crypto Transfer'
 openapi: '/api-reference/openapi.json POST /api/v1/transfers/crypto'
-description: 'Submit a customer-funded USDC or USDT transfer on Solana'
+description: 'Submit a customer-funded transfer on Solana or Stellar'
 ---
 
 ## Request
@@ -15,19 +15,23 @@ description: 'Submit a customer-funded USDC or USDT transfer on Solana'
 </ParamField>
 
 <ParamField body="recipient" type="string" required>
-  Recipient wallet address
+  Complete recipient address on the selected network. Stellar requires a valid Stellar public address.
 </ParamField>
 
 <ParamField body="network" type="string" required>
-  The blockchain network for the transfer. The only supported value is `solana`.
+  The blockchain network for the transfer: `solana` or `stellar`.
 </ParamField>
 
 <ParamField body="currency" type="string" required>
-  The cryptocurrency to transfer. Must be one of: `usdc`, `usdt`
+  Solana supports `sol`, `usdc`, and `usdt`. Stellar supports `xlm` and `usdc`. Use lowercase values.
 </ParamField>
 
 <ParamField body="amount" type="number" required>
   Gross token amount. The configured fee is deducted and the net amount is sent to the recipient.
+</ParamField>
+
+<ParamField body="memo" type="string">
+  Optional Stellar text memo, maximum 28 characters. FossaPay generates a memo when omitted. This field is used only for Stellar transfers.
 </ParamField>
 
 ### Request Example
@@ -67,6 +71,21 @@ if (!response.ok) {
 
 const transfer = await response.json();
 ```
+
+For a Stellar transfer, set `network` to `stellar`, `currency` to `xlm` or `usdc`, and `recipient` to the destination's full Stellar public address. Add a `memo` if the recipient requires one:
+
+```json
+{
+  "customerId": "11111111-1111-4111-8111-111111111111",
+  "recipient": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+  "network": "stellar",
+  "currency": "xlm",
+  "amount": 5,
+  "memo": "ORDER-123"
+}
+```
+
+The address above is illustrative. Use the recipient's actual address and required memo when submitting a payment.
 
 ## Response
 
@@ -109,7 +128,7 @@ const transfer = await response.json();
 ```
 </ResponseExample>
 
-The response indicates provider processing, not final blockchain settlement. This endpoint has no merchant-provided idempotency key or reference. After a timeout, inspect wallet history and balances before submitting another transfer.
+The response indicates provider processing, not final blockchain settlement. This endpoint has no merchant-provided idempotency key or reference. After a timeout, inspect wallet history and balances before submitting another transfer. Stellar wallets must retain the configured native XLM reserve and enough XLM for network fees; the default reserve is 1.5 XLM.
 
 ## Errors
 
@@ -117,5 +136,5 @@ The response indicates provider processing, not final blockchain settlement. Thi
 |---|---|
 | `400` | Customer/wallet unavailable, insufficient funds, unsupported operation, or provider rejection |
 | `401` | Missing or invalid API key |
-| `422` | Invalid customer UUID, currency, amount, recipient, or network other than `solana` |
+| `422` | Invalid customer UUID, currency, amount, memo, or network other than `solana` or `stellar` |
 | `5xx` | Temporary platform or provider failure; reconcile before retrying |

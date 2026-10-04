@@ -113,6 +113,7 @@
             "group": "Crypto Wallets",
             "pages": [
               "api-reference/crypto-wallets/create-wallet",
+              "api-reference/crypto-wallets/create-master-wallet",
               "api-reference/crypto-wallets/get-master-wallet",
               "api-reference/crypto-wallets/get-customer-balance",
               "api-reference/crypto-wallets/sign-master-transaction",

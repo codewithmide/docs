@@ -1,15 +1,21 @@
 ---
 title: 'Get Customer Wallet Balance'
 openapi: '/api-reference/openapi.json GET /api/v1/wallets/crypto/customer/{customerId}/balance'
-description: "Retrieve a customer's provider-reported SOL, USDC, and USDT balances"
+description: "Retrieve a customer's Solana or Stellar wallet balances"
 ---
 
-The customer and Solana wallet must belong to the merchant resolved from the production API key. Unsupported Solana token receipts remain visible in wallet transaction history but are not included in this supported-balance response.
+The customer and selected network wallet must belong to the merchant resolved from the production API key. Solana balances can contain SOL, USDC, and USDT; Stellar balances can contain XLM and USDC. Unsupported asset receipts remain visible in wallet transaction history but are omitted from the supported-balance response.
 
 ## Path parameter
 
 <ParamField path="customerId" type="string" required>
-  FossaPay UUID of the individual customer whose Solana balances will be retrieved.
+  FossaPay UUID of the individual customer whose wallet balance will be retrieved.
+</ParamField>
+
+## Query parameter
+
+<ParamField query="network" type="string">
+  `solana` (default) or `stellar`. Specify `stellar` to retrieve the customer's Stellar wallet.
 </ParamField>
 
 ## Header
@@ -22,7 +28,7 @@ The customer and Solana wallet must belong to the merchant resolved from the pro
 
 ```bash
 curl --request GET \
-  --url https://api-production.fossapay.com/api/v1/wallets/crypto/customer/11111111-1111-4111-8111-111111111111/balance \
+  --url 'https://api-production.fossapay.com/api/v1/wallets/crypto/customer/11111111-1111-4111-8111-111111111111/balance?network=stellar' \
   --header "x-api-key: $FOSSAPAY_API_KEY"
 ```
 
@@ -37,12 +43,11 @@ curl --request GET \
   "data": [
     {
       "id": "61237ceb-bde6-4052-9294-38470806f672",
-      "address": "8aQ3Y97fxiX26Pe2ckc3keoQEz5MtWBCVk4pEx96Sqeb",
-      "network": "solana",
+      "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      "network": "stellar",
       "tokens": {
-        "sol": { "amount": "0.025", "rawAmount": "25000000" },
-        "usdc": { "amount": "10.50", "rawAmount": "10500000" },
-        "usdt": { "amount": "8.00", "rawAmount": "8000000" }
+        "xlm": { "amount": "2.5", "rawAmount": "25000000" },
+        "usdc": { "amount": "10.50", "rawAmount": "105000000" }
       }
     }
   ]
@@ -54,7 +59,7 @@ curl --request GET \
 
 | Status | Typical cause |
 |---|---|
-| `400` | Customer or active Solana wallet was not found for this merchant |
+| `400` | Customer or selected network wallet was not found for this merchant |
 | `401` | Missing, invalid, or inactive API key |
 | `422` | `customerId` is not a valid UUID |
 | `5xx` | Temporary provider or platform error |

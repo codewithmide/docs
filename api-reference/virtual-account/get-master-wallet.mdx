@@ -4,7 +4,7 @@ openapi: '/api-reference/openapi.json GET /api/v1/wallets/fiat/master'
 description: "Retrieve the merchant's master NGN wallet, including live balance and virtual account details"
 ---
 
-The master NGN wallet is the merchant-level settlement wallet (as opposed to a customer's individual NGN wallet). It is resolved from the authenticated API key, so no wallet ID is required.
+The master NGN wallet belongs to the authenticated merchant, rather than an individual customer. No wallet ID is required.
 
 ## Request
 

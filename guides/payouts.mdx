@@ -221,7 +221,7 @@ Do not deliberately retry a terminal payout under a new reference without making
 - [ ] Keep API keys server-side only.
 - [ ] Validate the beneficiary before creating a payout.
 - [ ] Generate and persist a unique reference and idempotency key.
-- [ ] Store all returned payout and provider identifiers.
+- [ ] Store the payout ID, your reference, and the returned transaction identifiers.
 - [ ] Treat `processing` as non-terminal.
 - [ ] Verify webhook signatures before processing events.
 - [ ] Deduplicate webhook deliveries using `eventId`.

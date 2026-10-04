@@ -1,6 +1,6 @@
 ---
 title: Wallets
-description: 'Understand customer and merchant wallets across NGN and stablecoin rails'
+description: 'Understand customer and merchant wallets across NGN, Solana, and Stellar'
 ---
 
 Wallets are the accounts through which FossaPay attributes balances and money movement. Every wallet has an owner, a currency rail, and a specific operational purpose.
@@ -13,6 +13,8 @@ Wallets are the accounts through which FossaPay attributes balances and money mo
 | Master NGN wallet | Merchant | NGN bank account | Business-owned funds and master-wallet payouts |
 | Customer Solana wallet | Individual customer | Solana | SOL, USDC, and USDT deposits, balances, and transfers |
 | Master Solana wallet | Merchant | Solana | Merchant-owned SOL, USDC, and USDT balances and address |
+| Customer Stellar wallet | Individual customer | Stellar | XLM and USDC deposits, balances, and transfers |
+| Master Stellar wallet | Merchant | Stellar | Merchant-owned XLM and USDC balances and address |
 
 <Warning>
   Choose the source wallet according to economic ownership. Customer funds must use customer-wallet operations; business funds must use the merchant master wallet and Payouts API.
@@ -26,7 +28,7 @@ A master wallet belongs directly to the merchant. Retrieve it using the authenti
 
 ## NGN and stablecoin rails
 
-NGN wallets expose bank account details and separate available and ledger balances. Stablecoin wallets expose a Solana address and token balances. These are separate resources—an NGN wallet ID cannot be used with a stablecoin endpoint, and a blockchain address cannot identify an NGN wallet.
+NGN wallets expose bank account details and separate available and ledger balances. Crypto wallets expose a Solana or Stellar address and token balances. These are separate resources—an NGN wallet ID cannot be used with a crypto endpoint, and a blockchain address cannot identify an NGN wallet.
 
 FossaPay currently supports production access only. All wallet operations can affect live resources.
 
@@ -35,8 +37,8 @@ FossaPay currently supports production access only. All wallet operations can af
 | Balance | Meaning |
 |---|---|
 | Available balance | Funds currently available for a new operation |
-| Ledger balance | Funds recorded on the provider ledger, including amounts that may not yet be available |
-| Token balance | Provider-reported SOL, USDC, or USDT balance on a Solana address |
+| Ledger balance | Recorded funds, including amounts that may not yet be available |
+| Token balance | SOL/USDC/USDT on Solana or XLM/USDC on Stellar |
 
 Use the current authenticated wallet response as the balance authority before initiating an operation. Do not derive a balance solely by adding webhook amounts in your application.
 
@@ -68,7 +70,7 @@ Use:
 - transaction IDs and references for reconciliation;
 - `eventId` for webhook deduplication;
 - terminal transaction statuses for final internal state; and
-- wallet retrieval for current provider-reported balances.
+- wallet retrieval for current balances.
 
 ## Choose a wallet rail
 
@@ -76,8 +78,8 @@ Use:
   <Card title="NGN wallets" icon="naira-sign" href="/concepts/ngn-wallets">
     Provision bank accounts, collect NGN, inspect balances, and move customer funds.
   </Card>
-  <Card title="Stablecoin wallets" icon="coins" href="/concepts/stablecoin-wallets">
-    Provision Solana wallets, view SOL and stablecoin balances, and manage supported SOL/USDC/USDT transfers.
+  <Card title="Crypto wallets" icon="coins" href="/concepts/stablecoin-wallets">
+    Provision Solana or Stellar wallets, view supported balances, and manage customer crypto transfers.
   </Card>
 </CardGroup>
 

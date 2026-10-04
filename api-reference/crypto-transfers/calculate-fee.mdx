@@ -1,7 +1,7 @@
 ---
 title: 'Calculate Crypto Transfer Fee'
 openapi: '/api-reference/openapi.json GET /api/v1/transfers/crypto/calculate-fee'
-description: 'Calculate the payout fee for a crypto transfer in USDC or USDT'
+description: 'Calculate a Solana or Stellar crypto transfer fee'
 ---
 
 ## Request
@@ -17,7 +17,11 @@ description: 'Calculate the payout fee for a crypto transfer in USDC or USDT'
 </ParamField>
 
 <ParamField query="currency" type="string" required>
-  The stablecoin to calculate fees for. Must be one of: `usdc`, `usdt` (case-insensitive; values are normalized to lowercase).
+  The asset to calculate fees for: `sol`, `usdc`, `usdt`, or `xlm` (case-insensitive). Solana supports SOL/USDC/USDT; Stellar supports XLM/USDC.
+</ParamField>
+
+<ParamField query="network" type="string">
+  `solana` or `stellar`. Specify `network=stellar` for Stellar USDC. If omitted, XLM selects Stellar and other assets select Solana.
 </ParamField>
 
 ### Request Example
@@ -64,6 +68,7 @@ const feeData = await response.json();
   "data": {
     "amount": 200,
     "currency": "usdc",
+    "network": "solana",
     "feeAmount": 1,
     "total": 201
   }
@@ -74,7 +79,8 @@ const feeData = await response.json();
 | Field | Description |
 | ----- | ----------- |
 | `data.amount` | The amount you passed in the query |
-| `data.currency` | The stablecoin (`usdc` or `usdt`) |
+| `data.currency` | The quoted crypto asset |
+| `data.network` | The network selected for the fee quote |
 | `data.feeAmount` | The fee charged for the crypto payout |
 | `data.total` | `amount` + `feeAmount`, provided as the fee-quote total |
 
@@ -86,6 +92,6 @@ const feeData = await response.json();
 
 | HTTP status | Typical cause |
 | ----------- | ------------- |
-| `422` | Missing or invalid query params (e.g. `amount` not a positive number, `currency` empty or not `usdc`/`usdt`) |
+| `422` | Missing or invalid query params (for example, `amount` not positive or unsupported `currency`/`network`) |
 | `400` | `amount` or `currency` missing after validation, or unsupported currency at the service layer |
 | `401` | Missing or invalid API key |

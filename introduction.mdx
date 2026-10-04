@@ -3,7 +3,7 @@ title: Introduction
 description: 'Understand FossaPay’s payment infrastructure, core resources, and integration model'
 ---
 
-FossaPay provides payment and wallet infrastructure for businesses that need to collect, hold, and transfer funds in NGN and supported stablecoins through one server-side API.
+FossaPay provides payment and wallet infrastructure for businesses that need to collect, hold, and transfer NGN and supported crypto assets through one server-side API.
 
 You can create individual customers, provision customer wallets, accept bank-transfer payments, send customer- or business-funded transfers, and receive signed webhook notifications as transactions change state.
 
@@ -14,7 +14,7 @@ You can create individual customers, provision customer wallets, accept bank-tra
 | Customers | Merchant-scoped individual customer records used by wallet and transfer operations | [Customers](/concepts/customers) |
 | NGN wallets | Dedicated bank accounts for customer collections, wallet retrieval, balances, and transaction history | [NGN wallets](/concepts/ngn-wallets) |
 | Checkout Wallet | Time-limited payment instructions for one-time NGN orders and invoices | [Checkout Wallet](/guides/checkouts) |
-| Stablecoin wallets | Customer and master wallets on Solana for supported USDC and USDT operations | [Stablecoin wallets](/concepts/stablecoin-wallets) |
+| Crypto wallets | Customer and master wallets on Solana and Stellar for supported assets, including USDC and native SOL or XLM | [Crypto wallets](/concepts/stablecoin-wallets) |
 | NGN transfers | Customer-funded transfers between FossaPay wallets or to Nigerian bank accounts | [NGN transfers](/guides/ngn-transfers) |
 | Master wallet payouts | Business-funded NGN payouts from the merchant's permanent master wallet | [Master wallet payouts](/guides/payouts) |
 | Bulk payouts | Immediate CSV payout batches funded by a merchant master wallet or owned subaccount | [Bulk payouts](/guides/bulk-payouts) |
@@ -52,7 +52,7 @@ Choose an API based on who owns the source funds and what the payment is intende
 | Customer | Send to another customer wallet under the same business | Wallet-to-wallet transfer |
 | Customer | Send to an external Nigerian bank account | Customer inter-bank transfer |
 | Business | Send NGN from the merchant master wallet | Master Wallet Payouts API |
-| Customer | Send supported stablecoins to a blockchain address | Stablecoin transfer |
+| Customer | Send supported crypto assets to a Solana or Stellar address | Crypto transfer |
 | Buyer paying an order | Make a one-time NGN bank transfer for an exact amount | Checkout Wallet |
 
 <Warning>

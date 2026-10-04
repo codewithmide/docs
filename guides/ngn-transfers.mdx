@@ -140,7 +140,7 @@ curl --request POST \
   }'
 ```
 
-The transfer is free. FossaPay reserves the source balance, records withdrawal and deposit legs, performs the provider transfer, then marks both records successful. If the provider call fails, the local source reservation is rolled back and both transaction records are marked failed.
+The transfer is free. Check the returned status and reconcile an unresolved transfer before retrying.
 
 Reference handling provides replay protection:
 

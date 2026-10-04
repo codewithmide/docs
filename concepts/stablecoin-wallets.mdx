@@ -1,12 +1,12 @@
 ---
-title: Stablecoin Wallets
-description: 'Provision Solana wallets and manage SOL, USDC, and USDT balances'
+title: Crypto Wallets
+description: 'Provision Solana or Stellar wallets and manage supported crypto balances and transfers'
 ---
 
-Solana wallets assign an address to an individual customer. FossaPay reports balances and supports transfers for native SOL, USDC, and USDT.
+FossaPay supports merchant master wallets and individual customer wallets on Solana and Stellar. Solana wallets support SOL, USDC, and USDT; Stellar wallets support XLM and USDC.
 
 <Warning>
-  FossaPay does not currently support an EVM wallet option. Send `network: "solana"` exactly; other values are rejected before wallet creation.
+  FossaPay does not currently support EVM wallets. Use `network: "solana"` or `network: "stellar"` when creating a wallet.
 </Warning>
 
 ## Prerequisites
@@ -14,7 +14,7 @@ Solana wallets assign an address to an individual customer. FossaPay reports bal
 - Create the `individual` customer first.
 - Retain the customer UUID returned by FossaPay.
 - Use the production API key belonging to the same merchant.
-- Decide how your system will map the customer to the returned Solana address.
+- Decide how your system will map the customer to the returned network address.
 
 ## Create a customer wallet
 
@@ -29,13 +29,27 @@ curl --request POST \
   }'
 ```
 
-Wallet creation returns `data.id` (FossaPay's wallet UUID), `data.walletId` (the underlying provider wallet identifier), the Solana `data.address`, and the network. Persist the complete response with the customer UUID. Use `data.id` for the wallet-by-ID and wallet-transactions endpoints; use `data.address` for the wallet-by-address endpoint. Neither the Solana address nor the provider `walletId` works as the `{walletId}` path parameter.
+Set `network` to `stellar` in the same request to create a Stellar customer wallet. Save the returned `data.id`, `data.address`, and `data.network` with the customer ID. Use `data.id` for wallet-by-ID and wallet-transactions requests, and `data.address` for wallet-by-address requests.
 
-Only one Solana wallet can be created for the same customer. If a response is lost, reconcile the existing wallet before retrying; wallet creation does not provide idempotency semantics.
+Only one wallet per network can be created for the same customer. If a response is lost, reconcile the existing wallet before retrying; wallet creation does not provide idempotency semantics.
+
+## Create a merchant master wallet
+
+Create a master wallet only when the business needs an address on that network:
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/wallets/crypto/master/create \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{"network":"stellar"}'
+```
+
+The response contains the newly created master wallet in `data`, including its FossaPay `id`, Stellar `address`, `network`, and `tokens`. The endpoint rejects a second active master wallet for the same network. Existing wallets are not created automatically by this request; retrieve them with `GET /api/v1/wallets/crypto/master`.
 
 ## Addresses and ownership
 
-Solana addresses are public deposit destinations, not authentication credentials. An address can receive other Solana tokens even though they are not supported for wallet operations. Authenticated wallet details and transaction history remain merchant-scoped.
+Wallet addresses are public deposit destinations, not authentication credentials. A wallet can receive assets beyond FossaPay's supported set. Authenticated wallet details and transaction history remain merchant-scoped.
 
 Validate the full address before displaying or using it. Do not truncate addresses in storage, comparison, signing, or transfer requests. Truncation is suitable only for presentation after the complete value has been retained.
 
@@ -43,23 +57,25 @@ Validate the full address before displaying or using it. Do not truncate address
 
 | Value | Meaning |
 |---|---|
-| `network: "solana"` | The only supported blockchain network |
+| `network: "solana"` | Solana wallet; supports SOL, USDC, and USDT |
+| `network: "stellar"` | Stellar wallet; supports XLM and USDC |
 | `currency: "sol"` | Native SOL deposits, balance reporting, and transfers |
-| `currency: "usdc"` | USD Coin on the supported Solana integration |
+| `currency: "xlm"` | Native XLM deposits, balance reporting, and transfers on Stellar |
+| `currency: "usdc"` | USD Coin on Solana or Stellar; specify the network when transferring |
 | `currency: "usdt"` | Tether USD on the supported Solana integration |
 
-Only NGN, USDC, and USDT are accepted for checkouts and payment links. An incoming Solana token with another mint can appear as a successful on-chain deposit transaction with `cryptoAssetStatus: "unsupported"`, but is not added to a FossaPay spendable balance and cannot be used for transfers, checkouts, or payment links. Token symbols are not proof of identity; inspect the mint address. Contact support about recovery of an unsupported asset.
+Only NGN, USDC, and USDT are accepted for checkouts and payment links; XLM and SOL are wallet assets, not checkout methods. Stellar wallet support does not add Stellar as a checkout or payment-link network. An incoming asset outside the supported set can appear as a successful deposit transaction with `cryptoAssetStatus: "unsupported"`, but is not added to a FossaPay spendable balance and cannot be used for transfers, checkouts, or payment links. Token symbols are not proof of identity; inspect the token locator, mint, or contract. Contact support about recovery of an unsupported asset.
 
 An unsupported-asset receipt does not emit a `deposit.completed` merchant webhook: that event could otherwise be mistaken for spendable customer credit. Retrieve wallet transaction history to inspect these receipts.
 
 ## Retrieve wallets and balances
 
-Customer wallets can be retrieved by FossaPay wallet `id`, customer ID, or full blockchain address. Wallet lookup responses also include the FossaPay `id`, so an existing wallet can be looked up by address before requesting its transaction history. The master endpoint returns merchant-owned Solana addresses and provider-reported SOL, USDC, and USDT balances. Unsupported tokens are recorded in transaction history, not these standard balance responses.
+Customer wallets can be retrieved by FossaPay wallet `id`, customer ID, or full blockchain address. For customer balance lookup, add `?network=stellar` to retrieve Stellar; omitting `network` selects Solana. Wallet lookup responses also include the FossaPay `id`, so an existing wallet can be looked up by address before requesting its transaction history. The master endpoint returns the merchant's created Solana and Stellar addresses with supported balances. Unsupported tokens are recorded in transaction history, not these standard balance responses.
 
-Token balances contain human-readable and raw representations where supplied by the provider. Preserve decimal precision and do not use JavaScript binary floating point for ledger calculations.
+Token balances contain human-readable and raw representations when available. Preserve decimal precision and do not use JavaScript binary floating point for ledger calculations.
 
 <Note>
-  Wallet retrieval responses may be cached briefly. Use transaction state and confirmed provider results for operation reconciliation rather than assuming two immediate balance reads must differ.
+  Wallet retrieval responses may be cached briefly. Use transaction status and wallet history for reconciliation rather than assuming two immediate balance reads must differ.
 </Note>
 
 ## Calculate a transfer fee
@@ -70,7 +86,7 @@ Before sending, call:
 GET /api/v1/transfers/crypto/calculate-fee?amount=100&currency=usdc
 ```
 
-The response reports the configured fee quote. Fee configuration can change, so request a current quote instead of hard-coding pricing.
+The response reports the configured fee quote. Include `network=stellar` when quoting Stellar USDC or XLM; omitting `network` selects Solana for currencies other than XLM. Fee configuration can change, so request a current quote instead of hard-coding pricing.
 
 For SOL, use `currency=sol`. The SOL transfer fee is 0.001 SOL for amounts below 1 SOL, 0.01 SOL for amounts from 1 through 10 SOL, and 0.1 SOL for amounts above 10 SOL. The merchant dashboard quotes the same tiers. The external customer-transfer API subtracts this fee from the submitted gross amount; the merchant dashboard payout adds it to the requested recipient amount.
 
@@ -78,19 +94,20 @@ Crypto deposits carry no collection fee: the credited deposit amount equals the 
 
 ## Send SOL and stablecoins
 
-`POST /api/v1/transfers/crypto` sends from the customer's wallet to a Solana recipient.
+`POST /api/v1/transfers/crypto` sends from the customer's wallet to a recipient on the selected network.
 
 | Field | Requirement |
 |---|---|
 | `customerId` | UUID of the customer funding the transfer |
-| `recipient` | Complete destination Solana address |
-| `network` | Must be exactly `solana` |
-| `currency` | `sol`, `usdc`, or `usdt` |
+| `recipient` | Complete destination address on the selected network; a Stellar public address is required for Stellar transfers |
+| `network` | `solana` or `stellar` |
+| `currency` | Solana: `sol`, `usdc`, `usdt`; Stellar: `xlm`, `usdc` |
 | `amount` | Numeric submitted amount |
+| `memo` | Optional Stellar text memo, at most 28 characters |
 
-The current transfer flow treats the submitted amount as the gross token amount. Any quoted transfer fee is deducted and the recipient transfer uses the net amount (`amount - fee`). SOL amounts support up to nine decimal places. Confirm the current fee and that the wallet has enough native SOL for network execution before presenting the expected recipient amount.
+The current transfer flow treats the submitted amount as the gross token amount. Any quoted transfer fee is deducted and the recipient transfer uses the net amount (`amount - fee`). SOL amounts support up to nine decimal places; XLM amounts support up to seven. Solana wallets need enough native SOL for network execution. Stellar wallets must retain the configured XLM reserve for account reserves and network fees; the default minimum is 1.5 XLM. Confirm the current fee and network requirements before presenting the expected recipient amount. If no Stellar memo is supplied, FossaPay generates one.
 
-The initial response reports provider processing; it is not final settlement. Persist the returned data and wait for the corresponding verified terminal event or reconcile the transaction through wallet history.
+The initial response reports processing; it is not final settlement. Persist the returned data and wait for the corresponding verified terminal event or reconcile the transaction through wallet history.
 
 <Warning>
   Confirm the customer, token, network, destination address, gross amount, fee, net amount, and available balance before submission. Confirmed blockchain transfers cannot be reversed by FossaPay.
@@ -115,6 +132,7 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 | Operation | Endpoint | Reference |
 |---|---|---|
 | Create customer wallet | `POST /api/v1/wallets/crypto/create` | [Create wallet](/api-reference/crypto-wallets/create-wallet) |
+| Create master wallet | `POST /api/v1/wallets/crypto/master/create` | [Create master wallet](/api-reference/crypto-wallets/create-master-wallet) |
 | Get master wallet | `GET /api/v1/wallets/crypto/master` | [Get master wallet](/api-reference/crypto-wallets/get-master-wallet) |
 | Sign with master wallet | `POST /api/v1/wallets/crypto/master/transactions/sign-and-broadcast` | [Master wallet signing](/api-reference/crypto-wallets/sign-master-transaction) |
 | Sign with customer wallet | `POST /api/v1/wallets/crypto/customer/{customerId}/transactions/sign-and-broadcast` | [Customer wallet signing](/api-reference/crypto-wallets/sign-customer-transaction) |
@@ -124,13 +142,13 @@ Crypto transfer creation does not accept a merchant-provided idempotency key or 
 | List wallet transactions | `GET /api/v1/wallets/crypto/{walletId}/transactions` | [Wallet transactions](/api-reference/crypto-wallets/wallet-transactions) |
 | Get a transaction | `GET /api/v1/wallets/crypto/transactions/{transactionId}` | [Wallet transaction](/api-reference/crypto-wallets/wallet-transaction) |
 | Calculate transfer fee | `GET /api/v1/transfers/crypto/calculate-fee` | [Calculate fee](/api-reference/crypto-transfers/calculate-fee) |
-| Send SOL or stablecoins | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
+| Send supported crypto assets | `POST /api/v1/transfers/crypto` | [Create transfer](/api-reference/crypto-transfers/crypto-transfer) |
 
 For custom Solana program interactions, follow the [Solana Transaction Signing guide](/guides/solana-transaction-signing). Signing supports arbitrary validated Solana versioned transactions; it does not expand the assets supported by FossaPay transfers, checkouts, or payment links.
 
 ## Production checklist
 
-- [ ] Use `solana` for the wallet network; use SOL, USDC, or USDT for transfers, but only USDC or USDT for crypto checkout and payment links.
+- [ ] Match the wallet network and currency: Solana supports SOL/USDC/USDT; Stellar supports XLM/USDC. Crypto checkout and payment links accept only their documented USDC/USDT methods.
 - [ ] Persist complete addresses and identifiers without truncation.
 - [ ] Use decimal-safe token handling.
 - [ ] Quote fees before presenting the recipient amount.

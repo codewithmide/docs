@@ -92,7 +92,7 @@ For a customer wallet, use the customer endpoint and put the FossaPay customer U
 
 ### 4. Persist the submission result
 
-A successful request returns HTTP `202` with a FossaPay `requestId`, the wallet identity, provider transaction ID, transaction hash, explorer link, and simulation result. Persist at least:
+A successful request returns HTTP `202` with a `requestId`, wallet details, transaction hash, explorer link, and simulation result. Persist at least:
 
 - `requestId`
 - `X-Idempotency-Key`

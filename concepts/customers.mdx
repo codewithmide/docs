@@ -38,7 +38,7 @@ Every external customer request must include:
 }
 ```
 
-The field remains required for contract compatibility. Any other value is rejected with HTTP `422` before the request reaches the downstream banking provider.
+The field remains required for contract compatibility. Any other value is rejected with HTTP `422` before account creation begins.
 
 Do not send a business name as a customer name. Your FossaPay merchant account represents the business; records created through this API represent the individuals that business serves.
 
@@ -82,7 +82,7 @@ Each name may contain Unicode letters and combining marks. A hyphen, straight ap
 | `dateOfBirth` | Date string in `YYYY-MM-DD` format |
 | `address` | Non-empty residential address |
 | `city` | Non-empty city of residence |
-| `country` | Country supported by the downstream provider |
+| `country` | Supported country |
 | `type` | Must be exactly `individual` |
 
 The request body is allowlisted. Unknown fields are rejected rather than silently stored or forwarded.
@@ -141,8 +141,8 @@ Store `data.id`; wallet creation and customer-funded transfer operations require
 
 FossaPay stores the customer information required to identify the individual and operate the account. During production customer creation:
 
-- personal names, date of birth, address, city, customer type, and country identifiers are sent to the banking provider as required for account provisioning;
-- `emailAddress` and `mobileNumber` are retained by FossaPay but are not sent to the banking provider; and
+- personal names, date of birth, address, city, customer type, and country identifiers are used for account provisioning;
+- `emailAddress` and `mobileNumber` are retained by FossaPay and are not used for bank account provisioning; and
 - arbitrary or unknown request properties are rejected and are not forwarded.
 
 Collect only information you are authorized to process. Treat customer identity and contact fields as sensitive personal data throughout your systems.
@@ -206,7 +206,7 @@ Customer creation does not provide idempotency semantics. If the connection fail
   <Card title="NGN wallets" icon="building-columns" href="/concepts/ngn-wallets">
     Provision a dedicated NGN bank account for the customer.
   </Card>
-  <Card title="Stablecoin wallets" icon="coins" href="/concepts/stablecoin-wallets">
-    Create a Solana wallet for supported USDC and USDT operations.
+  <Card title="Crypto wallets" icon="coins" href="/concepts/stablecoin-wallets">
+    Create a Solana wallet for SOL/USDC/USDT or a Stellar wallet for XLM/USDC.
   </Card>
 </CardGroup>

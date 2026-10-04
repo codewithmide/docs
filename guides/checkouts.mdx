@@ -88,7 +88,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
 | `metadata` | Your JSON object, up to 4,096 UTF-8 bytes. It is returned unchanged in checkout responses and webhooks for reconciliation. Do not store secrets here. |
 | `description` | Internal description of up to 255 characters. |
 
-Customer details do not identify the incoming bank transfer. FossaPay correlates a temporary checkout through its dedicated account and provider checkout reference, or a fallback checkout through the permanent account and the pending checkout's expected payment. Treat `customer` as contact and reconciliation information.
+Customer details do not identify the incoming bank transfer. Use the checkout ID, reference, and status returned by FossaPay to reconcile payments. Treat `customer` as contact information.
 
 ## Understand the amounts and fee bearer
 
