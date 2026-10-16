@@ -84,7 +84,7 @@ The returned customer data depends on the resources already owned by your mercha
 |---|---|---|
 | `x-api-key` | Every protected request | Authenticates the merchant |
 | `Content-Type: application/json` | Requests with a JSON body | Declares the request-body format |
-| `X-Idempotency-Key` | Creating a checkout, master-wallet payout, or bulk payout batch | Prevents duplicate logical operations |
+| `X-Idempotency-Key` | Creating a checkout, master-wallet payout, bulk payout batch, or identity verification | Prevents duplicate logical operations and repeated verification charges |
 | `x-timezone` | Optional | Requests supported timestamps in the supplied timezone; the default is `Africa/Lagos` |
 
 Authentication and idempotency solve different problems. An API key establishes who is calling; an idempotency key identifies one logical write operation. Never use an API key as an idempotency key.

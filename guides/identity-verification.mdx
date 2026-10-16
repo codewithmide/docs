@@ -1,0 +1,92 @@
+---
+title: Identity Verification Guide
+description: "Verify a person's Nigerian NIN or BVN with the FossaPay API"
+---
+
+Use Identity Verification when your business needs to retrieve the available details for a Nigerian National Identification Number (NIN) or Bank Verification Number (BVN). Send requests from your server with a live FossaPay API key. Each lookup attempt costs **₦50**, including attempts that return no person details. Your business decides how to assess the returned details for its use case.
+
+**Production endpoint:** `POST https://api-production.fossapay.com/api/v1/kyc/verifications`
+
+<Warning>
+  This endpoint uses production access and can charge your business. Obtain any consent needed for your use case before submitting an identity number. Keep the API key and identity number out of browser code, URLs, analytics, and application logs.
+</Warning>
+
+## Before you begin
+
+- Complete your FossaPay business verification and use an active production API key.
+- Have an active NGN master wallet with at least ₦50 available for each new verification attempt.
+- Have the person's 11-digit NIN or BVN. Nigeria is selected automatically; do not include a `country` field.
+
+## How it works
+
+<Steps>
+  <Step title="Collect the identity number">
+    Obtain the NIN or BVN and handle any consent records in your own system.
+  </Step>
+  <Step title="Send one verification request">
+    Choose `NIN` or `BVN` and include a unique `X-Idempotency-Key`. Send the request from your backend.
+  </Step>
+  <Step title="Check the result">
+    FossaPay checks that your business has enough NGN available, charges ₦50 for the lookup attempt, and returns the available person details in `person`. Use those details to apply your own verification rules.
+  </Step>
+  <Step title="Handle a delayed response">
+    If the request times out or returns a temporary error, retry the same request with the same idempotency key. A completed request returns its original result without another charge.
+  </Step>
+</Steps>
+
+## Example request
+
+```bash
+curl --request POST \
+  --url https://api-production.fossapay.com/api/v1/kyc/verifications \
+  --header "x-api-key: $FOSSAPAY_API_KEY" \
+  --header "X-Idempotency-Key: verify-customer-10025-nin-v1" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "method": "NIN",
+    "identityNumber": "01234567890"
+  }'
+```
+
+For a BVN lookup, change `method` to `BVN` and supply the person's BVN as `identityNumber`. Keep the identity number as an **11-digit string** so leading zeros are preserved.
+
+## Read the response
+
+```json
+{
+  "reference": "11111111-1111-4111-8111-111111111111",
+  "method": "NIN",
+  "charged": true,
+  "feeAmount": "50.00",
+  "currency": "NGN",
+  "person": {
+    "identityNumber": "01234567890",
+    "firstName": "Ada",
+    "middleName": "Ngozi",
+    "lastName": "Okoro",
+    "dateOfBirth": "1990-05-15",
+    "gender": "female",
+    "phoneNumber": "08012345678",
+    "email": "ada@example.com",
+    "address": "12 Example Street"
+  }
+}
+```
+
+`person` contains the submitted identity number and the available returned details. Optional details may be `null` when unavailable. If the lookup returns no usable details, `person` is `null`. The response does not decide whether the person meets your verification requirements. A completed attempt is charged ₦50 in either case. Retain `reference` for support and reconciliation.
+
+## Pricing and retries
+
+| Situation | Charge | What to do |
+|---|---:|---|
+| A completed lookup returns person details | ₦50 | Apply your own verification rules. |
+| A completed lookup returns `person: null` | ₦50 | Handle the unavailable details according to your policy. A new lookup is a new billable attempt. |
+| The request is rejected before lookup because it is invalid or the NGN balance is insufficient | ₦0 | Correct the request or fund your wallet. |
+| The outcome is delayed or unclear | Do not assume | Retry the identical request with the same idempotency key. |
+| The same completed request is replayed with the same idempotency key | ₦0 additional | Use the returned original result. |
+
+Use a new idempotency key only when you intentionally want a new verification attempt. Reusing a key with different details returns `409`.
+
+<Info>
+  See [Verify identity](/api-reference/identity-verification/verify-identity) for the complete request fields, response, and HTTP errors.
+</Info>

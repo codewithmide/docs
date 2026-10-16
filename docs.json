@@ -35,6 +35,7 @@
             "group": "Guides",
             "pages": [
               "guides/checkouts",
+              "guides/identity-verification",
               "guides/collections",
               "guides/ngn-transfers",
               "guides/payouts",
@@ -79,6 +80,12 @@
               "api-reference/checkouts/get-checkout",
               "api-reference/checkouts/get-checkout-by-reference",
               "api-reference/checkouts/expire-checkout"
+            ]
+          },
+          {
+            "group": "Identity Verification",
+            "pages": [
+              "api-reference/identity-verification/verify-identity"
             ]
           },
           {
