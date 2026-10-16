@@ -25,7 +25,7 @@
         "operationId": "ExternalKycController_verify",
         "tags": ["Identity Verification"],
         "summary": "Look up a Nigerian NIN or BVN",
-        "description": "Returns available person details without making a verification decision. Charges NGN 50 for each lookup attempt, including one that returns no person details. Identical completed requests replayed with the same idempotency key incur no additional charge.",
+        "description": "Returns available person details without making a verification decision. Charges NGN 120 for each NIN attempt or NGN 70 for each BVN attempt, including one that returns no person details. Identical completed requests replayed with the same idempotency key incur no additional charge.",
         "parameters": [
           {
             "name": "X-Idempotency-Key",
@@ -2253,7 +2253,7 @@
           "reference": { "type": "string", "format": "uuid" },
           "method": { "type": "string", "enum": ["NIN", "BVN"] },
           "charged": { "type": "boolean", "const": true },
-          "feeAmount": { "type": "string", "const": "50.00" },
+          "feeAmount": { "type": "string", "description": "New NIN attempts cost 120.00 NGN and new BVN attempts cost 70.00 NGN. Idempotent replays retain the original fee, including earlier prices." },
           "currency": { "type": "string", "const": "NGN" },
           "person": {
             "oneOf": [

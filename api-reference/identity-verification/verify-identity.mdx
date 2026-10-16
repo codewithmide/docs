@@ -1,10 +1,10 @@
 ---
 title: Verify Identity
 openapi: '/api-reference/openapi.json POST /api/v1/kyc/verifications'
-description: 'Verify a Nigerian NIN or BVN for ₦50 per attempt'
+description: 'Look up a Nigerian NIN for ₦120 or BVN for ₦70 per attempt'
 ---
 
-Retrieves the available person details for a Nigerian NIN or BVN. The endpoint does not compare a submitted name or DOB and does not make a verification decision. Each lookup attempt costs **₦50**, including attempts that return no person details.
+Retrieves the available person details for a Nigerian NIN or BVN. The endpoint does not compare a submitted name or DOB and does not make a verification decision. Each NIN provider attempt costs **₦120** and each BVN provider attempt costs **₦70**, including attempts that return no person details.
 
 ## Headers
 
@@ -51,7 +51,7 @@ HTTP `200` returns the result directly:
   "reference": "11111111-1111-4111-8111-111111111111",
   "method": "BVN",
   "charged": true,
-  "feeAmount": "50.00",
+  "feeAmount": "70.00",
   "currency": "NGN",
   "person": {
     "identityNumber": "01234567890",
@@ -76,7 +76,7 @@ When no usable person details are returned, the full response has the same shape
   "reference": "22222222-2222-4222-8222-222222222222",
   "method": "BVN",
   "charged": true,
-  "feeAmount": "50.00",
+  "feeAmount": "70.00",
   "currency": "NGN",
   "person": null
 }
@@ -86,7 +86,7 @@ Both responses represent a charged lookup attempt. Your business decides how to 
 
 ## Idempotency
 
-- An identical completed request with the same key returns the original result without another charge.
+- An identical completed request with the same key returns the original result and its original fee without another charge, even if the current price has changed.
 - Reusing the key with a different request body returns `409`.
 - A request still processing may return `409` or `503`. Retry only with the same key and body. If it remains unresolved, contact support with the idempotency key and any returned reference.
 - If a request was rejected before verification and no charge was made, correct the issue and use a new key for the new request.
