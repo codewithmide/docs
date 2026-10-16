@@ -3,7 +3,7 @@ title: Identity Verification Guide
 description: "Verify a person's Nigerian NIN or BVN with the FossaPay API"
 ---
 
-Use Identity Verification when your business needs to retrieve the available details for a Nigerian National Identification Number (NIN) or Bank Verification Number (BVN). Send requests from your server with a live FossaPay API key. A NIN lookup costs **₦120** and a BVN lookup costs **₦70** per provider attempt, including attempts that return no person details. Your business decides how to assess the returned details for its use case.
+Use Identity Verification when your business needs to retrieve the available details for a Nigerian National Identification Number (NIN) or Bank Verification Number (BVN). Send requests from your server with a live FossaPay API key. A NIN lookup costs **₦120** and a BVN lookup costs **₦70** per successful call.
 
 **Production endpoint:** `POST https://api-production.fossapay.com/api/v1/kyc/verifications`
 
@@ -15,7 +15,7 @@ Use Identity Verification when your business needs to retrieve the available det
 
 - Complete your FossaPay business verification and use an active production API key.
 - Have an active NGN master wallet with at least ₦120 for a NIN attempt or ₦70 for a BVN attempt.
-- Have the person's 11-digit NIN or BVN. Nigeria is selected automatically; do not include a `country` field.
+- Have the person's 11-digit NIN or BVN.
 
 ## How it works
 
@@ -80,7 +80,6 @@ For a BVN lookup, change `method` to `BVN` and supply the person's BVN as `ident
 | Situation | Charge | What to do |
 |---|---:|---|
 | A completed lookup returns person details | ₦120 NIN / ₦70 BVN | Apply your own verification rules. |
-| A completed lookup returns `person: null` | ₦120 NIN / ₦70 BVN | Handle the unavailable details according to your policy. A new lookup is a new billable attempt. |
 | The request is rejected before lookup because it is invalid or the NGN balance is insufficient | ₦0 | Correct the request or fund your wallet. |
 | The outcome is delayed or unclear | Do not assume | Retry the identical request with the same idempotency key. |
 | The same completed request is replayed with the same idempotency key | ₦0 additional | Use the returned original result. |
