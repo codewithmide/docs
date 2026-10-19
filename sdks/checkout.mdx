@@ -1,0 +1,184 @@
+---
+title: Checkout SDK
+description: 'Create and present FossaPay hosted checkout experiences in JavaScript and React applications'
+---
+
+The `@fossapay/checkout` package contains separate server, browser, and React exports. Create payment resources on your server, then pass only the returned checkout URL or reference to the frontend.
+
+## Install
+
+```bash
+npm install @fossapay/checkout
+```
+
+## 1. Create a payment link on your server
+
+```ts
+import { FossaPay } from "@fossapay/checkout/server";
+
+const fossapay = new FossaPay({
+  apiKey: process.env.FOSSAPAY_API_KEY!,
+});
+
+const paymentLink = await fossapay.paymentLinks.create(
+  {
+    title: "Order 10025",
+    type: "fixed",
+    amount: 25000,
+    currency: "NGN",
+    description: "Payment for order 10025",
+    collectUserInfo: true,
+    feeBearer: "customer",
+  },
+  { idempotencyKey: "order-10025" },
+);
+
+return { checkoutUrl: paymentLink.checkoutUrl };
+```
+
+Fixed payment links are reusable. Payment links are immutable after creation, but they can be retrieved, listed, activated, or deactivated.
+
+```ts
+const link = await fossapay.paymentLinks.retrieve("LINK_REFERENCE");
+const links = await fossapay.paymentLinks.list();
+await fossapay.paymentLinks.deactivate(link.reference);
+await fossapay.paymentLinks.activate(link.reference);
+```
+
+## 2. Create a one-time order checkout
+
+Use a checkout session when one unique order should have its own reference and payment state.
+
+```ts
+const checkout = await fossapay.checkouts.create(
+  {
+    reference: "ORDER-10025",
+    amount: 25000,
+    currency: "NGN",
+    feeBearer: "customer",
+    customer: { email: "customer@example.com" },
+    metadata: { orderId: "10025" },
+  },
+  { idempotencyKey: "checkout-order-10025" },
+);
+
+await fossapay.checkouts.retrieve(checkout.id);
+await fossapay.checkouts.retrieveByReference("ORDER-10025");
+```
+
+## 3. Open checkout in the browser
+
+```ts
+import { openCheckout } from "@fossapay/checkout";
+
+const response = await fetch("/api/checkout", { method: "POST" });
+const { checkoutUrl } = await response.json();
+
+const checkout = openCheckout({
+  paymentLink: checkoutUrl,
+  onSuccess(event) {
+    console.log("Checkout completed", event.status);
+  },
+  onClose() {
+    console.log("Checkout closed");
+  },
+});
+
+checkout.close();
+```
+
+`paymentLink` accepts either a complete checkout URL or a payment-link reference.
+
+## React
+
+```tsx
+import { FossaPayCheckoutButton } from "@fossapay/checkout/react";
+
+export function PayButton({ checkoutUrl }: { checkoutUrl: string }) {
+  return (
+    <FossaPayCheckoutButton
+      checkout={{
+        paymentLink: checkoutUrl,
+        onSuccess: () => {
+          // Confirm the payment on your server before fulfilling the order.
+        },
+      }}
+    >
+      Pay now
+    </FossaPayCheckoutButton>
+  );
+}
+```
+
+## Presentation modes
+
+```ts
+openCheckout({ paymentLink, displayMode: "modal" });
+openCheckout({ paymentLink, displayMode: "redirect" });
+openCheckout({ paymentLink, displayMode: "new-tab" });
+openCheckout({
+  paymentLink,
+  displayMode: "inline",
+  container: "#checkout-container",
+});
+```
+
+`modal` is the default. Inline checkout requires `container` as an element or CSS selector.
+
+## Browser events
+
+The hosted checkout can emit:
+
+- `checkout.ready`
+- `checkout.success`
+- `checkout.failed`
+- `checkout.reversed`
+- `checkout.expired`
+- `checkout.closed`
+
+Use `onReady`, `onSuccess`, `onFailure`, `onReversed`, `onExpired`, `onClose`, or `onEvent` to update the interface. Browser events improve the customer experience but are not proof of settlement.
+
+<Warning>
+  Confirm payment from your server or a verified FossaPay webhook before delivering goods, crediting value, or marking an order fulfilled.
+</Warning>
+
+## Verify checkout webhooks
+
+Pass the unmodified raw request body and the v2 signature to the server export.
+
+```ts
+const event = fossapay.webhooks.constructEvent({
+  payload: rawRequestBody,
+  signature: request.headers["x-fossapay-signature-v2"],
+  secret: process.env.FOSSAPAY_WEBHOOK_SECRET!,
+});
+
+if (event.eventType === "checkout.completed") {
+  console.log(event.data);
+}
+```
+
+## Browser configuration
+
+| Option | Description |
+|---|---|
+| `paymentLink` | Required payment-link reference or complete checkout URL. |
+| `displayMode` | `modal`, `inline`, `redirect`, or `new-tab`. |
+| `container` | Required for inline checkout. Accepts an element or CSS selector. |
+| `closeOnOverlayClick` | Controls whether clicking the modal overlay closes checkout. |
+| `autoCloseOnSuccess` | Closes the frame after a success event. |
+| `onEvent` | Receives every hosted checkout lifecycle event. |
+
+## Troubleshooting
+
+### Checkout returns to the form after refresh
+
+Create or retrieve the payment resource on your server and continue passing the same active checkout URL or reference until it reaches a terminal state. Do not create a new checkout during every frontend render.
+
+### The modal does not open
+
+Confirm that `openCheckout` runs in a browser, the checkout URL is active, and popup or content-security policies allow the hosted checkout origin. Inline mode also requires an existing container.
+
+### A success event was received for another checkout
+
+The SDK validates the event origin and payment-link identity. Your server must still reconcile the checkout ID or reference and verify the signed webhook before fulfillment.

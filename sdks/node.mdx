@@ -1,0 +1,230 @@
+---
+title: Node SDK
+description: 'Integrate FossaPay customers, wallets, collections, transactions, payouts, and webhooks in Node.js'
+---
+
+The `@fossapay/node` package is the server-side SDK for FossaPay APIs. It requires Node.js 18 or newer.
+
+## Install and initialize
+
+```bash
+npm install @fossapay/node
+```
+
+```ts
+import { FossaPay } from "@fossapay/node";
+
+const fossapay = new FossaPay({
+  apiKey: process.env.FOSSAPAY_API_KEY!,
+});
+```
+
+Keep the API key in a secret manager or protected server environment.
+
+## Recommended integration order
+
+<Steps>
+  <Step title="Verify the business">
+    Confirm which business and environment are connected to the API key.
+
+    ```ts
+    const business = await fossapay.business.retrieve();
+    console.log(business.id, business.businessName, business.environment);
+    ```
+  </Step>
+  <Step title="Create the customer">
+    Create the individual who will own the wallet.
+
+    ```ts
+    const customer = await fossapay.customers.create(
+      {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        emailAddress: "ada@example.com",
+        mobileNumber: "08012345678",
+        dateOfBirth: "1990-08-15",
+        address: "1 Example Street",
+        city: "Lagos",
+        country: "Nigeria",
+      },
+      { idempotencyKey: "customer-ada" },
+    );
+    ```
+  </Step>
+  <Step title="Create the wallet">
+    Provision a dedicated NGN collection account or a supported stablecoin wallet.
+
+    ```ts
+    const wallet = await fossapay.wallets.fiat.create(
+      {
+        customerId: customer.id,
+        walletName: "Ada wallet",
+        walletReference: "CUSTOMER-ADA",
+      },
+      { idempotencyKey: "fiat-wallet-ada" },
+    );
+    ```
+  </Step>
+  <Step title="Track transactions and webhooks">
+    Store FossaPay IDs and your references, then reconcile state from signed webhooks and retrieval methods.
+  </Step>
+</Steps>
+
+## Customers
+
+```ts
+const customer = await fossapay.customers.retrieve("CUSTOMER_ID");
+const page = await fossapay.customers.list({
+  page: 1,
+  limit: 20,
+  search: "Ada",
+  sortBy: "createdAt",
+  sortOrder: "desc",
+});
+const wallets = await fossapay.customers.listWallets(customer.id);
+```
+
+## Wallets and collections
+
+```ts
+const fiatWallets = await fossapay.wallets.fiat.list();
+const fiatWallet = await fossapay.wallets.fiat.retrieve("WALLET_ID");
+const account = await fossapay.wallets.fiat.retrieveByAccountNumber("0123456789");
+const masterFiatWallet = await fossapay.wallets.fiat.getMaster();
+
+const cryptoWallet = await fossapay.wallets.crypto.create(
+  { customerId: "CUSTOMER_ID", network: "solana" },
+  { idempotencyKey: "customer-solana-wallet" },
+);
+const cryptoWallets = await fossapay.wallets.crypto.list();
+const balances = await fossapay.wallets.crypto.getCustomerBalance("CUSTOMER_ID", "solana");
+```
+
+The collections resource is an alias for dedicated customer NGN accounts:
+
+```ts
+const collectionAccount = await fossapay.collections.createAccount(
+  {
+    customerId: "CUSTOMER_ID",
+    walletName: "Ada collection account",
+    walletReference: "COLLECTION-ADA",
+  },
+  { idempotencyKey: "collection-ada" },
+);
+
+await fossapay.collections.listTransactions(collectionAccount.id!, { page: 1, limit: 20 });
+```
+
+## Transactions
+
+```ts
+const transactions = await fossapay.transactions.list({
+  page: 1,
+  limit: 20,
+  type: "fiat",
+  currency: "NGN",
+  status: "success",
+  reference: "ORDER-10025",
+  startDate: "2026-10-01",
+  endDate: "2026-10-31",
+});
+
+await fossapay.transactions.retrieve("TRANSACTION_ID");
+```
+
+## Bank resolution and payouts
+
+Resolve the account before creating a payout. Nigerian account numbers must contain exactly 10 digits.
+
+```ts
+const banks = await fossapay.banks.list();
+const resolved = await fossapay.banks.resolveAccount({
+  bankCode: banks[0].code,
+  accountNumber: "0123456789",
+});
+
+const payout = await fossapay.payouts.create(
+  {
+    amount: 5000,
+    currency: "NGN",
+    reference: "ORDER-10025",
+    destinationBankCode: banks[0].code,
+    destinationBankName: banks[0].name,
+    destinationAccountName: resolved.accountName,
+    destinationAccountNumber: resolved.accountNumber,
+    remarks: "Order settlement",
+  },
+  { idempotencyKey: "payout-order-10025" },
+);
+```
+
+<Warning>
+  Payouts require an active live full-access API key. Test API keys cannot initiate payouts. The SDK supports individual payouts only.
+</Warning>
+
+## Verify webhooks
+
+Use `x-fossapay-signature-v2` and pass the exact raw request body to the SDK.
+
+```ts
+app.post(
+  "/webhooks/fossapay",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    try {
+      const event = fossapay.webhooks.constructEvent(
+        req.body,
+        req.header("x-fossapay-signature-v2") ?? "",
+        process.env.FOSSAPAY_WEBHOOK_SECRET!,
+        { toleranceSeconds: 300 },
+      );
+
+      if (event.eventType === "payout.completed") {
+        console.log(event.data.payoutId);
+      }
+
+      res.sendStatus(200);
+    } catch {
+      res.sendStatus(400);
+    }
+  },
+);
+```
+
+Store `event.eventId` and ignore an event already processed.
+
+## Idempotency and retries
+
+Customer creation, wallet creation, payouts, and wallet transfers accept an optional `idempotencyKey` and `timeoutMs`. The SDK generates a key when omitted, but you should provide a stable key whenever your system may recreate the request in another process.
+
+GET requests and idempotent writes are retried for connection failures and retryable HTTP responses. Set `maxRetries` and `timeoutMs` when initializing the client to change the defaults.
+
+## Handle errors
+
+```ts
+import { FossaPayApiError, FossaPayConnectionError } from "@fossapay/node";
+
+try {
+  await fossapay.transactions.retrieve("TRANSACTION_ID");
+} catch (error) {
+  if (error instanceof FossaPayApiError) {
+    console.log(error.status, error.code, error.requestId, error.message);
+  } else if (error instanceof FossaPayConnectionError) {
+    console.log(error.message);
+  }
+}
+```
+
+## Available resources
+
+| Resource | Methods |
+|---|---|
+| `business` | `retrieve()` |
+| `customers` | `create()`, `retrieve()`, `list()`, `listWallets()` |
+| `wallets.fiat` | `create()`, `list()`, `getMaster()`, `retrieve()`, `retrieveByAccountNumber()`, `listTransactions()`, `retrieveTransaction()`, `transfer()` |
+| `wallets.crypto` | `create()`, `createMaster()`, `list()`, `getMaster()`, `retrieve()`, `retrieveByAddress()`, `getCustomerBalance()`, `listTransactions()`, `retrieveTransaction()` |
+| `collections` | `createAccount()`, `retrieveAccount()`, `retrieveAccountByNumber()`, `listTransactions()` |
+| `transactions` | `list()`, `retrieve()` |
+| `banks` | `list()`, `resolveAccount()` |
+| `payouts` | `create()`, `retrieve()`, `retrieveByReference()` |
+| `webhooks` | `constructEvent()`, `verifySignature()` |

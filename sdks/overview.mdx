@@ -1,0 +1,47 @@
+---
+title: SDKs
+description: 'Choose the FossaPay SDK that matches your integration'
+---
+
+FossaPay provides two official JavaScript and TypeScript SDKs. Use the Node SDK for server-side money movement and the Checkout SDK when customers need to complete a hosted checkout.
+
+<CardGroup cols={2}>
+  <Card title="Node SDK" icon="server" href="/sdks/node" cta="Open Node SDK guide" arrow="true">
+    Create customers and wallets, collect payments, inspect transactions, resolve bank accounts, send individual payouts, and verify webhooks from a trusted server.
+  </Card>
+  <Card title="Checkout SDK" icon="credit-card" href="/sdks/checkout" cta="Open Checkout SDK guide" arrow="true">
+    Create payment links or one-time checkouts on your server, then present the hosted checkout as a modal, inline frame, redirect, or new tab.
+  </Card>
+</CardGroup>
+
+## Choose an SDK
+
+| Requirement | Package | Runtime |
+|---|---|---|
+| Customers, wallets, collections, transactions, bank resolution, or payouts | `@fossapay/node` | Server only |
+| Create payment links or one-time checkout sessions | `@fossapay/checkout/server` | Server only |
+| Open hosted checkout in a web application | `@fossapay/checkout` | Browser |
+| Add a checkout button to React | `@fossapay/checkout/react` | Browser and React |
+
+You can install both packages in the same application. A common integration uses `@fossapay/checkout/server` to create a checkout in a protected backend route and `@fossapay/checkout` or `@fossapay/checkout/react` to open the returned URL in the browser.
+
+<Warning>
+  Never expose a FossaPay API key in browser code. Only the browser and React exports from the Checkout SDK belong in your frontend bundle.
+</Warning>
+
+## Install
+
+```bash
+npm install @fossapay/node
+npm install @fossapay/checkout
+```
+
+Both packages include TypeScript declarations and support ES modules and CommonJS.
+
+## Get help
+
+Before contacting support, include the package name and version, the operation being called, the HTTP status, the FossaPay request ID when available, and a redacted error response. Never include API keys, webhook secrets, or complete customer financial details.
+
+<Card title="Contact FossaPay support" icon="envelope" href="mailto:product@fossapay.com">
+  Send SDK integration questions to product@fossapay.com.
+</Card>

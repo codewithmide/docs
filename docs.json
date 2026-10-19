@@ -146,6 +146,19 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "SDK Guides",
+            "pages": [
+              "sdks/overview",
+              "sdks/node",
+              "sdks/checkout"
+            ]
+          }
+        ]
       }
     ],
     "global": {
