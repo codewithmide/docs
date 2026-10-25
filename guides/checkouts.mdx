@@ -173,6 +173,8 @@ The customer must send exactly `amountPayable` in a single transfer.
 
 Never infer payment success from a bank receipt, browser redirect, or a `pending`/`processing` response.
 
+When an amount mismatch is detected, FossaPay sends `checkout.failed`. The checkout status remains `failed`, while the associated transaction is recorded as `underpaid` or `overpaid`. The webhook includes `paymentOutcome`, `expectedAmount`, and `receivedAmount` so your application can identify the mismatch and reconcile it without treating the checkout as paid.
+
 ## Idempotency and references
 
 Every create request requires either `X-Idempotency-Key` or `Idempotency-Key`. Prefer `X-Idempotency-Key` for new integrations.
@@ -216,7 +218,7 @@ const checkout = await response.json();
 | `pending` | Waiting for the exact payment. | Display the account and continue waiting. |
 | `processing` | Payment processing has started. | Do not fulfill yet. Wait for a terminal event. |
 | `completed` | Exact payment confirmed and merchant settlement recorded. | Fulfill exactly once. |
-| `failed` | Payment could not complete, including an amount mismatch. | Do not fulfill; reconcile using the checkout and webhook data. |
+| `failed` | Payment could not complete. For an amount mismatch, the associated transaction remains `underpaid` or `overpaid`. | Do not fulfill; use the webhook's reconciliation fields when present. |
 | `expired` | The checkout expired or was expired by the merchant. | Stop displaying the payment instructions. |
 | `reversed` | The incoming payment was returned to the sender. | Do not fulfill. |
 
