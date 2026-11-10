@@ -132,6 +132,36 @@ const transactions = await fossapay.transactions.list({
 await fossapay.transactions.retrieve("TRANSACTION_ID");
 ```
 
+## Transaction splits
+
+Create and manage reusable NGN split rules without opening the dashboard:
+
+```ts
+const split = await fossapay.splits.create({
+  name: "Marketplace vendors",
+  type: "percentage",
+  currency: "NGN",
+  collectionTypes: ["checkout"],
+});
+
+await fossapay.splits.addRecipient(split.splitCode, {
+  type: "external_bank",
+  bankCode: "058",
+  accountNumber: "0123456789",
+  allocation: "40",
+});
+
+await fossapay.splits.activate(split.splitCode);
+
+await fossapay.splits.updateSources(split.splitCode, {
+  productIds: ["PRODUCT_UUID"],
+  storeIds: ["STORE_UUID"],
+  paymentLinkIds: ["PAYMENT_LINK_UUID_1", "PAYMENT_LINK_UUID_2"],
+});
+```
+
+Pass the returned `splitCode` when creating a checkout or a reusable payment link with `@fossapay/checkout`.
+
 ## Bank resolution and payouts
 
 Resolve the account before creating a payout. Nigerian account numbers must contain exactly 10 digits.
@@ -227,4 +257,5 @@ try {
 | `transactions` | `list()`, `retrieve()` |
 | `banks` | `list()`, `resolveAccount()` |
 | `payouts` | `create()`, `retrieve()`, `retrieveByReference()` |
+| `splits` | `create()`, `list()`, `retrieve()`, `update()`, `addRecipient()`, `updateRecipient()`, `removeRecipient()`, `preview()`, `activate()`, `pause()`, `listTransactions()` |
 | `webhooks` | `constructEvent()`, `verifySignature()` |

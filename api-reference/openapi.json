@@ -2129,6 +2129,122 @@
         }
       }
     },
+    "/api/v1/splits": {
+      "post": {
+        "operationId": "ExternalSplitPaymentsController_create",
+        "tags": ["Transaction Splits"],
+        "summary": "Create a reusable NGN transaction split",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSplitRequest" } } } },
+        "responses": { "201": { "description": "Split created successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      },
+      "get": {
+        "operationId": "ExternalSplitPaymentsController_list",
+        "tags": ["Transaction Splits"],
+        "summary": "List transaction splits",
+        "responses": { "200": { "description": "Splits retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}": {
+      "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+      "get": {
+        "operationId": "ExternalSplitPaymentsController_detail",
+        "tags": ["Transaction Splits"],
+        "summary": "Retrieve a transaction split",
+        "responses": { "200": { "description": "Split retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      },
+      "patch": {
+        "operationId": "ExternalSplitPaymentsController_update",
+        "tags": ["Transaction Splits"],
+        "summary": "Update a draft or paused transaction split",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSplitRequest" } } } },
+        "responses": { "200": { "description": "Split updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/recipients": {
+      "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+      "post": {
+        "operationId": "ExternalSplitPaymentsController_addRecipient",
+        "tags": ["Transaction Splits"],
+        "summary": "Add a recipient to a transaction split",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddSplitRecipientRequest" } } } },
+        "responses": { "201": { "description": "Recipient added successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/sources": {
+      "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+      "get": {
+        "operationId": "ExternalSplitPaymentsController_sources",
+        "tags": ["Transaction Splits"],
+        "summary": "List assignable products, storefronts, and payment links",
+        "responses": { "200": { "description": "Split sources retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      },
+      "put": {
+        "operationId": "ExternalSplitPaymentsController_updateSources",
+        "tags": ["Transaction Splits"],
+        "summary": "Replace the resources assigned to a split",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSplitSourcesRequest" } } } },
+        "responses": { "200": { "description": "Split sources updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/recipients/{recipientId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/SplitCode" },
+        { "name": "recipientId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "patch": {
+        "operationId": "ExternalSplitPaymentsController_updateRecipient",
+        "tags": ["Transaction Splits"],
+        "summary": "Update a recipient allocation",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSplitRecipientRequest" } } } },
+        "responses": { "200": { "description": "Recipient updated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      },
+      "delete": {
+        "operationId": "ExternalSplitPaymentsController_deleteRecipient",
+        "tags": ["Transaction Splits"],
+        "summary": "Remove a recipient",
+        "responses": { "200": { "description": "Recipient removed successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/preview": {
+      "get": {
+        "operationId": "ExternalSplitPaymentsController_preview",
+        "tags": ["Transaction Splits"],
+        "summary": "Preview split allocations",
+        "parameters": [
+          { "$ref": "#/components/parameters/SplitCode" },
+          { "name": "amount", "in": "query", "required": true, "schema": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$" } },
+          { "name": "collectionType", "in": "query", "required": true, "schema": { "type": "string", "enum": ["checkout", "direct_deposit"] } }
+        ],
+        "responses": { "200": { "description": "Split preview calculated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/activate": {
+      "post": {
+        "operationId": "ExternalSplitPaymentsController_activate",
+        "tags": ["Transaction Splits"],
+        "summary": "Activate a transaction split",
+        "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+        "responses": { "200": { "description": "Split activated successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/pause": {
+      "post": {
+        "operationId": "ExternalSplitPaymentsController_pause",
+        "tags": ["Transaction Splits"],
+        "summary": "Pause a transaction split",
+        "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+        "responses": { "200": { "description": "Split paused successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
+    "/api/v1/splits/{splitCode}/transactions": {
+      "get": {
+        "operationId": "ExternalSplitPaymentsController_transactions",
+        "tags": ["Transaction Splits"],
+        "summary": "List transactions processed by a split",
+        "parameters": [{ "$ref": "#/components/parameters/SplitCode" }],
+        "responses": { "200": { "description": "Split transactions retrieved successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SplitApiResponse" } } } } }
+      }
+    },
     "/api/v1/settings/webhooks": {
       "put": {
         "operationId": "WebhooksController_updateSettings",
@@ -2234,6 +2350,15 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key"
+      }
+    },
+    "parameters": {
+      "SplitCode": {
+        "name": "splitCode",
+        "in": "path",
+        "required": true,
+        "description": "Public code returned when the split was created.",
+        "schema": { "type": "string", "pattern": "^SPL_[A-Fa-f0-9]{16}$" }
       }
     },
     "schemas": {
@@ -3759,6 +3884,66 @@
         },
         "additionalProperties": false
       },
+      "CreateSplitRequest": {
+        "type": "object",
+        "required": ["name", "type", "currency", "collectionTypes"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 120 },
+          "type": { "type": "string", "enum": ["percentage", "flat"] },
+          "currency": { "type": "string", "const": "NGN" },
+          "collectionTypes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "enum": ["checkout", "direct_deposit"] } },
+          "minimumPaymentAmount": { "type": "string", "description": "Required before activating a flat split." }
+        },
+        "additionalProperties": false
+      },
+      "UpdateSplitRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "maxLength": 120 },
+          "collectionTypes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "enum": ["checkout", "direct_deposit"] } },
+          "minimumPaymentAmount": { "type": "string" },
+          "feePayer": { "type": "string", "enum": ["master_wallet", "evenly_distributed", "specific_recipient"] },
+          "feePayerRecipientId": { "type": ["string", "null"], "format": "uuid" }
+        },
+        "additionalProperties": false
+      },
+      "AddSplitRecipientRequest": {
+        "type": "object",
+        "required": ["type", "allocation"],
+        "properties": {
+          "type": { "type": "string", "enum": ["subaccount", "external_bank"] },
+          "virtualAccountId": { "type": "string", "format": "uuid" },
+          "accountNumber": { "type": "string", "pattern": "^[0-9]{10}$" },
+          "bankCode": { "type": "string" },
+          "allocation": { "type": "string", "description": "Percentage or flat NGN allocation, depending on the split type." }
+        },
+        "additionalProperties": false
+      },
+      "UpdateSplitRecipientRequest": {
+        "type": "object",
+        "required": ["allocation"],
+        "properties": { "allocation": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "UpdateSplitSourcesRequest": {
+        "type": "object",
+        "properties": {
+          "productIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "format": "uuid" } },
+          "storeIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "format": "uuid" } },
+          "paymentLinkIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "format": "uuid" } }
+        },
+        "additionalProperties": false
+      },
+      "SplitApiResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean", "const": true },
+          "message": { "type": "string" },
+          "data": { "description": "The split, recipient, preview, or transaction collection returned by the endpoint" }
+        },
+        "additionalProperties": false
+      },
       "CheckoutCustomer": {
         "type": "object",
         "properties": {
@@ -3802,6 +3987,11 @@
           "description": {
             "type": "string",
             "maxLength": 255
+          },
+          "splitCode": {
+            "type": "string",
+            "pattern": "^SPL_[A-Fa-f0-9]{16}$",
+            "description": "Public code of an active NGN split configured for checkout collections."
           }
         },
         "additionalProperties": false
@@ -3812,7 +4002,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["temporary", "permanent"]
+            "enum": ["temporary", "permanent", "order_wallet"]
           },
           "bankName": { "type": "string" },
           "accountName": { "type": "string" },
@@ -3860,6 +4050,12 @@
           "amountPayable": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
           "settlementAmount": { "type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$" },
           "feeBearer": { "type": "string", "enum": ["customer", "merchant"] },
+          "split": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/CheckoutSplitSummary" },
+              { "type": "null" }
+            ]
+          },
           "currency": { "type": "string", "enum": ["NGN"] },
           "account": { "$ref": "#/components/schemas/CheckoutAccount" },
           "customer": {
@@ -3894,6 +4090,16 @@
         },
         "additionalProperties": false
       },
+      "CheckoutSplitSummary": {
+        "type": "object",
+        "required": ["code", "version", "status"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^SPL_[A-Fa-f0-9]{16}$" },
+          "version": { "type": "integer", "minimum": 1 },
+          "status": { "type": "string", "const": "attached" }
+        },
+        "additionalProperties": false
+      },
       "WebhookSettingsRequest": {
         "type": "object",
         "required": ["url", "events", "secret"],
@@ -3916,6 +4122,10 @@
                 "checkout.failed",
                 "checkout.expired",
                 "checkout.reversed",
+                "split.payment.processing",
+                "split.payment.completed",
+                "split.payment.partially_failed",
+                "split.payment.reconciliation_required",
                 "payout.completed",
                 "payout.failed",
                 "payout.reversed"

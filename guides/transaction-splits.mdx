@@ -1,0 +1,250 @@
+---
+title: Transaction Splits Guide
+description: 'Create reusable NGN split rules for direct deposits, checkouts, products, storefronts, and payment links'
+---
+
+## Overview
+
+Transaction splits distribute an eligible NGN collection between one or more recipients and your business master wallet. You create a split once, add recipients, choose who covers the collection fee, activate it, and then attach it to the payment sources that should use it.
+
+Every split has a public code such as `SPL_0123456789ABCDEF`. Use that code in API and SDK integrations instead of exposing the split's internal database ID.
+
+
+## Prerequisites
+
+- A verified FossaPay business
+- An active API key
+- An active NGN master wallet
+- At least one eligible recipient
+- Sufficient master-wallet balance for recipient payout fees
+
+Transaction splits currently support NGN only.
+
+## How it works
+
+<Steps>
+  <Step title="Create the split">
+    Choose a unique name, `percentage` or `flat`, and one or both supported collection types.
+  </Step>
+  <Step title="Add recipients">
+    Add an existing NGN subaccount or a verified external Nigerian bank account and assign its percentage or flat amount.
+  </Step>
+  <Step title="Configure the fee payer">
+    Keep the master-wallet default, distribute the fee evenly, or assign it to a specific recipient.
+  </Step>
+  <Step title="Preview and activate">
+    Preview a representative amount, confirm the allocation, and activate the split.
+  </Step>
+  <Step title="Attach payment sources">
+    Pass `splitCode` when creating a checkout or payment link, or assign existing products, storefronts, and payment links through the source endpoint.
+  </Step>
+  <Step title="Track settlement">
+    Use split webhooks and the split-transactions endpoint to track recipient payouts separately from the original collection.
+  </Step>
+</Steps>
+
+## Split types
+
+### Percentage
+
+Each recipient receives a percentage of the allocation base. Recipient percentages may total up to `100`; any unassigned percentage remains in the master wallet.
+
+```json
+{
+  "name": "Marketplace vendors",
+  "type": "percentage",
+  "currency": "NGN",
+  "collectionTypes": ["checkout"]
+}
+```
+
+An allocation of `10` means 10%, not NGN 10. Percentage allocations support up to four decimal places.
+
+### Flat
+
+Each recipient receives a whole-NGN amount. A flat split requires `minimumPaymentAmount`, and the remaining amount stays in the master wallet.
+
+```json
+{
+  "name": "Vendor settlement",
+  "type": "flat",
+  "currency": "NGN",
+  "collectionTypes": ["checkout"],
+  "minimumPaymentAmount": "20000"
+}
+```
+
+The minimum must be high enough to cover every recipient allocation and the configured fee treatment.
+
+## Collection types
+
+| Collection type | Value | Behavior |
+|---|---|---|
+| Checkout | `checkout` | Supports API checkouts, reusable payment links, product pages, and storefronts. Multiple checkout splits can coexist when attached to different sources. |
+| Direct deposit | `direct_deposit` | Applies to an incoming payment on the business master NGN account. Only one active direct-deposit split can exist for a business at a time. It does not affect subaccounts. |
+
+A split can support both collection types.
+
+## Add recipients
+
+### External bank
+
+```json
+{
+  "type": "external_bank",
+  "bankCode": "058",
+  "accountNumber": "0123456789",
+  "allocation": "40"
+}
+```
+
+FossaPay performs a bank-name enquiry before saving the recipient. The account number must contain exactly 10 digits.
+
+### Existing subaccount
+
+```json
+{
+  "type": "subaccount",
+  "virtualAccountId": "4ce206d7-0e4a-4ca5-b195-2037a1c65097",
+  "allocation": "10"
+}
+```
+
+The wallet must be an active NGN subaccount owned by the authenticated business. The business master wallet is not added as a recipient; it automatically keeps the calculated remainder.
+
+## Choose who covers the collection fee
+
+Update a draft or paused split with one of these values:
+
+| Value | Behavior |
+|---|---|
+| `master_wallet` | The fee is taken from the portion remaining in the business master wallet. This is the default. |
+| `evenly_distributed` | The fee is divided across all recipients and the master-wallet remainder. |
+| `specific_recipient` | The fee is deducted from one selected recipient. Also send `feePayerRecipientId`. |
+
+```json
+{
+  "feePayer": "specific_recipient",
+  "feePayerRecipientId": "8b28033f-c4f0-4a90-8ab4-6ed12b8def35"
+}
+```
+
+If a checkout customer pays the platform fee, that fee sits outside the split allocation and is not deducted from a split participant again. If the business covers it, the split's fee-payer rule is applied.
+
+<Info>
+  Recipient payout fees are separate from the collection fee. They are charged to the business master wallet while the recipient receives the calculated allocation.
+</Info>
+
+## Preview before activation
+
+Preview a real amount and collection type:
+
+```bash
+curl "https://api-production.fossapay.com/api/v1/splits/SPL_0123456789ABCDEF/preview?amount=5000&collectionType=checkout" \
+  -H "x-api-key: $FOSSAPAY_API_KEY"
+```
+
+Check `eligible`, recipient allocations, the platform fee, and `masterRemainder` before activating the split.
+
+## Attach a split to payments
+
+### One API checkout
+
+Pass `splitCode` when creating the checkout:
+
+```json
+{
+  "amount": 5000,
+  "currency": "NGN",
+  "reference": "ORDER-10025",
+  "feeBearer": "customer",
+  "splitCode": "SPL_0123456789ABCDEF"
+}
+```
+
+The checkout response contains the attached split code and version.
+
+### Reusable payment link
+
+Pass `splitCode` when creating the payment link. The link retains the split, so every eligible payment through that link uses it without sending the code again.
+
+### Existing products, storefronts, and payment links
+
+Use the source endpoint to assign multiple resources in one request:
+
+```json
+{
+  "productIds": ["PRODUCT_UUID"],
+  "storeIds": ["STORE_UUID"],
+  "paymentLinkIds": ["PAYMENT_LINK_UUID_1", "PAYMENT_LINK_UUID_2"]
+}
+```
+
+`PUT /api/v1/splits/:splitCode/sources` replaces all source assignments for that split. Include every source that should remain assigned; an empty list clears that category. A source cannot belong to two splits at the same time.
+
+## Edit an active split
+
+Pause the split before changing its name, collection types, minimum amount, fee payer, or recipients. Existing payments retain the split configuration version captured when they were attached. Reactivate the split when the new configuration is ready.
+
+Pausing a split stops new payments from attaching to it. It does not cancel a payment or recipient payout already being processed.
+
+## Settlement and webhooks
+
+The original collection and its recipient settlement are separate lifecycles. A successful collection can be fulfilled once its normal checkout or deposit event is verified; split settlement may continue asynchronously.
+
+| Event | Meaning |
+|---|---|
+| `split.payment.processing` | The collection settled and recipient allocation processing started. |
+| `split.payment.completed` | Every recipient allocation completed. |
+| `split.payment.partially_failed` | At least one recipient completed and another requires attention. |
+| `split.payment.reconciliation_required` | No allocation completed or the settlement needs manual review. |
+
+Do not fulfill an order from a split event. Continue using the relevant signed checkout or collection event for fulfillment, and use split events for settlement tracking.
+
+## Endpoint map
+
+| Operation | API reference |
+|---|---|
+| Create a split | [Create split](/api-reference/splits/create-split) |
+| List splits | [List splits](/api-reference/splits/list-splits) |
+| Retrieve a split | [Get split](/api-reference/splits/get-split) |
+| Update configuration | [Update split](/api-reference/splits/update-split) |
+| Add a recipient | [Add recipient](/api-reference/splits/add-recipient) |
+| Update an allocation | [Update recipient](/api-reference/splits/update-recipient) |
+| Remove a recipient | [Remove recipient](/api-reference/splits/remove-recipient) |
+| Preview allocations | [Preview split](/api-reference/splits/preview-split) |
+| Activate | [Activate split](/api-reference/splits/activate-split) |
+| Pause | [Pause split](/api-reference/splits/pause-split) |
+| List assignable sources | [List split sources](/api-reference/splits/list-sources) |
+| Replace assigned sources | [Update split sources](/api-reference/splits/update-sources) |
+| Track settlements | [List split transactions](/api-reference/splits/list-transactions) |
+
+## Go-live checklist
+
+- [ ] Create the split with the intended collection types.
+- [ ] Add and verify every recipient.
+- [ ] Confirm percentage or flat allocations.
+- [ ] Set the correct collection-fee payer.
+- [ ] Preview representative minimum and maximum payment amounts.
+- [ ] Confirm the master wallet can cover recipient payout fees.
+- [ ] Activate the split before attaching sources.
+- [ ] Store the public `splitCode`, not the internal split ID.
+- [ ] Configure and verify split webhook events.
+- [ ] Handle partial failure and reconciliation states operationally.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card color="#07C983" title="Create a split" icon="code-branch" href="/api-reference/splits/create-split">
+    Open the interactive API playground
+  </Card>
+  <Card color="#0080FF" title="Create a checkout" icon="credit-card" href="/api-reference/checkouts/create-checkout">
+    Attach an active split to a checkout
+  </Card>
+  <Card color="#0080FF" title="Webhook events" icon="webhook" href="/api-reference/webhooks/events">
+    Track split settlement events
+  </Card>
+  <Card color="#0080FF" title="Node SDK" icon="node-js" href="/sdks/node">
+    Manage splits from the official SDK
+  </Card>
+</CardGroup>

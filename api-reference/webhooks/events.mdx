@@ -156,6 +156,41 @@ Fired after an incoming checkout payment is returned to the sender. This can fol
 }
 ```
 
+## Split Payment Events
+
+Split settlement happens after the underlying collection succeeds. These events do not replace `checkout.completed`.
+
+- `split.payment.processing` — the split distribution has been claimed for processing.
+- `split.payment.completed` — every recipient allocation completed.
+- `split.payment.partially_failed` — at least one allocation completed and another requires reconciliation.
+- `split.payment.reconciliation_required` — recipient distribution could not be completed automatically.
+
+```json
+{
+  "eventType": "split.payment.completed",
+  "data": {
+    "splitPaymentId": "9d887943-ce2a-4a54-b1a2-0b69b474ace8",
+    "splitCode": "SPL_0123456789ABCDEF",
+    "splitVersion": 3,
+    "transactionId": "3469cd26-a213-431e-96c9-72dc2dea51ae",
+    "collectionType": "checkout",
+    "status": "completed",
+    "allocationBaseAmount": "5000.00",
+    "collectedAmount": "5070.00",
+    "platformFeeAmount": "70.00",
+    "platformFeeChargedToSplit": false,
+    "allocations": [
+      {
+        "recipientId": "8b28033f-c4f0-4a90-8ab4-6ed12b8def35",
+        "amount": "2000.00",
+        "status": "completed",
+        "failureReason": null
+      }
+    ]
+  }
+}
+```
+
 ## Payout Events
 
 Master-wallet payout events are emitted when a payout reaches a terminal state. Use `data.reference` to reconcile with your request and `data.payoutId` when retrieving the payout through the API.

@@ -29,6 +29,7 @@ const paymentLink = await fossapay.paymentLinks.create(
     description: "Payment for order 10025",
     collectUserInfo: true,
     feeBearer: "customer",
+    splitCode: "SPL_0123456789ABCDEF",
   },
   { idempotencyKey: "order-10025" },
 );
@@ -65,6 +66,44 @@ const checkout = await fossapay.checkouts.create(
 await fossapay.checkouts.retrieve(checkout.id);
 await fossapay.checkouts.retrieveByReference("ORDER-10025");
 ```
+
+## Create and manage transaction splits
+
+Splits can be created programmatically; merchants do not need to create one on the dashboard and copy its code manually.
+
+```ts
+const split = await fossapay.splits.create({
+  name: "Marketplace vendors",
+  type: "percentage",
+  currency: "NGN",
+  collectionTypes: ["checkout"],
+});
+
+const recipient = await fossapay.splits.addRecipient(split.splitCode, {
+  type: "external_bank",
+  bankCode: "058",
+  accountNumber: "0123456789",
+  allocation: "40",
+});
+
+await fossapay.splits.activate(split.splitCode);
+
+await fossapay.splits.updateSources(split.splitCode, {
+  productIds: ["PRODUCT_UUID"],
+  storeIds: ["STORE_UUID"],
+  paymentLinkIds: ["PAYMENT_LINK_UUID_1", "PAYMENT_LINK_UUID_2"],
+});
+
+const checkout = await fossapay.checkouts.create({
+  reference: "ORDER-10026",
+  amount: 25000,
+  currency: "NGN",
+  feeBearer: "customer",
+  splitCode: split.splitCode,
+});
+```
+
+Use `splits.list()`, `retrieve()`, `update()`, `updateRecipient()`, `removeRecipient()`, `preview()`, `listSources()`, `updateSources()`, `pause()`, and `listTransactions()` to manage the complete lifecycle.
 
 ## 3. Open checkout in the browser
 

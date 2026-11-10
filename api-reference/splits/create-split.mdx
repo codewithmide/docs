@@ -1,0 +1,12 @@
+---
+title: 'Create Transaction Split'
+openapi: '/api-reference/openapi.json POST /api/v1/splits'
+playground: 'interactive'
+description: 'Create a reusable NGN percentage or flat split'
+---
+
+Creates a draft split and returns its public `splitCode`. Add recipients and configure the fee payer before activation.
+
+For a flat split, `minimumPaymentAmount` is required and must be a whole NGN amount.
+
+See the [Transaction Splits Guide](/guides/transaction-splits) for the complete setup and settlement flow.

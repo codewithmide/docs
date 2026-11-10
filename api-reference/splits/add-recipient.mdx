@@ -1,0 +1,8 @@
+---
+title: 'Add Split Recipient'
+openapi: '/api-reference/openapi.json POST /api/v1/splits/{splitCode}/recipients'
+playground: 'interactive'
+description: 'Add a subaccount or verified external bank recipient'
+---
+
+For `subaccount`, provide `virtualAccountId`. For `external_bank`, provide a supported `bankCode` and a 10-digit `accountNumber`; FossaPay performs name enquiry before saving it.

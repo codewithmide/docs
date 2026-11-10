@@ -1,0 +1,8 @@
+---
+title: 'Update Transaction Split'
+openapi: '/api-reference/openapi.json PATCH /api/v1/splits/{splitCode}'
+playground: 'interactive'
+description: 'Update a draft or paused split configuration'
+---
+
+An active split must be paused before it can be updated. When `feePayer` is `specific_recipient`, also provide a recipient ID belonging to this split.

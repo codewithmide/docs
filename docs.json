@@ -35,6 +35,7 @@
             "group": "Guides",
             "pages": [
               "guides/checkouts",
+              "guides/transaction-splits",
               "guides/identity-verification",
               "guides/collections",
               "guides/ngn-transfers",
@@ -80,6 +81,24 @@
               "api-reference/checkouts/get-checkout",
               "api-reference/checkouts/get-checkout-by-reference",
               "api-reference/checkouts/expire-checkout"
+            ]
+          },
+          {
+            "group": "Transaction Splits",
+            "pages": [
+              "api-reference/splits/create-split",
+              "api-reference/splits/list-splits",
+              "api-reference/splits/get-split",
+              "api-reference/splits/update-split",
+              "api-reference/splits/add-recipient",
+              "api-reference/splits/update-recipient",
+              "api-reference/splits/remove-recipient",
+              "api-reference/splits/preview-split",
+              "api-reference/splits/activate-split",
+              "api-reference/splits/pause-split",
+              "api-reference/splits/list-sources",
+              "api-reference/splits/update-sources",
+              "api-reference/splits/list-transactions"
             ]
           },
           {

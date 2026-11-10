@@ -46,6 +46,10 @@ Creates a merchant-scoped checkout and returns the exact amount and bank account
   Optional description, up to 255 characters.
 </ParamField>
 
+<ParamField body="splitCode" type="string">
+  Optional public code of an active NGN split configured for checkout collections. See the [Transaction Splits Guide](/guides/transaction-splits) or create one in the [Split API playground](/api-reference/splits/create-split).
+</ParamField>
+
 ## Request
 
 ```bash
@@ -58,6 +62,7 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
     "currency": "NGN",
     "reference": "ORDER-10025",
     "feeBearer": "customer",
+    "splitCode": "SPL_0123456789ABCDEF",
     "customer": {
       "name": "John Doe",
       "email": "john.doe@example.com"
@@ -84,6 +89,11 @@ curl -X POST https://api-production.fossapay.com/api/v1/checkouts \
     "amountPayable": "5080.00",
     "settlementAmount": "5000.00",
     "feeBearer": "customer",
+    "split": {
+      "code": "SPL_0123456789ABCDEF",
+      "version": 3,
+      "status": "attached"
+    },
     "currency": "NGN",
     "account": {
       "type": "temporary",
